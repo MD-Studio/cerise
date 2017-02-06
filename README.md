@@ -25,7 +25,7 @@ install using
 
 Dependencies
 ------------
- * Python 2.7 or Python 3.5
+ * Python 3.5
 
 Example usage
 -------------
@@ -33,7 +33,7 @@ To use this repository as the starting point for your Python project, just
 download the repository and rename all occurences of `simple-cwl-xenon-service` with the
 name of your new project!
 
-    `python3 -m simple-cwl-xenon-service`
+    `python3 -m simple_cwl_xenon_service`
 
 and open your browser to here:
 

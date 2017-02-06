@@ -6,6 +6,8 @@ from typing import List, Dict
 from six import iteritems
 from ..util import deserialize_date, deserialize_datetime
 
+import job_manager
+
 
 def cancel_job_by_id(jobId):
     """
@@ -16,7 +18,9 @@ def cancel_job_by_id(jobId):
 
     :rtype: Job
     """
-    return 'do some magic!'
+
+    job_manager.job_store().get_job(jobId).cancel()
+    return job_manager.job_store().get_job(jobId)
 
 
 def delete_job_by_id(jobId):
@@ -28,7 +32,8 @@ def delete_job_by_id(jobId):
 
     :rtype: None
     """
-    return 'do some magic!'
+    job_manager.job_store().delete_job(jobId)
+    return
 
 
 def get_job_by_id(jobId):
@@ -40,7 +45,16 @@ def get_job_by_id(jobId):
 
     :rtype: Job
     """
-    return 'do some magic!'
+    job = job_manager.job_store().get_job(jobId)
+    return Job(
+            id=job.id,
+            name=job.name,
+            workflow=job.workflow,
+            input=job.input,
+            state=job.get_state(),
+            output=job.get_output(),
+            log=job.get_log()
+        )
 
 
 def get_job_log_by_id(jobId):
@@ -52,7 +66,7 @@ def get_job_log_by_id(jobId):
 
     :rtype: str
     """
-    return 'do some magic!'
+    return job_manager.job_store().get_job(jobId).get_log()
 
 
 def get_jobs():
@@ -62,8 +76,18 @@ def get_jobs():
 
     :rtype: List[Job]
     """
-    return 'do some magic!'
 
+    job_list = job_manager.job_store().list_jobs()
+
+    return [ Job(
+        id=job.id,
+        name=job.name,
+        workflow=job.workflow,
+        input=job.input,
+        state=job.get_state(),
+        output=job.get_output(),
+        log=job.get_log()
+        ) for job in job_list]
 
 def post_job(body):
     """
@@ -76,4 +100,13 @@ def post_job(body):
     """
     if connexion.request.is_json:
         body = JobDescription.from_dict(connexion.request.get_json())
-    return 'do some magic!'
+
+    job_id = job_manager.job_store().create_job(
+        job_manager.JobDescription(
+            name=body.name,
+            workflow=body.workflow,
+            input=body.input
+            )
+        )
+
+    return job_manager.job_store().get_job(job_id)

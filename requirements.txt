@@ -1,4 +1,4 @@
-connection == 1.0.129
+connexion == 1.0.129
 pytest
 python_dateutil == 2.6.0
 setuptools >= 21.0.0

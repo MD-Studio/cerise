@@ -1,1 +1,3 @@
 **/*.autosave
+**/__pycache__/**
+**/*.swp
