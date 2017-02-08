@@ -1,18 +1,14 @@
-An empty Python project
-=======================
+Simple CWL Xenon Service
+========================
 [![Build Status](https://api.travis-ci.org/LourensVeen/simple-cwl-xenon-service.svg?branch=master)](https://travis-ci.org/LourensVeen/simple-cwl-xenon-service)
 
-The goal of this repository is to serve as an example of how to structure
-a newly started Python project for the Netherlands eScience Center, being
-compliant for as much as possible with the [eStep checklist](https://github.com/NLeSC/estep-checklist).
-
-The idea is that this is a collaborative effort so feel free to directly
-contribute or suggest any additions and/or changes that may improve this
-empty Python project repository.
+This is a simple REST service that can run (some) CWL jobs on some remote
+compute resource. It uses the GA4GH REST API as its interface and PyXenon
+to run jobs remotely.
 
 Documentation
 -------------
-You could include a link to the full documentation of your project here.
+Documentation may be found in the doc/ directory.
 
 Installation
 ------------
@@ -25,13 +21,11 @@ install using
 
 Dependencies
 ------------
- * Python 3.5
+ * Python 3.5 or up
 
 Example usage
 -------------
-To use this repository as the starting point for your Python project, just
-download the repository and rename all occurences of `simple-cwl-xenon-service` with the
-name of your new project!
+To start the service, simply run
 
     `python3 -m simple_cwl_xenon_service`
 
@@ -49,7 +43,7 @@ http://localhost:8080/swagger.json
 
 Contribution guide
 ------------------
-The simple-cwl-xenon-service Project follows the Google Python style guide, with Sphinxdoc docstrings for module public functions. If you want to
+The simple-cwl-xenon-service project follows the Google Python style guide, with Sphinxdoc docstrings for module public functions. If you want to
 contribute to the project please fork it, create a branch including your addition, and create a pull request.
 
 The tests use relative imports and can be run directly after making
