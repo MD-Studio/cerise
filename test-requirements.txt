@@ -1,4 +1,4 @@
-flask_testing=0.6.1
+flask_testing>=0.6.1
 coverage>=4.0.3
 pytest>=3.0
 py>=1.4.31

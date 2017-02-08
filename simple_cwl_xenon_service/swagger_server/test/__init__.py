@@ -1,8 +1,12 @@
 from flask_testing import TestCase
-from ..encoder import JSONEncoder
 import connexion
 import logging
 
+import sys
+import os
+sys.path.append(os.getcwd() + '/simple_cwl_xenon_service');
+
+from ..encoder import JSONEncoder
 
 class BaseTestCase(TestCase):
 

@@ -41,7 +41,7 @@ def delete_job_by_id(jobId):
     :rtype: None
     """
     job_manager.job_store().delete_job(jobId)
-    return "Job deleted", 204
+    return None, 204
 
 
 def get_job_by_id(jobId):
