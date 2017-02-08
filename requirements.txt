@@ -1,4 +1,5 @@
 connexion == 1.0.129
 python_dateutil == 2.6.0
+pyxenon >= 0.3
 setuptools >= 21.0.0
 sphinx

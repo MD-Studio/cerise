@@ -10,6 +10,22 @@ import flask
 import job_manager
 
 
+def _job_to_cwl_job(job):
+    return Job(
+            id=job.id,
+            name=job.name,
+            workflow=job.workflow,
+            input=job.input,
+            state=job.get_state(),
+            output={},
+            log=flask.url_for('.swagger_server_controllers_default_controller_get_job_log_by_id',
+                jobId=job.id,
+                _external=True)
+        )
+
+
+
+
 def cancel_job_by_id(jobId):
     """
     Cancel a job
@@ -57,18 +73,7 @@ def get_job_by_id(jobId):
     if not job:
         flask.abort(404, "Job not found")
 
-    return Job(
-            id=job.id,
-            name=job.name,
-            workflow=job.workflow,
-            input=job.input,
-            state=job.get_state(),
-            output={},
-            log=flask.url_for('.swagger_server_controllers_default_controller_get_job_log_by_id',
-                jobId=job.id,
-                _external=True)
-        )
-
+    return _job_to_cwl_job(job)
 
 
 def get_job_log_by_id(jobId):
@@ -93,15 +98,7 @@ def get_jobs():
 
     job_list = job_manager.job_store().list_jobs()
 
-    return [ Job(
-        id=job.id,
-        name=job.name,
-        workflow=job.workflow,
-        input=job.input,
-        state=job.get_state(),
-        output=job.get_output(),
-        log=job.get_log()
-        ) for job in job_list]
+    return [_job_to_cwl_job(job) for job in job_list]
 
 def post_job(body):
     """
@@ -123,4 +120,7 @@ def post_job(body):
             )
         )
 
-    return job_manager.job_store().get_job(job_id).__dict__
+    job_manager.job_runner().start_job(job_id)
+
+    job = job_manager.job_store().get_job(job_id)
+    return _job_to_cwl_job(job)

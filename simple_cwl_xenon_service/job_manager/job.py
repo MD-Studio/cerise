@@ -42,4 +42,8 @@ class Job:
         self.state = JobState.CANCELLED
         return None
     
+    def set_runner_data(self, runner_data):
+        self.runner_data = runner_data
 
+    def get_runner_data(self):
+        return runner_data
