@@ -1,5 +1,5 @@
-from Job import Job
-from JobDescription import JobDescription
+from .job import Job
+from .job_description import JobDescription
 
 class JobStore:
     """Abstract class JobStore

@@ -5,6 +5,7 @@ from datetime import date, datetime
 from typing import List, Dict
 from six import iteritems
 from ..util import deserialize_date, deserialize_datetime
+import flask
 
 import job_manager
 
@@ -19,8 +20,15 @@ def cancel_job_by_id(jobId):
     :rtype: Job
     """
 
-    job_manager.job_store().get_job(jobId).cancel()
-    return job_manager.job_store().get_job(jobId)
+    job = job_manager.job_store().get_job(jobId)
+    if not job:
+        flask.abort(404, "Job not found")
+
+    job.cancel()
+
+    return flask.url_for('.swagger_server_controllers_default_controller_get_job_by_id',
+            jobId=job.id,
+            _external=True)
 
 
 def delete_job_by_id(jobId):
@@ -33,7 +41,7 @@ def delete_job_by_id(jobId):
     :rtype: None
     """
     job_manager.job_store().delete_job(jobId)
-    return
+    return "Job deleted", 204
 
 
 def get_job_by_id(jobId):
@@ -46,15 +54,21 @@ def get_job_by_id(jobId):
     :rtype: Job
     """
     job = job_manager.job_store().get_job(jobId)
+    if not job:
+        flask.abort(404, "Job not found")
+
     return Job(
             id=job.id,
             name=job.name,
             workflow=job.workflow,
             input=job.input,
             state=job.get_state(),
-            output=job.get_output(),
-            log=job.get_log()
+            output={},
+            log=flask.url_for('.swagger_server_controllers_default_controller_get_job_log_by_id',
+                jobId=job.id,
+                _external=True)
         )
+
 
 
 def get_job_log_by_id(jobId):
@@ -102,11 +116,11 @@ def post_job(body):
         body = JobDescription.from_dict(connexion.request.get_json())
 
     job_id = job_manager.job_store().create_job(
-        job_manager.JobDescription(
+        job_manager.job_description.JobDescription(
             name=body.name,
             workflow=body.workflow,
             input=body.input
             )
         )
 
-    return job_manager.job_store().get_job(job_id)
+    return job_manager.job_store().get_job(job_id).__dict__

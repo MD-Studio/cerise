@@ -2,10 +2,7 @@
 class JobDescription:
     """Class JobDescription
     """
-    # Attributes:
-    name = None  # (string?) 
-    workflow = None  # (string) 
-    input = None  # (WorkflowBinding?) 
-    
-    # Operations
-
+    def __init__(self, name, workflow, input):
+        self.name = name
+        self.workflow = workflow
+        self.input = input

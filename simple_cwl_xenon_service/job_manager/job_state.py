@@ -1,15 +1,12 @@
 
 class JobState:
-    """Class JobState
+    """Enum JobState
     """
-    # Attributes:
-    WAITING = None  # () 
-    RUNNING = None  # () 
-    SUCCESS = None  # () 
-    CANCELLED = None  # () 
-    SYSTEM_ERROR = None  # () 
-    TEMPORARY_FAILURE = None  # () 
-    PERMANENT_FAILURE = None  # () 
-    
-    # Operations
+    WAITING = "Waiting"
+    RUNNING = "Running"
+    SUCCESS = "Success"
+    CANCELLED = "Cancelled"
+    SYSTEM_ERROR = "SystemError"
+    TEMPORARY_FAILURE = "TemporaryFailure"
+    PERMANENT_FAILURE = "PermanentFailure"
 

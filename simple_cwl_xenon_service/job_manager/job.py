@@ -1,14 +1,15 @@
-from JobState import JobState
-from WorkflowBinding import WorkflowBinding
+from .job_state import JobState
 
 class Job:
     """Class Job
     """
     # Attributes:
-    id = None  # (string) 
-    name = None  # (string) 
-    workflow = None  # (string) 
-    input = None  # (WorkflowBinding) 
+    def __init__(self, id, name, workflow, input):
+        self.id = id
+        self.name = name
+        self.workflow = workflow
+        self.input = input
+        self.state = JobState.WAITING
     
     # Operations
     def get_state(self):
@@ -16,27 +17,29 @@ class Job:
         
         returns JobState
         """
-        return None # should raise NotImplementedError()
+        # update state
+        return self.state
     
     def get_output(self):
         """function get_output
         
         returns string
         """
-        return None # should raise NotImplementedError()
+        return "Here be output"
     
     def get_log(self):
         """function get_log
         
         returns string
         """
-        return None # should raise NotImplementedError()
+        return "Here be logging output"
     
     def cancel(self):
         """function cancel
         
         returns void
         """
-        return None # should raise NotImplementedError()
+        self.state = JobState.CANCELLED
+        return None
     
 
