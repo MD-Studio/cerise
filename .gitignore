@@ -1,4 +1,5 @@
-**/*.autosave
 **/__pycache__/**
+**/*.pyc
+**/*.autosave
 **/*.swp
 **/.cache/**
