@@ -29,7 +29,7 @@ def _job_to_cwl_job(job):
 def cancel_job_by_id(jobId):
     """
     Cancel a job
-    
+
     :param jobId: Job ID
     :type jobId: str
 
@@ -63,7 +63,7 @@ def delete_job_by_id(jobId):
 def get_job_by_id(jobId):
     """
     Get a job
-    
+
     :param jobId: Job ID
     :type jobId: str
 
@@ -79,7 +79,7 @@ def get_job_by_id(jobId):
 def get_job_log_by_id(jobId):
     """
     Log of a job
-    
+
     :param jobId: Job ID
     :type jobId: str
 
