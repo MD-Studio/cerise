@@ -1,12 +1,10 @@
-from .job_runner import JobRunner
-
 import xenon
 
-class XenonJobRunner(JobRunner):
+class XenonJobRunner:
     def __init__(self, job_store, xenon_config={}):
-        super().__init__(job_store)
         self._init_xenon(xenon_config)
         self._init_remote(xenon_config)
+        self._job_store = job_store
 
     def update(self):
         # get status from Xenon and update store
@@ -14,7 +12,7 @@ class XenonJobRunner(JobRunner):
         return None
 
     def start_job(self, job_id):
-        job = self.job_store.get_job(job_id)
+        job = self._job_store.get_job(job_id)
 
         self._run_remote(self.xenon_jobsdir, 'mkdir', ['-p', job_id + '/work'])
         job_dir = self.xenon_jobsdir + '/' + job_id
@@ -30,7 +28,13 @@ class XenonJobRunner(JobRunner):
         job.set_runner_data(xenon_job)
 
     def _init_xenon(self, xenon_config):
-        xenon.init()
+        # The try-except ignores an error from Xenon about double initialisation.
+        # I'm not doing that as far as I can see, but it seems that PyTest does,
+        # because without this, I get that error when trying to run the tests.
+        try:
+            xenon.init()
+        except ValueError:
+            pass
         self.x = xenon.Xenon()
         # TODO: use config
         self.sched = self.x.jobs().newScheduler('local', None, None, None)
