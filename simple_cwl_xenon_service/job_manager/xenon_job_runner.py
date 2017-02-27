@@ -4,16 +4,34 @@ from xenon.files import OpenOption
 
 class XenonJobRunner:
     def __init__(self, job_store, xenon_config={}):
+        """Create a XenonJobRunner object.
+
+        Args:
+            job_store: The job store to get jobs from.
+            xenon_config: A dict containing key-value pairs with Xenon
+                configuration.
+        """
         self._job_store = job_store
-        self._x = None          # Xenon instance
-        self._sched = None      # Xenon scheduler
-        self._fs = None         # Xenon remote filesystem
-        self._basedir = None    # Remote path to base directory
+        """The JobStore to obtain jobs from."""
+        self._x = None
+        """The Xenon instance to use."""
+        self._sched = None
+        """The Xenon scheduler to start jobs through."""
+        self._fs = None
+        """The Xenon remote file system to stage to."""
+        self._basedir = None
+        """The remote path to the base directory where we store our stuff."""
 
         self._init_xenon(xenon_config)
         self._init_remote(xenon_config)
 
     def _init_xenon(self, xenon_config):
+        """Initialise Xenon, and set up Xenon objects to work with.
+
+        Args:
+            xenon_config: A dict containing key-value pairs with Xenon
+                configuration.
+        """
         # The try-except ignores an error from Xenon about double initialisation.
         # I'm not doing that as far as I can see, but it seems that PyTest does,
         # because without this, I get that error when trying to run the tests.
@@ -28,7 +46,12 @@ class XenonJobRunner:
         self._fs = self._x.files().newFileSystem('local', None, None, None)
 
     def _init_remote(self, xenon_config):
-        # set up a couple of dirs for running jobs, if they don't exist
+        """Set up a couple of dirs for running jobs, if they don't exist.
+
+        Args:
+            xenon_config: A dict containing key-value pairs with Xenon
+                configuration.
+        """
         # TODO: use config
         self._basedir = '/tmp/simple_cwl_xenon_service'
         self._run_remote('', 'mkdir', ['jobs'])
@@ -36,12 +59,24 @@ class XenonJobRunner:
         # TODO: do a simple test run to check that cwl-runner works (?)
 
 
-    def update(self):
-        # get status from Xenon and update store
+    def update(self, job_id):
+        """Get status from Xenon and update store.
+
+        Args:
+            job_id: ID of the job to get the status of.
+        """
         # self.store.get_job(job_id).set_state(JobState.RUNNING)
         return None
 
     def start_job(self, job_id):
+        """Get a job from the job store and start it on the compute resource.
+
+        Args:
+            job_id: The id of the job to start.
+
+        Returns:
+            None
+        """
         job = self._job_store.get_job(job_id)
 
         # create work dir
