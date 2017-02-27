@@ -86,7 +86,10 @@ class XenonJobRunner:
 
         # stage workflow
         workflow_file_name = job_dir + '/workflow.cwl'
-        workflow_content = requests.get(job.workflow).content
+        if '://' in job.workflow:
+            workflow_content = requests.get(job.workflow).content
+        else:
+            workflow_content = open(job.workflow, 'rb').read()
         self._stage_file(workflow_file_name, workflow_content)
 
         # submit job
