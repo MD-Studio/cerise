@@ -4,6 +4,8 @@ cwlVersion: v1.0
 class: CommandLineTool
 baseCommand: hostname
 stdout: output.txt
+inputs: []
+
 outputs:
   output:
     type: File
