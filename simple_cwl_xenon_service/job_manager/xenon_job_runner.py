@@ -1,3 +1,4 @@
+import jpype
 import requests
 import xenon
 from xenon.files import OpenOption
@@ -54,7 +55,11 @@ class XenonJobRunner:
         """
         # TODO: use config
         self._basedir = '/tmp/simple_cwl_xenon_service'
-        self._run_remote('', 'mkdir', ['jobs'])
+        basedirpath = self._make_xenon_path('')
+        if not self._x.files().exists(basedirpath):
+            raise RuntimeError('Configuration error: Base directory not found on remote file system')
+
+        self._make_remote_dir('jobs', True)
 
         # TODO: do a simple test run to check that cwl-runner works (?)
 
@@ -80,9 +85,9 @@ class XenonJobRunner:
         job = self._job_store.get_job(job_id)
 
         # create work dir
-        self._run_remote('jobs', 'mkdir', ['-p', job_id + '/work'])
         job_dir = 'jobs/' + job_id
         job_workdir = job_dir + '/work'
+        self._make_remote_dir(job_workdir)
 
         # stage workflow
         workflow_file_name = job_dir + '/workflow.cwl'
@@ -112,14 +117,27 @@ class XenonJobRunner:
         # Note: setting to 0 for an infinite timeout doesn't work
         self._x.jobs().waitUntilDone(xenon_job, 100000)
 
+    def _make_remote_dir(self, rel_path, existing_ok=False):
+        try:
+            xenonpath = self._make_xenon_path(rel_path)
+            self._x.files().createDirectories(xenonpath)
+        except jpype.JException(xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException):
+            if not existing_ok:
+                raise
+            else:
+                pass
+
+
     def _stage_file(self, rel_path, data):
-        remote_path = self._to_remote_path(rel_path)
-        x_files = self._x.files()
-        x_remote_path = x_files.newPath(self._fs, xenon.files.RelativePath(remote_path))
-        stream = x_files.newOutputStream(x_remote_path, [OpenOption.CREATE, OpenOption.TRUNCATE])
+        x_remote_path = self._make_xenon_path(rel_path)
+        stream = self._x.files().newOutputStream(x_remote_path, [OpenOption.CREATE, OpenOption.TRUNCATE])
         stream.write(data)
         stream.close()
 
     def _to_remote_path(self, rel_path):
         return self._basedir + '/' + rel_path
 
+    def _make_xenon_path(self, rel_path):
+        remote_path = self._to_remote_path(rel_path)
+        xenon_path = xenon.files.RelativePath(remote_path)
+        return self._x.files().newPath(self._fs, xenon_path)
