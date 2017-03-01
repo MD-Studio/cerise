@@ -73,6 +73,8 @@ def get_job_by_id(jobId):
     if not job:
         flask.abort(404, "Job not found")
 
+    job_manager.job_runner().update(jobId)
+
     return _job_to_cwl_job(job)
 
 
