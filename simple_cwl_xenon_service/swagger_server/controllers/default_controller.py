@@ -40,7 +40,7 @@ def cancel_job_by_id(jobId):
     if not job:
         flask.abort(404, "Job not found")
 
-    job.cancel()
+    job_manager.job_runner().cancel_job(jobId)
 
     return flask.url_for('.swagger_server_controllers_default_controller_get_job_by_id',
             jobId=job.id,

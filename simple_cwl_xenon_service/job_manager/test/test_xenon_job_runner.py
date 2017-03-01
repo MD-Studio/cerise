@@ -42,9 +42,29 @@ def test_update(slowworkflow):
     job_id = store.create_job(test_job)
     runner.start_job(job_id)
 
-    time.sleep(5)
+    time.sleep(2)
 
     runner.update(job_id)
     updated_job = store.get_job(job_id)
     assert updated_job.get_state() == JobState.RUNNING
 
+    time.sleep(4)
+
+    runner.update(job_id)
+    updated_job = store.get_job(job_id)
+    assert updated_job.get_state() == JobState.SUCCESS
+
+def test_cancel(slowworkflow):
+    store = InMemoryJobStore()
+    runner = XenonJobRunner(store)
+
+    test_job = JobDescription("TestJob", slowworkflow, {})
+    job_id = store.create_job(test_job)
+    runner.start_job(job_id)
+
+    time.sleep(2)
+
+    runner.cancel_job(job_id)
+
+    updated_job = store.get_job(job_id)
+    assert updated_job.get_state() == JobState.CANCELLED

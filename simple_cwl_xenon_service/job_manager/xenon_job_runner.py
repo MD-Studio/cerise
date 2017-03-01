@@ -73,37 +73,45 @@ class XenonJobRunner:
             job_id: ID of the job to get the status of.
         """
         job = self._job_store.get_job(job_id)
-        xenon_job = job.get_runner_data()
-        xenon_status = self._x.jobs().getJobStatus(xenon_job)
 
-        print(xenon_status)
-
-        # convert the xenon JobStatus to our JobStatus
-        if xenon_status.isRunning():
-            job.set_state(JobState.RUNNING)
-            return
-
-        if xenon_status.isDone():
-            if xenon_status.hasException():
-                # TODO: fix, check that it is a JobCanceledException
-                print(xenon_status.getException())
-                job.set_state(JobState.CANCELLED)
+        if (   job.get_state() == JobState.WAITING
+            or job.get_state() == JobState.RUNNING
+           ):
+            xenon_job = job.get_runner_data()
+            try:
+                xenon_status = self._x.jobs().getJobStatus(xenon_job)
+            except xenon.exceptions.XenonException:
+                # Xenon does not know about this job anymore
+                # We should be able to get a status once after the job
+                # finishes, so something went wrong
+                print('Job disappeared?')
+                job.set_state(JobState.SYSTEM_ERROR)
                 return
 
-            exit_code = xenon_status.getExitCode()
-            if exit_code == 0:
-                job.set_state(JobState.SUCCESS)
+            # convert the xenon JobStatus to our JobStatus
+            if xenon_status.isRunning():
+                job.set_state(JobState.RUNNING)
                 return
-            if exit_code == 1:
-                job.set_state(JobState.PERMANENT_FAILURE)
-                return
-            if exit_code == 33:
-                job.set_state(JobState.PERMANENT_FAILURE)
-                return
-            job.set_state(JobState.SYSTEM_ERROR)
-            return
 
-        job.set_state(JobState.WAITING)
+            if xenon_status.isDone():
+                if xenon_status.hasException():
+                    # TODO: fix, check that it is a JobCanceledException
+                    print(xenon_status.getException())
+                    job.set_state(JobState.CANCELLED)
+                    return
+
+                exit_code = xenon_status.getExitCode().intValue()
+                if exit_code == 0:
+                    job.set_state(JobState.SUCCESS)
+                    return
+                if exit_code == 1:
+                    job.set_state(JobState.PERMANENT_FAILURE)
+                    return
+                if exit_code == 33:
+                    job.set_state(JobState.PERMANENT_FAILURE)
+                    return
+                job.set_state(JobState.SYSTEM_ERROR)
+                return
 
     def update_all(self):
         """Get status from Xenon and update store, for all jobs.
@@ -144,6 +152,13 @@ class XenonJobRunner:
         xenon_jobdesc.setStderr(self._to_remote_path(job_dir + '/stderr.txt'))
         xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
         job.set_runner_data(xenon_job)
+        job.set_state(JobState.WAITING)
+
+    def cancel_job(self, job_id):
+        job = self._job_store.get_job(job_id)
+        xenon_job = job.get_runner_data()
+        new_status = self._x.jobs().cancelJob(xenon_job)
+        job.set_state(JobState.CANCELLED)
 
 
     def _run_remote(self, rel_workdir, command, args):
