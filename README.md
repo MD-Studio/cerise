@@ -6,17 +6,26 @@ This is a simple REST service that can run (some) CWL jobs on some remote
 compute resource. It uses the GA4GH REST API as its interface and PyXenon
 to run jobs remotely.
 
+Note that this is very much a prototype at the moment, and that we are
+planning to create a more robust implementation in the future. This
+project serves as a pathfinder, with mistakes to be made and learnt
+from. It's also my first non-trivial Python program, so it will be a bit
+messy, but that will get better over time as I learn to omit semicolons
+and such.
+
 Documentation
 -------------
-Documentation may be found in the doc/ directory.
+Documentation may be found in the doc/ directory. Currently there are
+the requirements for this project there, and a probably somewhat outdated
+class diagram.
 
 Installation
 ------------
-clone the repository  
-    `git clone git@github.com:LourensVeen/simple-cwl-xenon-service.git`  
-change into the top-level directory  
-    `cd simple-cwl-xenon-service`  
-install using  
+clone the repository
+    `git clone git@github.com:LourensVeen/simple-cwl-xenon-service.git`
+change into the top-level directory
+    `cd simple-cwl-xenon-service`
+install using
     `pip3 install .`
 
 Dependencies
