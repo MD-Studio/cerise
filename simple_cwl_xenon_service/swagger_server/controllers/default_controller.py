@@ -88,6 +88,8 @@ def get_job_log_by_id(jobId):
 
     :rtype: str
     """
+    job_manager.job_runner().update(jobId)
+
     return job_manager.job_store().get_job(jobId).get_log()
 
 
@@ -99,6 +101,7 @@ def get_jobs():
     :rtype: List[Job]
     """
 
+    job_manager.job_runner().update_all()
     job_list = job_manager.job_store().list_jobs()
 
     return [_job_to_cwl_job(job) for job in job_list]

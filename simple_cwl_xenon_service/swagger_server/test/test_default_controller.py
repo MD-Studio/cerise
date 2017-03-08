@@ -8,6 +8,7 @@ from . import BaseTestCase
 from six import BytesIO
 from flask import json
 
+import os.path
 
 class TestDefaultController(BaseTestCase):
     """ DefaultController integration test stubs """
@@ -16,15 +17,14 @@ class TestDefaultController(BaseTestCase):
         """
         Creates a job for the test cases to work with.
         """
+        # TODO: stage it to a WebDAV
+        cur_dir = os.path.dirname(__file__)
+        test_workflow = os.path.join(cur_dir, 'test_workflow.cwl')
+
         body = JobDescription(
                 name='TestDefaultController._create_test_job',
-                workflow='https://github.com/common-workflow-language/common-workflow-language/raw/master/v1.0/v1.0/wc-tool.cwl',
-                input={
-                        "file1": {
-                            "class": "File",
-                            "location": "whale.txt"
-                            }
-                        }
+                workflow=test_workflow,
+                input={}
                 )
         response = self.client.open('/jobs',
                                     method='POST',

@@ -31,8 +31,6 @@ class InMemoryJobStore(JobStore):
 
         self._jobs.append(job)
 
-        # TODO: start it using Xenon
-
         return job_id
 
     def list_jobs(self):

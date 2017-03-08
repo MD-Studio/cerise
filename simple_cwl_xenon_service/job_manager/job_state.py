@@ -13,3 +13,7 @@ class JobState:
     @staticmethod
     def is_cancellable(state):
         return (state == JobState.WAITING) or (state == JobState.RUNNING)
+
+    @staticmethod
+    def is_done(state):
+        return (state != JobState.WAITING) and (state != JobState.RUNNING)

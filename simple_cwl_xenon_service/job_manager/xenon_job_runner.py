@@ -73,6 +73,10 @@ class XenonJobRunner:
             job_id: ID of the job to get the status of.
         """
         job = self._job_store.get_job(job_id)
+        log = self._read_remote_file('jobs/' + job_id + '/stderr.txt')
+
+        if len(log) > 0:
+            job.set_log(log.decode())
 
         if (   job.get_state() == JobState.WAITING
             or job.get_state() == JobState.RUNNING
@@ -116,7 +120,7 @@ class XenonJobRunner:
     def update_all(self):
         """Get status from Xenon and update store, for all jobs.
         """
-        for job in self._job_store:
+        for job in self._job_store.list_jobs():
             self.update(job.get_id())
 
     def start_job(self, job_id):
@@ -218,6 +222,20 @@ class XenonJobRunner:
         stream = self._x.files().newOutputStream(x_remote_path, [OpenOption.CREATE, OpenOption.TRUNCATE])
         stream.write(data)
         stream.close()
+
+    def _read_remote_file(self, rel_path):
+        result = bytearray()
+
+        x_remote_path = self._make_xenon_path(rel_path)
+        if self._x.files().exists(x_remote_path):
+            stream = self._x.files().newInputStream(x_remote_path)
+            buf = jpype.JArray(jpype.JByte)(1024)
+            bytes_read = stream.read(buf)
+            while bytes_read != -1:
+                result = bytearray().join([result, bytearray(buf[0:bytes_read])])
+                bytes_read = stream.read(buf)
+
+        return result
 
     def _to_remote_path(self, rel_path):
         return self._basedir + '/' + rel_path

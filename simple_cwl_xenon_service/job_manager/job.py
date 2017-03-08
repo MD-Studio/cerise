@@ -10,6 +10,7 @@ class Job:
         self.workflow = workflow
         self.input = input
         self.state = JobState.WAITING
+        self._log = ''
 
     # Operations
     def get_id(self):
@@ -55,15 +56,10 @@ class Job:
 
         returns string
         """
-        return "Here be logging output"
+        return self._log
 
-    def cancel(self):
-        """function cancel
-
-        returns void
-        """
-        self.state = JobState.CANCELLED
-        return None
+    def set_log(self, log):
+        self._log = log
 
     def set_runner_data(self, runner_data):
         self.runner_data = runner_data

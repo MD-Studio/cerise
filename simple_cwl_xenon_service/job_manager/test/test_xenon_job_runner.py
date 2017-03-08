@@ -119,3 +119,20 @@ def test_delete_done(workflowfile):
     runner.delete_job(job_id)
     # TODO: Should test that remote dir is gone somehow?
     # Needs better test setup I think
+
+def test_get_log(workflowfile):
+    store = InMemoryJobStore()
+    runner = XenonJobRunner(store)
+
+    test_job = JobDescription("test_xenon_job_runner.test_get_log", workflowfile, {})
+    job_id = store.create_job(test_job)
+    runner.start_job(job_id)
+
+    while not JobState.is_done(store.get_job(job_id).get_state()):
+        time.sleep(0.1)
+        runner.update(job_id)
+
+    log = store.get_job(job_id).get_log()
+
+    assert len(log) > 0
+    assert 'success' in log
