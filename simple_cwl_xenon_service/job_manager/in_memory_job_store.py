@@ -47,8 +47,8 @@ class InMemoryJobStore(JobStore):
         """Return the job with the given id.
 
         Args:
-            job_id: A string containing a job id, as obtained from create_job
-                or list_jobs.
+            job_id: A string containing a job id, as obtained from create_job()
+                or list_jobs().
 
         Returns:
             A Job object corresponding to the given id.
@@ -63,6 +63,6 @@ class InMemoryJobStore(JobStore):
         """Delete the job with the given id.
 
         Args:
-            job_id: A string containg the id of the job to be deleted.
+            job_id: A string containing the id of the job to be deleted.
         """
         self._jobs = [job for job in self._jobs if job.id != job_id]
