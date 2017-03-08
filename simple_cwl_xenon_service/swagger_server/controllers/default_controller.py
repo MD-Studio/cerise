@@ -56,6 +56,7 @@ def delete_job_by_id(jobId):
 
     :rtype: None
     """
+    job_manager.job_runner().delete_job(jobId)
     job_manager.job_store().delete_job(jobId)
     return None, 204
 

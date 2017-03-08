@@ -143,6 +143,9 @@ class XenonJobRunner:
             workflow_content = open(job.workflow, 'rb').read()
         self._stage_file(workflow_file_name, workflow_content)
 
+        # stage name of the job
+        self._stage_file(job_dir + '/name.txt', job.get_name().encode('utf-8'))
+
         # submit job
         xenon_jobdesc = xenon.jobs.JobDescription()
         xenon_jobdesc.setWorkingDirectory(self._to_remote_path(job_workdir))
@@ -161,6 +164,12 @@ class XenonJobRunner:
             new_status = self._x.jobs().cancelJob(xenon_job)
             job.set_state(JobState.CANCELLED)
 
+    def delete_job(self, job_id):
+        job = self._job_store.get_job(job_id)
+        self.cancel_job(job_id)
+        # delete files from server
+        job_dir = 'jobs/' + job_id
+        self._rm_remote_dir(job_dir, True)
 
     def _run_remote(self, rel_workdir, command, args):
         desc = xenon.jobs.JobDescription()
@@ -181,8 +190,30 @@ class XenonJobRunner:
             else:
                 pass
 
+    def _rm_remote_dir(self, rel_path, recursive):
+        x_remote_path = self._make_xenon_path(rel_path)
+        if recursive:
+            self._x_recursive_delete(x_remote_path)
+        else:
+            self._x.files().delete(x_remote_path)
+
+    def _x_recursive_delete(self, x_remote_path):
+        x_dir = self._x.files().newAttributesDirectoryStream(x_remote_path)
+        x_dir_it = x_dir.iterator()
+        while x_dir_it.hasNext():
+            x_path_attr = x_dir_it.next()
+            if x_path_attr.attributes().isDirectory():
+                self._x_recursive_delete(x_path_attr.path())
+            else:
+                self._x.files().delete(x_path_attr.path())
+        self._x.files().delete(x_remote_path)
 
     def _stage_file(self, rel_path, data):
+        """Write a file on the remote resource containing the given raw data.
+        Args:
+            rel_path A string containing a relative remote path
+            data A bytes-type object containing the data to write
+        """
         x_remote_path = self._make_xenon_path(rel_path)
         stream = self._x.files().newOutputStream(x_remote_path, [OpenOption.CREATE, OpenOption.TRUNCATE])
         stream.write(data)

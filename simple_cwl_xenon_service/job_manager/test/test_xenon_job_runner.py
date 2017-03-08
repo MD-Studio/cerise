@@ -30,7 +30,7 @@ def test_start_job(workflowfile):
     store = InMemoryJobStore()
     runner = XenonJobRunner(store)
 
-    test_job = JobDescription("TestJob", workflowfile, {})
+    test_job = JobDescription("test_xenon_job_runner.test_start_job", workflowfile, {})
     job_id = store.create_job(test_job)
     runner.start_job(job_id)
 
@@ -38,7 +38,7 @@ def test_update(slowworkflow):
     store = InMemoryJobStore()
     runner = XenonJobRunner(store)
 
-    test_job = JobDescription("TestJob", slowworkflow, {})
+    test_job = JobDescription("test_xenon_job_runner.test_update", slowworkflow, {})
     job_id = store.create_job(test_job)
     runner.start_job(job_id)
 
@@ -58,7 +58,7 @@ def test_cancel(slowworkflow):
     store = InMemoryJobStore()
     runner = XenonJobRunner(store)
 
-    test_job = JobDescription("TestJob", slowworkflow, {})
+    test_job = JobDescription("test_xenon_job_runner.test_cancel", slowworkflow, {})
     job_id = store.create_job(test_job)
     runner.start_job(job_id)
 
@@ -71,3 +71,51 @@ def test_cancel(slowworkflow):
 
     runner.cancel_job(job_id)
     assert updated_job.get_state() == JobState.CANCELLED
+
+def test_delete_running(slowworkflow):
+    store = InMemoryJobStore()
+    runner = XenonJobRunner(store)
+
+    test_job = JobDescription("test_xenon_job_runner.test_delete_running", slowworkflow, {})
+    job_id = store.create_job(test_job)
+    runner.start_job(job_id)
+
+    time.sleep(2)
+
+    runner.delete_job(job_id)
+    # TODO: Should test that remote dir is gone somehow?
+    # Needs better test setup I think
+
+def test_delete_cancelled(slowworkflow):
+    store = InMemoryJobStore()
+    runner = XenonJobRunner(store)
+
+    test_job = JobDescription("test_xenon_job_runner.test_cancel", slowworkflow, {})
+    job_id = store.create_job(test_job)
+    runner.start_job(job_id)
+
+    time.sleep(2)
+
+    runner.cancel_job(job_id)
+
+    updated_job = store.get_job(job_id)
+    assert updated_job.get_state() == JobState.CANCELLED
+
+    runner.delete_job(job_id)
+    # TODO: Should test that remote dir is gone somehow?
+    # Needs better test setup I think
+
+def test_delete_done(workflowfile):
+    store = InMemoryJobStore()
+    runner = XenonJobRunner(store)
+
+    test_job = JobDescription("test_xenon_job_runner.test_start_job", workflowfile, {})
+    job_id = store.create_job(test_job)
+    runner.start_job(job_id)
+
+    while store.get_job(job_id).get_state == JobState.RUNNING:
+        time.sleep(0.1)
+
+    runner.delete_job(job_id)
+    # TODO: Should test that remote dir is gone somehow?
+    # Needs better test setup I think

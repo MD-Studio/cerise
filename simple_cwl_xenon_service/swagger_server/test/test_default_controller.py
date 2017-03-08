@@ -17,7 +17,7 @@ class TestDefaultController(BaseTestCase):
         Creates a job for the test cases to work with.
         """
         body = JobDescription(
-                name='test_job',
+                name='TestDefaultController._create_test_job',
                 workflow='https://github.com/common-workflow-language/common-workflow-language/raw/master/v1.0/v1.0/wc-tool.cwl',
                 input={
                         "file1": {

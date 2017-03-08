@@ -20,6 +20,14 @@ class Job:
         """
         return self.id
 
+    def get_name(self):
+        """Returns the name of the job.
+
+        Return:
+            A string containing the job's id.
+        """
+        return self.name
+
     def get_state(self):
         """function get_state
 
