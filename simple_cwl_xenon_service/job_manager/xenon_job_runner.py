@@ -156,9 +156,10 @@ class XenonJobRunner:
 
     def cancel_job(self, job_id):
         job = self._job_store.get_job(job_id)
-        xenon_job = job.get_runner_data()
-        new_status = self._x.jobs().cancelJob(xenon_job)
-        job.set_state(JobState.CANCELLED)
+        if JobState.is_cancellable(job.get_state()):
+            xenon_job = job.get_runner_data()
+            new_status = self._x.jobs().cancelJob(xenon_job)
+            job.set_state(JobState.CANCELLED)
 
 
     def _run_remote(self, rel_workdir, command, args):

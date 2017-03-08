@@ -68,3 +68,6 @@ def test_cancel(slowworkflow):
 
     updated_job = store.get_job(job_id)
     assert updated_job.get_state() == JobState.CANCELLED
+
+    runner.cancel_job(job_id)
+    assert updated_job.get_state() == JobState.CANCELLED

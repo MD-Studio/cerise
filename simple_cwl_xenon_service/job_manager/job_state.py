@@ -10,3 +10,6 @@ class JobState:
     TEMPORARY_FAILURE = "TemporaryFailure"
     PERMANENT_FAILURE = "PermanentFailure"
 
+    @staticmethod
+    def is_cancellable(state):
+        return (state == JobState.WAITING) or (state == JobState.RUNNING)
