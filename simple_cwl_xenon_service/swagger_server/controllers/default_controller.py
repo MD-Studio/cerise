@@ -8,7 +8,7 @@ from ..util import deserialize_date, deserialize_datetime
 import flask
 
 import job_manager
-
+from job_manager import job_state
 
 def _internal_job_to_rest_job(job):
     return Job(
@@ -16,7 +16,7 @@ def _internal_job_to_rest_job(job):
             name=job.get_name(),
             workflow=job.get_workflow(),
             input=job.get_input(),
-            state=job.get_state(),
+            state=job_state.JobState.to_external_string(job.get_state()),
             output=job.get_output(),
             log=flask.url_for('.swagger_server_controllers_default_controller_get_job_log_by_id',
                 jobId=job.get_id(),
