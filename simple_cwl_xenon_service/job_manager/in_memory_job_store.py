@@ -51,7 +51,7 @@ class InMemoryJobStore(JobStore):
         Returns:
             A Job object corresponding to the given id.
         """
-        matching_jobs = [job for job in self._jobs if job.id == job_id]
+        matching_jobs = [job for job in self._jobs if job.get_id() == job_id]
         assert len(matching_jobs) <= 1
         if not matching_jobs:
             return None
@@ -63,4 +63,4 @@ class InMemoryJobStore(JobStore):
         Args:
             job_id: A string containing the id of the job to be deleted.
         """
-        self._jobs = [job for job in self._jobs if job.id != job_id]
+        self._jobs = [job for job in self._jobs if job.get_id() != job_id]

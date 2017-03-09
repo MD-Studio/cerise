@@ -117,10 +117,10 @@ class XenonJobRunner:
         self._files.create_work_dir(job_id)
 
         # stage workflow
-        if '://' in job.workflow:
-            workflow_content = requests.get(job.workflow).content
+        if '://' in job.get_workflow():
+            workflow_content = requests.get(job.get_workflow()).content
         else:
-            workflow_content = open(job.workflow, 'rb').read()
+            workflow_content = open(job.get_workflow(), 'rb').read()
         self._files.write_to_file(job_id, 'workflow.cwl', workflow_content)
 
         # stage name of the job

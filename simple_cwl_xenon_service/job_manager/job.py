@@ -19,11 +19,11 @@ class Job:
             workflow: A string containing the URI of the workflow file
             input: A string containing an input definition for the job
         """
-        self.id = id
-        self.name = name
-        self.workflow = workflow
-        self.input = input
-        self.state = JobState.WAITING
+        self._id = id
+        self._name = name
+        self._workflow = workflow
+        self._input = input
+        self._state = JobState.WAITING
         self._log = ''
         self._output = ''
 
@@ -34,7 +34,7 @@ class Job:
         Returns:
             A string containing the job's id.
         """
-        return self.id
+        return self._id
 
     def get_name(self):
         """Returns the name of the job.
@@ -42,7 +42,23 @@ class Job:
         Returns:
             A string containing the job's name.
         """
-        return self.name
+        return self._name
+
+    def get_workflow(self):
+        """Returns the workflow URI.
+
+        Returns:
+            A string containing a URI pointing to the workflow.
+        """
+        return self._workflow
+
+    def get_input(self):
+        """Returns the input description.
+
+        Returns:
+            A string containing the CWL input definition of the job.
+        """
+        return self._input
 
     def get_state(self):
         """Returns the current state of the job.
@@ -50,7 +66,7 @@ class Job:
         Returns:
             A string from JobState.*
         """
-        return self.state
+        return self._state
 
     def set_state(self, new_state):
         """Set the current state of the job.
@@ -58,7 +74,7 @@ class Job:
         Args:
             new_state: The new state of the Job, one of JobState.*
         """
-        self.state = new_state
+        self._state = new_state
 
     def get_output(self):
         """Returns the output of the job
@@ -94,7 +110,7 @@ class Job:
             runner_data: Some object to attach
         """
 
-        self.runner_data = runner_data
+        self._runner_data = runner_data
 
     def get_runner_data(self):
         """Get runner data.
@@ -106,4 +122,4 @@ class Job:
             The object that was attached in a previous call to
             set_runner_data()
         """
-        return self.runner_data
+        return self._runner_data

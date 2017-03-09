@@ -10,16 +10,16 @@ import flask
 import job_manager
 
 
-def _job_to_cwl_job(job):
+def _internal_job_to_rest_job(job):
     return Job(
-            id=job.id,
-            name=job.name,
-            workflow=job.workflow,
-            input=job.input,
+            id=job.get_id(),
+            name=job.get_name(),
+            workflow=job.get_workflow(),
+            input=job.get_input(),
             state=job.get_state(),
-            output={},
+            output=job.get_output(),
             log=flask.url_for('.swagger_server_controllers_default_controller_get_job_log_by_id',
-                jobId=job.id,
+                jobId=job.get_id(),
                 _external=True)
         )
 
@@ -43,7 +43,7 @@ def cancel_job_by_id(jobId):
     job_manager.job_runner().cancel_job(jobId)
 
     return flask.url_for('.swagger_server_controllers_default_controller_get_job_by_id',
-            jobId=job.id,
+            jobId=job.get_id(),
             _external=True)
 
 
@@ -76,7 +76,7 @@ def get_job_by_id(jobId):
 
     job_manager.job_runner().update(jobId)
 
-    return _job_to_cwl_job(job)
+    return _internal_job_to_rest_job(job)
 
 
 def get_job_log_by_id(jobId):
@@ -104,7 +104,7 @@ def get_jobs():
     job_manager.job_runner().update_all()
     job_list = job_manager.job_store().list_jobs()
 
-    return [_job_to_cwl_job(job) for job in job_list]
+    return [_internal_job_to_rest_job(job) for job in job_list]
 
 def post_job(body):
     """
@@ -129,4 +129,4 @@ def post_job(body):
     job_manager.job_runner().start_job(job_id)
 
     job = job_manager.job_store().get_job(job_id)
-    return _job_to_cwl_job(job)
+    return _internal_job_to_rest_job(job)
