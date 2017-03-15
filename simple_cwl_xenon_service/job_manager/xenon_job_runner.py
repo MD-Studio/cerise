@@ -125,6 +125,9 @@ class XenonJobRunner:
             workflow_content = open(job.get_workflow(), 'rb').read()
         self._files.write_to_file(job_id, 'workflow.cwl', workflow_content)
 
+        # stage input
+        self._files.write_to_file(job_id, 'input.json', job.get_input().encode('utf-8'))
+
         # stage name of the job
         self._files.write_to_file(job_id, 'name.txt', job.get_name().encode('utf-8'))
 
@@ -132,7 +135,11 @@ class XenonJobRunner:
         xenon_jobdesc = xenon.jobs.JobDescription()
         xenon_jobdesc.setWorkingDirectory(self._files.get_work_dir_path(job_id))
         xenon_jobdesc.setExecutable('cwl-runner')
-        xenon_jobdesc.setArguments([self._files.get_remote_file_path(job_id, 'workflow.cwl')])
+        args = [
+            self._files.get_remote_file_path(job_id, 'workflow.cwl'),
+            self._files.get_remote_file_path(job_id, 'input.json')
+            ]
+        xenon_jobdesc.setArguments(args)
         xenon_jobdesc.setStdout(self._files.get_remote_file_path(job_id, '/stdout.txt'))
         xenon_jobdesc.setStderr(self._files.get_remote_file_path(job_id, '/stderr.txt'))
         xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)

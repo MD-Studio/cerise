@@ -13,19 +13,22 @@ import os.path
 class TestDefaultController(BaseTestCase):
     """ DefaultController integration test stubs """
 
-    def _create_test_job(self):
+    def _create_test_job(self, name):
         """
         Creates a job for the test cases to work with.
         """
         # TODO: stage it to a WebDAV
         cur_dir = os.path.dirname(__file__)
         test_workflow = os.path.join(cur_dir, 'test_workflow.cwl')
+        test_input = os.path.join(cur_dir, 'test_input.json')
+        with open(test_input, 'r') as f:
+            input_data = json.load(f)
 
         body = JobDescription(
-                name='TestDefaultController._create_test_job',
+                name=name,
                 workflow=test_workflow,
-                input={}
-                )
+                input=input_data
+            )
         response = self.client.open('/jobs',
                                     method='POST',
                                     data=json.dumps(body),
@@ -39,7 +42,7 @@ class TestDefaultController(BaseTestCase):
 
         Cancel a job
         """
-        test_job = self._create_test_job()
+        test_job = self._create_test_job('test_cancel_job_by_id')
         # Cancel test job
         response = self.client.open('/jobs/{jobId}/cancel'.format(jobId=test_job['id']),
                                     method='POST')
@@ -56,7 +59,7 @@ class TestDefaultController(BaseTestCase):
 
         Deleta a job
         """
-        test_job = self._create_test_job()
+        test_job = self._create_test_job('test_delete_job_by_id')
         # Delete test job
         response = self.client.open('/jobs/{jobId}'.format(jobId=test_job['id']),
                                     method='DELETE')
@@ -72,7 +75,7 @@ class TestDefaultController(BaseTestCase):
 
         Get a job
         """
-        test_job = self._create_test_job()
+        test_job = self._create_test_job('test_get_job_by_id')
         # Get the job
         response = self.client.open('/jobs/{jobId}'.format(jobId=test_job['id']),
                                     method='GET')
@@ -85,7 +88,7 @@ class TestDefaultController(BaseTestCase):
 
         Log of a job
         """
-        test_job = self._create_test_job()
+        test_job = self._create_test_job('test_get_job_log_by_id')
         # Get the log
         response = self.client.open('/jobs/{jobId}/log'.format(jobId=test_job['id']),
                                     method='GET')
@@ -107,7 +110,7 @@ class TestDefaultController(BaseTestCase):
 
         submit a new job
         """
-        test_job = self._create_test_job()
+        test_job = self._create_test_job('test_post_job')
         assert test_job['state'] == 'Waiting'
 
 if __name__ == '__main__':
