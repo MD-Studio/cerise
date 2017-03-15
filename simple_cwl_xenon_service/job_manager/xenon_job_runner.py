@@ -36,14 +36,6 @@ class XenonJobRunner:
             xenon_config: A dict containing key-value pairs with Xenon
                 configuration.
         """
-        # The try-except ignores an error from Xenon about double initialisation.
-        # I'm not doing that as far as I can see, but it seems that PyTest does,
-        # because without this, I get that error when trying to run the tests.
-        # It still throws on shutdown if you actually use Xenon. TODO
-        try:
-            xenon.init()
-        except ValueError:
-            pass
         self._x = xenon.Xenon()
         # TODO: use config
         self._sched = self._x.jobs().newScheduler('local', None, None, None)

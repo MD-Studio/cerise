@@ -8,6 +8,12 @@ from simple_cwl_xenon_service.job_manager.job_state import JobState
 import os
 import pytest
 import time
+import xenon
+
+@pytest.fixture(scope="module")
+def xenon(request):
+    xenon.init()
+    return None
 
 @pytest.fixture
 def workflowfile(request):
