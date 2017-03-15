@@ -6,6 +6,8 @@ from xenon.files import OpenOption
 from .xenon_remote_files import XenonRemoteFiles
 from .job_state import JobState
 
+from time import sleep
+
 class XenonJobRunner:
     def __init__(self, job_store, xenon_config={}):
         """Create a XenonJobRunner object.
@@ -136,6 +138,7 @@ class XenonJobRunner:
         xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
         job.set_runner_data(xenon_job)
         job.set_state(JobState.WAITING)
+        sleep(2)    # work-around for Xenon local running bug
 
     def cancel_job(self, job_id):
         job = self._job_store.get_job(job_id)
