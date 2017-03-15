@@ -26,7 +26,8 @@ class XenonRemoteFiles:
         # TODO: use config
         basedirpath = self._make_xenon_path('')
         if not self._x.files().exists(basedirpath):
-            raise RuntimeError('Configuration error: Base directory not found on remote file system')
+            raise RuntimeError(('Configuration error: Base directory {} ' +
+                'not found on remote file system').format(basedirpath))
 
         self._make_remote_dir('jobs', True)
 
