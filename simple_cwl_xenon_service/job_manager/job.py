@@ -84,6 +84,14 @@ class Job:
         """
         return self._output
 
+    def set_output(self, output):
+        """Sets the output contents of the job
+
+        Args:
+            output: A string containing a JSON CWL output object
+        """
+        self._output = output
+
     def get_log(self):
         """Returns the log of the job
 

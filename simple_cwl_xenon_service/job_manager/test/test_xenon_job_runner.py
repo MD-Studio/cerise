@@ -136,3 +136,20 @@ def test_get_log(workflowfile):
 
     assert len(log) > 0
     assert 'success' in log
+
+def test_get_output(workflowfile):
+    store = InMemoryJobStore()
+    runner = XenonJobRunner(store)
+
+    test_job = JobDescription("test_xenon_job_runner.test_get_output", workflowfile, {})
+    job_id = store.create_job(test_job)
+    runner.start_job(job_id)
+
+    while not JobState.is_done(store.get_job(job_id).get_state()):
+        time.sleep(0.1)
+        runner.update(job_id)
+
+    output = store.get_job(job_id).get_output()
+
+    assert len(output) > 0
+    assert 'checksum' in output

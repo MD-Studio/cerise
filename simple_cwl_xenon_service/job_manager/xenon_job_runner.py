@@ -55,49 +55,32 @@ class XenonJobRunner:
             job_id: ID of the job to get the status of.
         """
         job = self._job_store.get_job(job_id)
-        log = self._files.read_from_file(job_id, 'stderr.txt')
 
-        if len(log) > 0:
-            job.set_log(log.decode())
-
+        # get state
         if (   job.get_state() == JobState.WAITING
             or job.get_state() == JobState.RUNNING
            ):
-            xenon_job = job.get_runner_data()
             try:
+                xenon_job = job.get_runner_data()
                 xenon_status = self._x.jobs().getJobStatus(xenon_job)
+                job.set_state(self._xenon_status_to_job_state(xenon_status))
             except xenon.exceptions.XenonException:
                 # Xenon does not know about this job anymore
                 # We should be able to get a status once after the job
                 # finishes, so something went wrong
                 print('Job disappeared?')
                 job.set_state(JobState.SYSTEM_ERROR)
-                return
+                pass
 
-            # convert the xenon JobStatus to our JobStatus
-            if xenon_status.isRunning():
-                job.set_state(JobState.RUNNING)
-                return
+        # get output
+        output = self._files.read_from_file(job_id, 'stdout.txt')
+        if len(output) > 0:
+            job.set_output(output.decode())
 
-            if xenon_status.isDone():
-                if xenon_status.hasException():
-                    # TODO: fix, check that it is a JobCanceledException
-                    print(xenon_status.getException())
-                    job.set_state(JobState.CANCELLED)
-                    return
-
-                exit_code = xenon_status.getExitCode().intValue()
-                if exit_code == 0:
-                    job.set_state(JobState.SUCCESS)
-                    return
-                if exit_code == 1:
-                    job.set_state(JobState.PERMANENT_FAILURE)
-                    return
-                if exit_code == 33:
-                    job.set_state(JobState.PERMANENT_FAILURE)
-                    return
-                job.set_state(JobState.SYSTEM_ERROR)
-                return
+        # get log
+        log = self._files.read_from_file(job_id, 'stderr.txt')
+        if len(log) > 0:
+            job.set_log(log.decode())
 
     def update_all(self):
         """Get status from Xenon and update store, for all jobs.
@@ -158,3 +141,31 @@ class XenonJobRunner:
         job = self._job_store.get_job(job_id)
         self.cancel_job(job_id)
         self._files.remove_work_dir(job_id)
+
+    def _xenon_status_to_job_state(self, xenon_status):
+        """Convert a xenon JobStatus to our JobState.
+
+        Args:
+            xenon_status: a xenon JobStatus object.
+
+        Returns:
+            A corresponding JobState object.
+        """
+        if xenon_status.isRunning():
+            return JobState.RUNNING
+
+        if xenon_status.isDone():
+            if xenon_status.hasException():
+                # TODO: fix, check that it is a JobCanceledException
+                print(xenon_status.getException())
+                return JobState.CANCELLED
+
+            exit_code = xenon_status.getExitCode().intValue()
+            if exit_code == 0:
+                return JobState.SUCCESS
+            if exit_code == 1:
+                return JobState.PERMANENT_FAILURE
+            if exit_code == 33:
+                return JobState.PERMANENT_FAILURE
+            return JobState.SYSTEM_ERROR
+
