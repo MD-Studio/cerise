@@ -6,24 +6,31 @@ from typing import List, Dict
 from six import iteritems
 from ..util import deserialize_date, deserialize_datetime
 import flask
+import json
 
 import job_manager
 from job_manager import job_state
 
 def _internal_job_to_rest_job(job):
+    output = job.get_output()
+    if output:
+        output = json.loads(output)['output']
+        # TODO: return a SystemError if output does not have 'output' key
+
+    input = job.get_input()
+    input = json.loads(input)
+
     return Job(
             id=job.get_id(),
             name=job.get_name(),
             workflow=job.get_workflow(),
-            input=job.get_input(),
+            input=input,
             state=job_state.JobState.to_external_string(job.get_state()),
-            output=job.get_output(),
+            output=output,
             log=flask.url_for('.swagger_server_controllers_default_controller_get_job_log_by_id',
                 jobId=job.get_id(),
                 _external=True)
         )
-
-
 
 
 def cancel_job_by_id(jobId):
