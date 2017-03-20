@@ -1,0 +1,17 @@
+compute-resource:
+  files:
+    scheme: local
+    location:               # TODO: allow leaving these out completely
+    path: /tmp/simple_cwl_xenon_service
+    credential:
+    properties:
+
+  jobs:
+    scheme: local
+    location:
+    credential:
+    properties:
+
+rest-service:
+  hostname: 127.0.0.1           # Set to 0.0.0.0 to listen on external interfaces as well
+  port: 8080

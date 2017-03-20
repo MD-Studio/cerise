@@ -38,7 +38,12 @@ class XenonJobRunner:
         """
         self._x = xenon.Xenon()
         # TODO: use config
-        self._sched = self._x.jobs().newScheduler('local', None, None, None)
+        self._sched = self._x.jobs().newScheduler(
+                xenon_config['files'].get('scheme', 'local'),
+                xenon_config['files'].get('location'),
+                xenon_config['files'].get('credential'),
+                xenon_config['files'].get('properties')
+                )
 
     def update(self, job_id):
         """Get status from Xenon and update store.

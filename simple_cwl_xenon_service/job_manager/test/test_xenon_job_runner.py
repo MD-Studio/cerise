@@ -9,6 +9,7 @@ import os
 import pytest
 import time
 import xenon
+import yaml
 
 @pytest.fixture(scope="module")
 def xenon(request):
@@ -27,22 +28,31 @@ def slowworkflow(request):
     thisdir = os.path.dirname(thisfile)
     return os.path.join(thisdir, 'slow_workflow.cwl')
 
+@pytest.fixture
+def xenon_config(request):
+    thisfile = request.module.__file__
+    thisdir = os.path.dirname(thisfile)
+    test_config_file_path = os.path.join(thisdir, 'config.yml')
+    with open(test_config_file_path) as test_config_file:
+        test_config = yaml.load(test_config_file)
+    return test_config['compute-resource']
 
-def test_init():
-    store = InMemoryJobStore()
-    runner = XenonJobRunner(store)
 
-def test_start_job(workflowfile):
+def test_init(xenon_config):
     store = InMemoryJobStore()
-    runner = XenonJobRunner(store)
+    runner = XenonJobRunner(store, xenon_config)
+
+def test_start_job(workflowfile, xenon_config):
+    store = InMemoryJobStore()
+    runner = XenonJobRunner(store, xenon_config)
 
     test_job = JobDescription("test_xenon_job_runner.test_start_job", workflowfile, {})
     job_id = store.create_job(test_job)
     runner.start_job(job_id)
 
-def test_update(slowworkflow):
+def test_update(slowworkflow, xenon_config):
     store = InMemoryJobStore()
-    runner = XenonJobRunner(store)
+    runner = XenonJobRunner(store, xenon_config)
 
     test_job = JobDescription("test_xenon_job_runner.test_update", slowworkflow, {})
     job_id = store.create_job(test_job)
@@ -60,9 +70,9 @@ def test_update(slowworkflow):
     updated_job = store.get_job(job_id)
     assert updated_job.get_state() == JobState.SUCCESS
 
-def test_cancel(slowworkflow):
+def test_cancel(slowworkflow, xenon_config):
     store = InMemoryJobStore()
-    runner = XenonJobRunner(store)
+    runner = XenonJobRunner(store, xenon_config)
 
     test_job = JobDescription("test_xenon_job_runner.test_cancel", slowworkflow, {})
     job_id = store.create_job(test_job)
@@ -78,9 +88,9 @@ def test_cancel(slowworkflow):
     runner.cancel_job(job_id)
     assert updated_job.get_state() == JobState.CANCELLED
 
-def test_delete_running(slowworkflow):
+def test_delete_running(slowworkflow, xenon_config):
     store = InMemoryJobStore()
-    runner = XenonJobRunner(store)
+    runner = XenonJobRunner(store, xenon_config)
 
     test_job = JobDescription("test_xenon_job_runner.test_delete_running", slowworkflow, {})
     job_id = store.create_job(test_job)
@@ -92,9 +102,9 @@ def test_delete_running(slowworkflow):
     # TODO: Should test that remote dir is gone somehow?
     # Needs better test setup I think
 
-def test_delete_cancelled(slowworkflow):
+def test_delete_cancelled(slowworkflow, xenon_config):
     store = InMemoryJobStore()
-    runner = XenonJobRunner(store)
+    runner = XenonJobRunner(store, xenon_config)
 
     test_job = JobDescription("test_xenon_job_runner.test_cancel", slowworkflow, {})
     job_id = store.create_job(test_job)
@@ -111,9 +121,9 @@ def test_delete_cancelled(slowworkflow):
     # TODO: Should test that remote dir is gone somehow?
     # Needs better test setup I think
 
-def test_delete_done(workflowfile):
+def test_delete_done(workflowfile, xenon_config):
     store = InMemoryJobStore()
-    runner = XenonJobRunner(store)
+    runner = XenonJobRunner(store, xenon_config)
 
     test_job = JobDescription("test_xenon_job_runner.test_start_job", workflowfile, {})
     job_id = store.create_job(test_job)
@@ -126,9 +136,9 @@ def test_delete_done(workflowfile):
     # TODO: Should test that remote dir is gone somehow?
     # Needs better test setup I think
 
-def test_get_log(workflowfile):
+def test_get_log(workflowfile, xenon_config):
     store = InMemoryJobStore()
-    runner = XenonJobRunner(store)
+    runner = XenonJobRunner(store, xenon_config)
 
     test_job = JobDescription("test_xenon_job_runner.test_get_log", workflowfile, {})
     job_id = store.create_job(test_job)
@@ -143,9 +153,9 @@ def test_get_log(workflowfile):
     assert len(log) > 0
     assert 'success' in log
 
-def test_get_output(workflowfile):
+def test_get_output(workflowfile, xenon_config):
     store = InMemoryJobStore()
-    runner = XenonJobRunner(store)
+    runner = XenonJobRunner(store, xenon_config)
 
     test_job = JobDescription("test_xenon_job_runner.test_get_output", workflowfile, {})
     job_id = store.create_job(test_job)

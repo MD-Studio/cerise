@@ -17,13 +17,16 @@ class XenonRemoteFiles:
         """
         self._x = xenon
         """The Xenon instance to use."""
-        # TODO: use config
-        self._fs = self._x.files().newFileSystem('local', None, None, None)
+        self._fs = self._x.files().newFileSystem(
+                xenon_config['files'].get('scheme', 'local'),
+                xenon_config['files'].get('location'),
+                xenon_config['files'].get('credential'),
+                xenon_config['files'].get('properties')
+                )
         """The Xenon remote file system to stage to."""
-        self._basedir = '/tmp/simple_cwl_xenon_service'
+        self._basedir = xenon_config['files']['path']
         """The remote path to the base directory where we store our stuff."""
 
-        # TODO: use config
         basedirpath = self._make_xenon_path('')
         if not self._x.files().exists(basedirpath):
             raise RuntimeError(('Configuration error: Base directory {} ' +
