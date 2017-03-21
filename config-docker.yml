@@ -13,5 +13,5 @@ compute-resource:
     properties:
 
 rest-service:
-  hostname: 127.0.0.1           # Set to 0.0.0.0 to listen on external interfaces as well
+  hostname: 0.0.0.0           # Set to 0.0.0.0 to listen on external interfaces as well
   port: 29593

@@ -41,14 +41,30 @@ To start the service, simply run
 and open your browser to here:
 
 ```
-http://localhost:8080/ui/
+http://localhost:29593/ui/
 ```
 
 The Swagger definition of the interface can be found at
 
 ```
-http://localhost:8080/swagger.json
+http://localhost:29593/swagger.json
 ```
+
+Docker
+------
+
+To build a Docker image, use
+    `cd simple-cwl-xenon-service`
+    `docker build -t simple-cwl-xenon-service .`
+then run it using
+    `docker run --name=simple-cwl-xenon-service -p 29593 simple-cwl-xenon-service`
+and point your browser to
+
+```
+http://localhost:29593/ui/
+```
+
+Note that the Dockerfile uses config-docker.yml for configuration.
 
 Contribution guide
 ------------------
