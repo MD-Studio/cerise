@@ -96,7 +96,7 @@ def test_start_staging_job(staging_workflow, staging_workflow_input, staging_wor
 
     runner.update_job(job_id)
     updated_job = store.get_job(job_id)
-    assert updated_job.get_state() == JobState.SUCCESS
+    assert updated_job.state == JobState.SUCCESS
 
 def test_update(slowworkflow, x, xenon_config):
     store = InMemoryJobStore()
@@ -112,13 +112,13 @@ def test_update(slowworkflow, x, xenon_config):
 
     runner.update_job(job_id)
     updated_job = store.get_job(job_id)
-    assert updated_job.get_state() == JobState.RUNNING
+    assert updated_job.state == JobState.RUNNING
 
     time.sleep(4)
 
     runner.update_job(job_id)
     updated_job = store.get_job(job_id)
-    assert updated_job.get_state() == JobState.SUCCESS
+    assert updated_job.state == JobState.SUCCESS
 
 def test_cancel(slowworkflow, x, xenon_config):
     store = InMemoryJobStore()
@@ -135,10 +135,10 @@ def test_cancel(slowworkflow, x, xenon_config):
     runner.cancel_job(job_id)
 
     updated_job = store.get_job(job_id)
-    assert updated_job.get_state() == JobState.CANCELLED
+    assert updated_job.state == JobState.CANCELLED
 
     runner.cancel_job(job_id)
-    assert updated_job.get_state() == JobState.CANCELLED
+    assert updated_job.state == JobState.CANCELLED
 
 def test_delete_running(slowworkflow, x, xenon_config):
     store = InMemoryJobStore()
@@ -172,7 +172,7 @@ def test_delete_cancelled(slowworkflow, x, xenon_config):
     runner.cancel_job(job_id)
 
     updated_job = store.get_job(job_id)
-    assert updated_job.get_state() == JobState.CANCELLED
+    assert updated_job.state == JobState.CANCELLED
 
     remote_files.delete_job(job_id)
     # TODO: Should test that remote dir is gone somehow?
@@ -188,7 +188,7 @@ def test_delete_done(workflowfile, x, xenon_config):
     remote_files.stage_job(job_id, {})
     runner.start_job(job_id)
 
-    while store.get_job(job_id).get_state == JobState.RUNNING:
+    while store.get_job(job_id).state == JobState.RUNNING:
         time.sleep(0.1)
 
     remote_files.delete_job(job_id)
@@ -205,12 +205,12 @@ def test_get_log(workflowfile, x, xenon_config):
     remote_files.stage_job(job_id, {})
     runner.start_job(job_id)
 
-    while not JobState.is_done(store.get_job(job_id).get_state()):
+    while not JobState.is_done(store.get_job(job_id).state):
         time.sleep(0.1)
         runner.update_job(job_id)
 
     remote_files.update_job(job_id)
-    log = store.get_job(job_id).get_log()
+    log = store.get_job(job_id).log
 
     assert len(log) > 0
     assert 'success' in log
@@ -225,12 +225,12 @@ def test_get_output(workflowfile, x, xenon_config):
     remote_files.stage_job(job_id, {})
     runner.start_job(job_id)
 
-    while not JobState.is_done(store.get_job(job_id).get_state()):
+    while not JobState.is_done(store.get_job(job_id).state):
         time.sleep(0.1)
         runner.update_job(job_id)
 
     remote_files.update_job(job_id)
-    output = store.get_job(job_id).get_output()
+    output = store.get_job(job_id).output
 
     assert len(output) > 0
     assert 'checksum' in output

@@ -12,23 +12,22 @@ import job_manager
 from job_manager import job_state
 
 def _internal_job_to_rest_job(job):
-    output = job.get_output()
+    output = job.output
     if output:
         output = json.loads(output)['output']
         # TODO: return a SystemError if output does not have 'output' key
 
-    input = job.get_input()
-    input = json.loads(input)
+    input = json.loads(job.input)
 
     return Job(
-            id=job.get_id(),
-            name=job.get_name(),
-            workflow=job.get_workflow(),
+            id=job.id,
+            name=job.name,
+            workflow=job.workflow,
             input=input,
-            state=job_state.JobState.to_external_string(job.get_state()),
+            state=job_state.JobState.to_external_string(job.state),
             output=output,
             log=flask.url_for('.swagger_server_controllers_default_controller_get_job_log_by_id',
-                jobId=job.get_id(),
+                jobId=job.id,
                 _external=True)
         )
 
@@ -50,7 +49,7 @@ def cancel_job_by_id(jobId):
     job_manager.job_runner().cancel_job(jobId)
 
     return flask.url_for('.swagger_server_controllers_default_controller_get_job_by_id',
-            jobId=job.get_id(),
+            jobId=job.id,
             _external=True)
 
 
@@ -99,7 +98,7 @@ def get_job_log_by_id(jobId):
     """
     job_manager.remote_files().update_job(jobId)
 
-    return job_manager.job_store().get_job(jobId).get_log()
+    return job_manager.job_store().get_job(jobId).log
 
 
 def get_jobs():

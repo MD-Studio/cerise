@@ -62,23 +62,28 @@ class XenonRemoteFiles:
         # create work dir
         self._make_remote_dir(job_id, '')
         self._make_remote_dir(job_id, 'work')
-        job.set_workdir_path(self._abs_path(job_id, 'work'))
+        job.workdir_path = self._abs_path(job_id, 'work')
 
         # stage workflow
-        if '://' in job.get_workflow():
-            workflow_content = requests.get(job.get_workflow()).content
+        if '://' in job.workflow:
+            workflow_content = requests.get(job.workflow).content
         else:
-            workflow_content = open(job.get_workflow(), 'rb').read()
+            workflow_content = open(job.workflow, 'rb').read()
         self._write_remote_file(job_id, 'workflow.cwl', workflow_content)
-        job.set_workflow_path(self._abs_path(job_id, 'workflow.cwl'))
+        job.workflow_path = self._abs_path(job_id, 'workflow.cwl')
 
         # stage input
-        inputs = json.loads(job.get_input())
+        inputs = json.loads(job.input)
         count = 1
         for name, value in inputs.items():
             print(name)
             print(value)
-            if value.get('class') == 'File':
+            item_class = None
+            try:
+                item_class = value.get('class')
+            except AttributeError:
+                pass
+            if item_class and item_class == 'File':
                 print(input_files)
                 staged_name = self._create_input_filename(str(count).zfill(2), value['path'])
                 count = count + 1
@@ -91,14 +96,14 @@ class XenonRemoteFiles:
         print(inputs)
         input_json = json.dumps(inputs).encode('utf-8')
         self._write_remote_file(job_id, 'input.json', input_json)
-        job.set_input_path(self._abs_path(job_id, 'input.json'))
+        job.input_path = self._abs_path(job_id, 'input.json')
 
         # stage name of the job
-        self._write_remote_file(job_id, 'name.txt', job.get_name().encode('utf-8'))
+        self._write_remote_file(job_id, 'name.txt', job.name.encode('utf-8'))
 
         # configure output
-        job.set_stdout_path(self._abs_path(job_id, 'stdout.txt'))
-        job.set_stderr_path(self._abs_path(job_id, '/stderr.txt'))
+        job.stdout_path = self._abs_path(job_id, 'stdout.txt')
+        job.stderr_path = self._abs_path(job_id, '/stderr.txt')
 
     def delete_job(self, job_id):
         """Remove the work directory for a job.
@@ -120,18 +125,18 @@ class XenonRemoteFiles:
         # get output
         output = self._read_remote_file(job_id, 'stdout.txt')
         if len(output) > 0:
-            job.set_output(output.decode())
+            job.output = output.decode()
 
         # get log
         log = self._read_remote_file(job_id, 'stderr.txt')
         if len(log) > 0:
-            job.set_log(log.decode())
+            job.log = log.decode()
 
     def update_all_jobs(self):
         """Get status from Xenon and update store, for all jobs.
         """
         for job in self._job_store.list_jobs():
-            self.update_job(job.get_id())
+            self.update_job(job.id)
 
     def _create_input_filename(self, unique_prefix, orig_path):
         """Return a string containing a remote filename that

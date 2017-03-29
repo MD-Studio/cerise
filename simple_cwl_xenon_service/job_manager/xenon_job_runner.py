@@ -37,26 +37,26 @@ class XenonJobRunner:
         job = self._job_store.get_job(job_id)
 
         # get state
-        if (   job.get_state() == JobState.WAITING
-                or job.get_state() == JobState.RUNNING
+        if (   job.state == JobState.WAITING
+                or job.state == JobState.RUNNING
                 ):
             try:
-                xenon_job = job.get_runner_data()
+                xenon_job = job.runner_data
                 xenon_status = self._x.jobs().getJobStatus(xenon_job)
-                job.set_state(self._xenon_status_to_job_state(xenon_status))
+                job.state = self._xenon_status_to_job_state(xenon_status)
             except xenon.exceptions.XenonException:
                 # Xenon does not know about this job anymore
                 # We should be able to get a status once after the job
                 # finishes, so something went wrong
                 print('Job disappeared?')
-                job.set_state(JobState.SYSTEM_ERROR)
+                job.state = JobState.SYSTEM_ERROR
                 pass
 
     def update_all_jobs(self):
         """Get status from Xenon and update store, for all jobs.
         """
         for job in self._job_store.list_jobs():
-            self.update_job(job.get_id())
+            self.update_job(job.id)
 
     def start_job(self, job_id):
         """Get a job from the job store and start it on the compute resource.
@@ -68,29 +68,29 @@ class XenonJobRunner:
             None
         """
         job = self._job_store.get_job(job_id)
-        print(job.get_workdir_path())
+        print(job.workdir_path)
         # submit job
         xenon_jobdesc = xenon.jobs.JobDescription()
-        xenon_jobdesc.setWorkingDirectory(job.get_workdir_path())
+        xenon_jobdesc.setWorkingDirectory(job.workdir_path)
         xenon_jobdesc.setExecutable('cwl-runner')
         args = [
-                job.get_workflow_path(),
-                job.get_input_path()
+                job.workflow_path,
+                job.input_path
                 ]
         xenon_jobdesc.setArguments(args)
-        xenon_jobdesc.setStdout(job.get_stdout_path())
-        xenon_jobdesc.setStderr(job.get_stderr_path())
+        xenon_jobdesc.setStdout(job.stdout_path)
+        xenon_jobdesc.setStderr(job.stderr_path)
         xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
-        job.set_runner_data(xenon_job)
-        job.set_state(JobState.WAITING)
+        job.runner_data = xenon_job
+        job.state = JobState.WAITING
         sleep(2)    # work-around for Xenon local running bug
 
     def cancel_job(self, job_id):
         job = self._job_store.get_job(job_id)
-        if JobState.is_cancellable(job.get_state()):
-            xenon_job = job.get_runner_data()
+        if JobState.is_cancellable(job.state):
+            xenon_job = job.runner_data
             new_status = self._x.jobs().cancelJob(xenon_job)
-            job.set_state(JobState.CANCELLED)
+            job.state = JobState.CANCELLED
 
     def _xenon_status_to_job_state(self, xenon_status):
         """Convert a xenon JobStatus to our JobState.

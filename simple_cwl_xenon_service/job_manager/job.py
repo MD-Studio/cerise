@@ -19,196 +19,36 @@ class Job:
             workflow: A string containing the URI of the workflow file
             input: A string containing an input definition for the job
         """
-        self._id = id
-        self._name = name
-        self._workflow = workflow
-        self._input = input
-        self._state = JobState.WAITING
-        self._log = ''
-        self._output = ''
+        # General description
+        self.id = id
+        """Job id, a string containing a UUID."""
+        self.name = name
+        """Name, as specified by the submitter."""
+        self.workflow = workflow
+        """Workflow file URI, as specified by the submitter."""
+        self.input = input
 
-    # Operations
-    def get_id(self):
-        """Returns the id of the job.
+        # Current status
+        """A string containing the JSON input definition"""
+        self.state = JobState.WAITING
+        """Current state of the job."""
+        self.log = ''
+        """String with log output as of last update."""
+        self.output = ''
+        """String with cwl-runner output as of last update."""
 
-        Returns:
-            A string containing the job's id.
-        """
-        return self._id
+        # Post-staging data
+        self.workdir_path = ''
+        """The absolute remote path of the working directory."""
+        self.workflow_path = ''
+        """The absolute remote path of the CWL workflow file."""
+        self.input_path = ''
+        """The absolute remote path of the input description file."""
+        self.stdout_path = ''
+        """The absolute remote path of the standard output dump."""
+        self.stderr_path = ''
+        """The absolute remote path of the standard error dump."""
 
-    def get_name(self):
-        """Returns the name of the job.
-
-        Returns:
-            A string containing the job's name.
-        """
-        return self._name
-
-    def get_workflow(self):
-        """Returns the workflow URI.
-
-        Returns:
-            A string containing a URI pointing to the workflow.
-        """
-        return self._workflow
-
-    def get_input(self):
-        """Returns the input description.
-
-        Returns:
-            A string containing the CWL input definition of the job.
-        """
-        return self._input
-
-    def get_state(self):
-        """Returns the current state of the job.
-
-        Returns:
-            A string from JobState.*
-        """
-        return self._state
-
-    def set_state(self, new_state):
-        """Set the current state of the job.
-
-        Args:
-            new_state: The new state of the Job, one of JobState.*
-        """
-        self._state = new_state
-
-    def get_output(self):
-        """Returns the output of the job
-
-        Returns:
-            The output of the job run
-        """
-        return self._output
-
-    def set_output(self, output):
-        """Sets the output contents of the job
-
-        Args:
-            output: A string containing a JSON CWL output object
-        """
-        self._output = output
-
-    def get_log(self):
-        """Returns the log of the job
-
-        Returns:
-            The run log of the job
-        """
-        return self._log
-
-    def set_log(self, log):
-        """Set the log contents of the job
-
-        Args:
-            log: A string containing the log output of the job
-        """
-        self._log = log
-
-    def set_runner_data(self, runner_data):
-        """Set runner data.
-
-        This is a way for the XenonJobRunner to attach data to a job in
-        the job store.
-
-        Args:
-            runner_data: Some object to attach
-        """
-        self._runner_data = runner_data
-
-    def get_runner_data(self):
-        """Get runner data.
-
-        This is a way for the XenonJobRunner to attach data to a job in
-        the job store. This function retrieves it again.
-
-        Returns:
-            The object that was attached in a previous call to
-            set_runner_data()
-        """
-        return self._runner_data
-
-
-    def set_workdir_path(self, workdir_path):
-        """Set remote workdir path of this job.
-
-        Args:
-            workdir_path: The remote path to the CWL workdir file
-        """
-        self._workdir_path = workdir_path
-
-    def get_workdir_path(self):
-        """Get workdir path.
-
-        Returns:
-            A string containing the remote path to the CWL workdir file
-        """
-        return self._workdir_path
-
-    def set_workflow_path(self, workflow_path):
-        """Set remote workflow path of this job.
-
-        Args:
-            workflow_path: The remote path to the CWL workflow file
-        """
-        self._workflow_path = workflow_path
-
-    def get_workflow_path(self):
-        """Get workflow path.
-
-        Returns:
-            A string containing the remote path to the CWL workflow file
-        """
-        return self._workflow_path
-
-    def set_input_path(self, input_path):
-        """Set remote input path of this job.
-
-        Args:
-            input_path: The remote path to the JSON input file
-        """
-        self._input_path = input_path
-
-    def get_input_path(self):
-        """Get remote input file path of this job.
-
-        Returns:
-            A string containing the remote path to the JSON input file
-        """
-        return self._input_path
-
-    def set_stdout_path(self, stdout_path):
-        """Set remote stdout path of this job.
-
-        Args:
-            stdout_path: The remote path that the cwl-runner stdout should be written to
-        """
-        self._stdout_path = stdout_path
-
-    def get_stdout_path(self):
-        """Get remote stdout path of this job.
-
-        Returns:
-            A string containing the remote path the cwl-runner stdout output file
-        """
-        return self._stdout_path
-
-    def set_stderr_path(self, stderr_path):
-        """Set remote stderr path of this job.
-
-        Args:
-            stderr_path: The remote path that the cwl-runner stderr should be written to
-        """
-        self._stderr_path = stderr_path
-
-    def get_stderr_path(self):
-        """Get stderr path.
-
-        Returns:
-            A string containing the remote path the cwl-runner stderr output file
-        """
-        return self._stderr_path
-
+        # Internal data
+        self.runner_data = None
+        """Unspecified object with data for XenonJobRunner."""
