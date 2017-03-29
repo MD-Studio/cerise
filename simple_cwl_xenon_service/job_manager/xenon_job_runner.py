@@ -3,13 +3,12 @@ import requests
 import xenon
 from xenon.files import OpenOption
 
-from .xenon_remote_files import XenonRemoteFiles
 from .job_state import JobState
 
 from time import sleep
 
 class XenonJobRunner:
-    def __init__(self, job_store, xenon_config={}):
+    def __init__(self, job_store, xenon, xenon_config={}):
         """Create a XenonJobRunner object.
 
         Args:
@@ -19,33 +18,17 @@ class XenonJobRunner:
         """
         self._job_store = job_store
         """The JobStore to obtain jobs from."""
-        self._x = None
+        self._x = xenon
         """The Xenon instance to use."""
-        self._sched = None
-        """The Xenon scheduler to start jobs through."""
-
-        self._init_xenon(xenon_config)
-
-        self._files = XenonRemoteFiles(self._x, xenon_config)
-        """The Xenon remote file system to stage to."""
-
-    def _init_xenon(self, xenon_config):
-        """Initialise Xenon, and set up Xenon objects to work with.
-
-        Args:
-            xenon_config: A dict containing key-value pairs with Xenon
-                configuration.
-        """
-        self._x = xenon.Xenon()
-        # TODO: use config
         self._sched = self._x.jobs().newScheduler(
                 xenon_config['files'].get('scheme', 'local'),
                 xenon_config['files'].get('location'),
                 xenon_config['files'].get('credential'),
                 xenon_config['files'].get('properties')
                 )
+        """The Xenon scheduler to start jobs through."""
 
-    def update(self, job_id):
+    def update_job(self, job_id):
         """Get status from Xenon and update store.
 
         Args:
@@ -55,8 +38,8 @@ class XenonJobRunner:
 
         # get state
         if (   job.get_state() == JobState.WAITING
-            or job.get_state() == JobState.RUNNING
-           ):
+                or job.get_state() == JobState.RUNNING
+                ):
             try:
                 xenon_job = job.get_runner_data()
                 xenon_status = self._x.jobs().getJobStatus(xenon_job)
@@ -69,21 +52,11 @@ class XenonJobRunner:
                 job.set_state(JobState.SYSTEM_ERROR)
                 pass
 
-        # get output
-        output = self._files.read_from_file(job_id, 'stdout.txt')
-        if len(output) > 0:
-            job.set_output(output.decode())
-
-        # get log
-        log = self._files.read_from_file(job_id, 'stderr.txt')
-        if len(log) > 0:
-            job.set_log(log.decode())
-
-    def update_all(self):
+    def update_all_jobs(self):
         """Get status from Xenon and update store, for all jobs.
         """
         for job in self._job_store.list_jobs():
-            self.update(job.get_id())
+            self.update_job(job.get_id())
 
     def start_job(self, job_id):
         """Get a job from the job store and start it on the compute resource.
@@ -95,33 +68,18 @@ class XenonJobRunner:
             None
         """
         job = self._job_store.get_job(job_id)
-
-        self._files.create_work_dir(job_id)
-
-        # stage workflow
-        if '://' in job.get_workflow():
-            workflow_content = requests.get(job.get_workflow()).content
-        else:
-            workflow_content = open(job.get_workflow(), 'rb').read()
-        self._files.write_to_file(job_id, 'workflow.cwl', workflow_content)
-
-        # stage input
-        self._files.write_to_file(job_id, 'input.json', job.get_input().encode('utf-8'))
-
-        # stage name of the job
-        self._files.write_to_file(job_id, 'name.txt', job.get_name().encode('utf-8'))
-
+        print(job.get_workdir_path())
         # submit job
         xenon_jobdesc = xenon.jobs.JobDescription()
-        xenon_jobdesc.setWorkingDirectory(self._files.get_work_dir_path(job_id))
+        xenon_jobdesc.setWorkingDirectory(job.get_workdir_path())
         xenon_jobdesc.setExecutable('cwl-runner')
         args = [
-            self._files.get_remote_file_path(job_id, 'workflow.cwl'),
-            self._files.get_remote_file_path(job_id, 'input.json')
-            ]
+                job.get_workflow_path(),
+                job.get_input_path()
+                ]
         xenon_jobdesc.setArguments(args)
-        xenon_jobdesc.setStdout(self._files.get_remote_file_path(job_id, '/stdout.txt'))
-        xenon_jobdesc.setStderr(self._files.get_remote_file_path(job_id, '/stderr.txt'))
+        xenon_jobdesc.setStdout(job.get_stdout_path())
+        xenon_jobdesc.setStderr(job.get_stderr_path())
         xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
         job.set_runner_data(xenon_job)
         job.set_state(JobState.WAITING)
@@ -133,11 +91,6 @@ class XenonJobRunner:
             xenon_job = job.get_runner_data()
             new_status = self._x.jobs().cancelJob(xenon_job)
             job.set_state(JobState.CANCELLED)
-
-    def delete_job(self, job_id):
-        job = self._job_store.get_job(job_id)
-        self.cancel_job(job_id)
-        self._files.remove_work_dir(job_id)
 
     def _xenon_status_to_job_state(self, xenon_status):
         """Convert a xenon JobStatus to our JobState.

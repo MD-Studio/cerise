@@ -117,7 +117,6 @@ class Job:
         Args:
             runner_data: Some object to attach
         """
-
         self._runner_data = runner_data
 
     def get_runner_data(self):
@@ -131,3 +130,85 @@ class Job:
             set_runner_data()
         """
         return self._runner_data
+
+
+    def set_workdir_path(self, workdir_path):
+        """Set remote workdir path of this job.
+
+        Args:
+            workdir_path: The remote path to the CWL workdir file
+        """
+        self._workdir_path = workdir_path
+
+    def get_workdir_path(self):
+        """Get workdir path.
+
+        Returns:
+            A string containing the remote path to the CWL workdir file
+        """
+        return self._workdir_path
+
+    def set_workflow_path(self, workflow_path):
+        """Set remote workflow path of this job.
+
+        Args:
+            workflow_path: The remote path to the CWL workflow file
+        """
+        self._workflow_path = workflow_path
+
+    def get_workflow_path(self):
+        """Get workflow path.
+
+        Returns:
+            A string containing the remote path to the CWL workflow file
+        """
+        return self._workflow_path
+
+    def set_input_path(self, input_path):
+        """Set remote input path of this job.
+
+        Args:
+            input_path: The remote path to the JSON input file
+        """
+        self._input_path = input_path
+
+    def get_input_path(self):
+        """Get remote input file path of this job.
+
+        Returns:
+            A string containing the remote path to the JSON input file
+        """
+        return self._input_path
+
+    def set_stdout_path(self, stdout_path):
+        """Set remote stdout path of this job.
+
+        Args:
+            stdout_path: The remote path that the cwl-runner stdout should be written to
+        """
+        self._stdout_path = stdout_path
+
+    def get_stdout_path(self):
+        """Get remote stdout path of this job.
+
+        Returns:
+            A string containing the remote path the cwl-runner stdout output file
+        """
+        return self._stdout_path
+
+    def set_stderr_path(self, stderr_path):
+        """Set remote stderr path of this job.
+
+        Args:
+            stderr_path: The remote path that the cwl-runner stderr should be written to
+        """
+        self._stderr_path = stderr_path
+
+    def get_stderr_path(self):
+        """Get stderr path.
+
+        Returns:
+            A string containing the remote path the cwl-runner stderr output file
+        """
+        return self._stderr_path
+

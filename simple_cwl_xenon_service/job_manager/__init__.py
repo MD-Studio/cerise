@@ -1,4 +1,5 @@
 from .in_memory_job_store import InMemoryJobStore
+from .xenon_remote_files import XenonRemoteFiles
 from .xenon_job_runner import XenonJobRunner
 
 import xenon
@@ -17,11 +18,16 @@ config_file_path = 'config.yml'
 with open(config_file_path) as config_file:
     config = yaml.load(config_file)
 
+_xenon = xenon.Xenon()
 _job_store = InMemoryJobStore()
-_job_runner = XenonJobRunner(_job_store, config['compute-resource'])
+_remote_files = XenonRemoteFiles(_job_store, _xenon, config['compute-resource'])
+_job_runner = XenonJobRunner(_job_store, _xenon, config['compute-resource'])
 
 def job_store():
     return _job_store
+
+def remote_files():
+    return _remote_files
 
 def job_runner():
     return _job_runner

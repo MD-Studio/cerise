@@ -63,7 +63,8 @@ def delete_job_by_id(jobId):
 
     :rtype: None
     """
-    job_manager.job_runner().delete_job(jobId)
+    job_manager.job_runner().cancel_job(jobId)
+    job_manager.remote_files().delete_job(jobId)
     job_manager.job_store().delete_job(jobId)
     return None, 204
 
@@ -81,7 +82,8 @@ def get_job_by_id(jobId):
     if not job:
         flask.abort(404, "Job not found")
 
-    job_manager.job_runner().update(jobId)
+    job_manager.job_runner().update_job(jobId)
+    job_manager.remote_files().update_job(jobId)
 
     return _internal_job_to_rest_job(job)
 
@@ -95,7 +97,7 @@ def get_job_log_by_id(jobId):
 
     :rtype: str
     """
-    job_manager.job_runner().update(jobId)
+    job_manager.remote_files().update_job(jobId)
 
     return job_manager.job_store().get_job(jobId).get_log()
 
@@ -108,7 +110,8 @@ def get_jobs():
     :rtype: List[Job]
     """
 
-    job_manager.job_runner().update_all()
+    job_manager.job_runner().update_all_jobs()
+    job_manager.remote_files().update_all_jobs()
     job_list = job_manager.job_store().list_jobs()
 
     return [_internal_job_to_rest_job(job) for job in job_list]
@@ -133,6 +136,7 @@ def post_job(body):
             )
         )
 
+    job_manager.remote_files().stage_job(job_id, {})
     job_manager.job_runner().start_job(job_id)
 
     job = job_manager.job_store().get_job(job_id)
