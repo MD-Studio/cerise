@@ -49,6 +49,11 @@ class Job:
         self.stderr_path = ''
         """The absolute remote path of the standard error dump."""
 
+        # Post-destaging data
+        self.output_files = None
+        """A list of (output_name, file_name, content) of output file contents,
+        or None if there is no output yet."""
+
         # Internal data
         self.runner_data = None
         """Unspecified object with data for XenonJobRunner."""

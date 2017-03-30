@@ -8,6 +8,7 @@ from xenon.files import OpenOption
 from xenon.files import RelativePath
 
 from .job_state import JobState
+from .cwl import get_files_from_binding
 
 class XenonRemoteFiles:
     def __init__(self, job_store, x, xenon_config={}):
@@ -64,6 +65,9 @@ class XenonRemoteFiles:
         self._make_remote_dir(job_id, 'work')
         job.workdir_path = self._abs_path(job_id, 'work')
 
+        # stage name of the job
+        self._write_remote_file(job_id, 'name.txt', job.name.encode('utf-8'))
+
         # stage workflow
         if '://' in job.workflow:
             workflow_content = requests.get(job.workflow).content
@@ -72,38 +76,46 @@ class XenonRemoteFiles:
         self._write_remote_file(job_id, 'workflow.cwl', workflow_content)
         job.workflow_path = self._abs_path(job_id, 'workflow.cwl')
 
-        # stage input
+        # stage input files
         inputs = json.loads(job.input)
         count = 1
-        for name, value in inputs.items():
-            print(name)
-            print(value)
-            item_class = None
-            try:
-                item_class = value.get('class')
-            except AttributeError:
-                pass
-            if item_class and item_class == 'File':
-                print(input_files)
-                staged_name = self._create_input_filename(str(count).zfill(2), value['path'])
-                count = count + 1
-                print('Hey!')
-                print('Writing to work/' + staged_name)
-                self._write_remote_file(job_id, 'work/' + staged_name, input_files[name])
-                value['path'] = self._abs_path(job_id, 'work/' + staged_name)
-                print(value['path'])
+        for name, path in get_files_from_binding(inputs):
+            staged_name = self._create_input_filename(str(count).zfill(2), path)
+            count = count + 1
+            self._write_remote_file(job_id, 'work/' + staged_name, input_files[name])
+            inputs[name]['path'] = self._abs_path(job_id, 'work/' + staged_name)
 
-        print(inputs)
+        # stage input description
         input_json = json.dumps(inputs).encode('utf-8')
         self._write_remote_file(job_id, 'input.json', input_json)
         job.input_path = self._abs_path(job_id, 'input.json')
 
-        # stage name of the job
-        self._write_remote_file(job_id, 'name.txt', job.name.encode('utf-8'))
-
         # configure output
         job.stdout_path = self._abs_path(job_id, 'stdout.txt')
-        job.stderr_path = self._abs_path(job_id, '/stderr.txt')
+        job.stderr_path = self._abs_path(job_id, 'stderr.txt')
+
+    def destage_job_output(self, job_id):
+        """Download results of the given job from the compute resource.
+
+        Args:
+            job_id: The id of the job to download results of.
+
+        Returns:
+            A dictionary with output names as keys, and file contents
+            as values.
+        """
+        job = self._job_store.get_job(job_id)
+        outputs = json.loads(job.output)
+        output_files = []
+        for output_name, path in get_files_from_binding(outputs):
+            prefix = self._basedir + '/jobs/' + job_id + '/work/'
+            if not path.startswith(prefix):
+                raise Exception("Unexpected output location in cwl-runner output: " + path)
+            rel_path = path[len(prefix):]
+            content = self._read_remote_file(job_id, 'work/' + rel_path)
+            output_files.append((output_name, rel_path, content))
+
+        return output_files
 
     def delete_job(self, job_id):
         """Remove the work directory for a job.
@@ -126,6 +138,9 @@ class XenonRemoteFiles:
         output = self._read_remote_file(job_id, 'stdout.txt')
         if len(output) > 0:
             job.output = output.decode()
+
+        if job.state == JobState.SUCCESS and job.output_files is None:
+            job.output_files = self.destage_job_output(job_id)
 
         # get log
         log = self._read_remote_file(job_id, 'stderr.txt')

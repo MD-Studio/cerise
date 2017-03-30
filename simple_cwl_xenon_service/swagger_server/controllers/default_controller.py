@@ -14,8 +14,7 @@ from job_manager import job_state
 def _internal_job_to_rest_job(job):
     output = job.output
     if output:
-        output = json.loads(output)['output']
-        # TODO: return a SystemError if output does not have 'output' key
+        output = json.loads(output)
 
     input = json.loads(job.input)
 
@@ -64,6 +63,7 @@ def delete_job_by_id(jobId):
     """
     job_manager.job_runner().cancel_job(jobId)
     job_manager.remote_files().delete_job(jobId)
+    job_manager.local_files().remove_output_dir(jobId)
     job_manager.job_store().delete_job(jobId)
     return None, 204
 
@@ -83,6 +83,7 @@ def get_job_by_id(jobId):
 
     job_manager.job_runner().update_job(jobId)
     job_manager.remote_files().update_job(jobId)
+    job_manager.local_files().publish_job_output(jobId)
 
     return _internal_job_to_rest_job(job)
 
@@ -111,6 +112,7 @@ def get_jobs():
 
     job_manager.job_runner().update_all_jobs()
     job_manager.remote_files().update_all_jobs()
+    job_manager.local_files().publish_all_jobs_output()
     job_list = job_manager.job_store().list_jobs()
 
     return [_internal_job_to_rest_job(job) for job in job_list]
@@ -136,6 +138,7 @@ def post_job(body):
         )
 
     job_manager.remote_files().stage_job(job_id, {})
+    job_manager.local_files().create_output_dir(job_id)
     job_manager.job_runner().start_job(job_id)
 
     job = job_manager.job_store().get_job(job_id)

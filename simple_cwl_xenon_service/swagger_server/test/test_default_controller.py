@@ -9,6 +9,7 @@ from six import BytesIO
 from flask import json
 
 import os.path
+import time
 
 class TestDefaultController(BaseTestCase):
     """ DefaultController integration test stubs """
@@ -76,11 +77,18 @@ class TestDefaultController(BaseTestCase):
         Get a job
         """
         test_job = self._create_test_job('test_get_job_by_id')
+
+        time.sleep(0.5)
+
         # Get the job
         response = self.client.open('/jobs/{jobId}'.format(jobId=test_job['id']),
                                     method='GET')
         self.assert200(response, "Response body is : " + response.data.decode('utf-8'))
+
         assert all(item in response.json for item in test_job)
+        out_file_path = response.json['output']['output']['path']
+        with open(out_file_path, 'r') as f:
+            assert f.read() == 'Hello world!\n'
 
     def test_get_job_log_by_id(self):
         """

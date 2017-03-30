@@ -83,7 +83,7 @@ class XenonJobRunner:
         xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
         job.runner_data = xenon_job
         job.state = JobState.WAITING
-        sleep(2)    # work-around for Xenon local running bug
+        sleep(1)    # work-around for Xenon local running bug
 
     def cancel_job(self, job_id):
         job = self._job_store.get_job(job_id)

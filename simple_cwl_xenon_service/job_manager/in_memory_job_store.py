@@ -10,6 +10,7 @@ class InMemoryJobStore(JobStore):
 
     def __init__(self):
         self._jobs = []
+        """A list of Job objects."""
 
     # Operations
     def create_job(self, description):
