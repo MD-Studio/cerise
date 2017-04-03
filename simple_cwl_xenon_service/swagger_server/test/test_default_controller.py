@@ -9,6 +9,7 @@ from six import BytesIO
 from flask import json
 
 import os.path
+import shutil
 import time
 
 class TestDefaultController(BaseTestCase):
@@ -21,13 +22,15 @@ class TestDefaultController(BaseTestCase):
         # TODO: stage it to a WebDAV
         cur_dir = os.path.dirname(__file__)
         test_workflow = os.path.join(cur_dir, 'test_workflow.cwl')
+        shutil.copy(test_workflow, '/tmp/simple_cwl_xenon_service_files/input/test_workflow.cwl')
+
         test_input = os.path.join(cur_dir, 'test_input.json')
         with open(test_input, 'r') as f:
             input_data = json.load(f)
 
         body = JobDescription(
                 name=name,
-                workflow=test_workflow,
+                workflow='input/test_workflow.cwl',
                 input=input_data
             )
         response = self.client.open('/jobs',

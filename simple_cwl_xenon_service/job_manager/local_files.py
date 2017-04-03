@@ -4,6 +4,7 @@ from .job_state import JobState
 import json
 import os
 import shutil
+import urllib
 
 class LocalFiles:
     def __init__(self, job_store, local_config={}):
@@ -37,6 +38,31 @@ class LocalFiles:
             os.mkdir(self._to_abs_path('output'))
         except FileExistsError:
             pass
+
+    def resolve_input(self, job_id):
+        """Resolves input (workflow and input files) for a job.
+
+        This function will read the job from the database, add a
+        .workflow_content attribute with the contents of the
+        referenced file, and add a .input_files attribute
+        containing the input data.
+
+        Local file:// URLs, or URLs without a schema, will be
+        resolved relative to the local file-store-path/input.
+        This function will also load remote http:// URLs.
+
+        Args:
+            job_id: The id of the job whose input to resolve.
+        """
+        job = self._job_store.get_job(job_id)
+
+        job.workflow_content = self._get_content_from_url(job.workflow)
+
+        inputs = json.loads(job.input)
+        job.input_files = []
+        for name, location in get_files_from_binding(inputs):
+            content = self._get_content_from_url(location)
+            job.input_files.append((name, location, content))
 
     def create_output_dir(self, job_id):
         """Create an output directory for a job.
@@ -82,7 +108,27 @@ class LocalFiles:
         for job in self._job_store.list_jobs():
             self.publish_job_output(job.id)
 
-    def read_from_file(self, rel_path):
+    def _get_content_from_url(self, url):
+        """Return the content referenced by a URL.
+
+        URLs with no schema, or a file:// schema, will be
+        resolved relative to the file-store-path/input directory,
+        remote URLs will be downloaded.
+
+        Args:
+            url A str containing the URL to get the content of
+
+        Returns:
+            A bytes object with the contents of the file
+        """
+        parsed_url = urllib.parse.urlparse(url, scheme='file')
+
+        if parsed_url.scheme == 'file':
+            return self._read_from_file(parsed_url.path)
+        else:
+            return requests.get(url).content
+
+    def _read_from_file(self, rel_path):
         """Read data from a local file.
 
         Args:
@@ -91,7 +137,7 @@ class LocalFiles:
         Returns:
             A bytes-object containing the contents of the file.
         """
-        with open(_to_abs_path(rel_path)) as f:
+        with open(self._to_abs_path(rel_path), 'rb') as f:
             data = f.read()
         return data
 

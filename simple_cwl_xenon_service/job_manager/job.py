@@ -37,6 +37,15 @@ class Job:
         self.output = ''
         """String with cwl-runner output as of last update."""
 
+        # Post-resolving data
+        self.workflow_content = None
+        """A bytes object containing the content of the workflow
+        description file, or None if it has not been resolved yet."""
+
+        self.input_files = None
+        """A list of (input_name, location, content) of input file contents,
+        or None if there is no input yet."""
+
         # Post-staging data
         self.workdir_path = ''
         """The absolute remote path of the working directory."""

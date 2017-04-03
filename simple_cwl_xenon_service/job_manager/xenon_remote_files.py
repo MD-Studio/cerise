@@ -50,13 +50,12 @@ class XenonRemoteFiles:
         except jpype.JException(xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException):
             pass
 
-    def stage_job(self, job_id, input_files):
+    def stage_job(self, job_id):
         """Stage a job. Copies any necessary files to
         the remote resource.
 
         Args:
             job_id The id of the job to stage
-            input_files A dictionary of file contents, keyed by input binding id
         """
         job = self._job_store.get_job(job_id)
 
@@ -69,21 +68,17 @@ class XenonRemoteFiles:
         self._write_remote_file(job_id, 'name.txt', job.name.encode('utf-8'))
 
         # stage workflow
-        if '://' in job.workflow:
-            workflow_content = requests.get(job.workflow).content
-        else:
-            workflow_content = open(job.workflow, 'rb').read()
-        self._write_remote_file(job_id, 'workflow.cwl', workflow_content)
+        self._write_remote_file(job_id, 'workflow.cwl', job.workflow_content)
         job.workflow_path = self._abs_path(job_id, 'workflow.cwl')
 
         # stage input files
         inputs = json.loads(job.input)
         count = 1
-        for name, path in get_files_from_binding(inputs):
-            staged_name = self._create_input_filename(str(count).zfill(2), path)
-            count = count + 1
-            self._write_remote_file(job_id, 'work/' + staged_name, input_files[name])
-            inputs[name]['path'] = self._abs_path(job_id, 'work/' + staged_name)
+        for name, location, content in job.input_files:
+            staged_name = self._create_input_filename(str(count).zfill(2), location)
+            count += 1
+            self._write_remote_file(job_id, 'work/' + staged_name, content)
+            inputs[name]['location'] = self._abs_path(job_id, 'work/' + staged_name)
 
         # stage input description
         input_json = json.dumps(inputs).encode('utf-8')
@@ -108,7 +103,8 @@ class XenonRemoteFiles:
         outputs = json.loads(job.output)
         output_files = []
         for output_name, path in get_files_from_binding(outputs):
-            prefix = self._basedir + '/jobs/' + job_id + '/work/'
+            print('Destage path = ' + path + ' for output ' + output_name)
+            prefix = 'file://' + self._basedir + '/jobs/' + job_id + '/work/'
             if not path.startswith(prefix):
                 raise Exception("Unexpected output location in cwl-runner output: " + path)
             rel_path = path[len(prefix):]

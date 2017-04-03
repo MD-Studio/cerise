@@ -12,6 +12,10 @@ compute-resource:
     credential:
     properties:
 
+local:
+  file-store-path:
+  file-store-location:
+
 rest-service:
   hostname: 127.0.0.1           # Set to 0.0.0.0 to listen on external interfaces as well
   port: 8080

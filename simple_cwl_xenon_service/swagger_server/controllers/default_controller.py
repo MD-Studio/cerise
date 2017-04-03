@@ -137,7 +137,8 @@ def post_job(body):
             )
         )
 
-    job_manager.remote_files().stage_job(job_id, {})
+    job_manager.local_files().resolve_input(job_id)
+    job_manager.remote_files().stage_job(job_id)
     job_manager.local_files().create_output_dir(job_id)
     job_manager.job_runner().start_job(job_id)
 
