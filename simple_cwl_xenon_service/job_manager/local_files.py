@@ -46,8 +46,8 @@ class LocalFiles:
         """
         os.mkdir(self._to_abs_path('output/' + job_id))
 
-    def remove_output_dir(self, job_id):
-        """Remove the output directory for a job.
+    def delete_output_dir(self, job_id):
+        """Delete the output directory for a job.
         This will remove the directory and everything in it.
 
         Args:
@@ -56,43 +56,31 @@ class LocalFiles:
         shutil.rmtree(self._to_abs_path('output/' + job_id))
 
     def publish_job_output(self, job_id):
+        """Write output files to the local output dir for this job.
+
+        Uses the .output_files property of the job to get data, and
+        updates its .output property with URLs pointing to the newly
+        published files, then sets .output_files to None.
+
+        Args:
+            job_id: The id of the job whose output to publish.
+        """
         job = self._job_store.get_job(job_id)
         if job.output_files is not None:
             output = json.loads(job.output)
             for output_name, file_name, content in job.output_files:
-                self.write_to_output_file(job_id, file_name, content)
-                output[output_name]['location'] = self.get_output_file_url(job_id, file_name)
+                output_loc = self._write_to_output_file(job_id, file_name, content)
+                output[output_name]['location'] = output_loc
                 output[output_name]['path'] = self._to_abs_path('output/' + job_id + '/' + file_name)
             job.output = json.dumps(output)
             job.output_files = None
 
-
     def publish_all_jobs_output(self):
+        """Publish the output of all jobs that have some.
+        See publish_job_output() for details.
+        """
         for job in self._job_store.list_jobs():
             self.publish_job_output(job.id)
-
-    def write_to_output_file(self, job_id, rel_path, data):
-        """Write the data to a local file.
-
-        Args:
-            job_id: The id of the job to write data for
-            rel_path: A string with a path relative to the job's output directory
-            data: A bytes-object containing the data to write
-        """
-        with open(self._to_abs_path('output/' + job_id + '/' + rel_path), 'wb') as f:
-            f.write(data)
-
-    def get_output_file_url(self, job_id, rel_path):
-        """Return the file's external url.
-
-        Args:
-            job_id: The id of the job this file belongs to
-            rel_path: A string with a path relative to the job's output directory
-
-        Returns:
-            A string containing an external URL that points to the file
-        """
-        return self._to_external_url('output/' + job_id + '/' + rel_path)
 
     def read_from_file(self, rel_path):
         """Read data from a local file.
@@ -106,6 +94,22 @@ class LocalFiles:
         with open(_to_abs_path(rel_path)) as f:
             data = f.read()
         return data
+
+    def _write_to_output_file(self, job_id, rel_path, data):
+        """Write the data to a local file.
+
+        Args:
+            job_id: The id of the job to write data for
+            rel_path: A string with a path relative to the job's output directory
+            data: A bytes-object containing the data to write
+
+        Returns:
+            A string containing an external URL that points to the file
+        """
+        with open(self._to_abs_path('output/' + job_id + '/' + rel_path), 'wb') as f:
+            f.write(data)
+
+        return self._to_external_url('output/' + job_id + '/' + rel_path)
 
     def _to_abs_path(self, rel_path):
         return self._basedir + '/' + rel_path

@@ -63,7 +63,7 @@ def delete_job_by_id(jobId):
     """
     job_manager.job_runner().cancel_job(jobId)
     job_manager.remote_files().delete_job(jobId)
-    job_manager.local_files().remove_output_dir(jobId)
+    job_manager.local_files().delete_output_dir(jobId)
     job_manager.job_store().delete_job(jobId)
     return None, 204
 
