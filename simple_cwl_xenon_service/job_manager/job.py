@@ -27,6 +27,7 @@ class Job:
         self.workflow = workflow
         """Workflow file URI, as specified by the submitter."""
         self.input = input
+        """Input JSON string, as specified by the submitter."""
 
         # Current status
         """A string containing the JSON input definition"""
