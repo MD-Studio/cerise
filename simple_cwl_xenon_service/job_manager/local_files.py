@@ -7,7 +7,7 @@ import shutil
 import urllib
 
 class LocalFiles:
-    def __init__(self, job_store, local_config={}):
+    def __init__(self, job_store, local_config):
         """Create a LocalFiles object.
         Sets up local directory structure as well, but refuses to
         create the top-level directory.
@@ -25,9 +25,10 @@ class LocalFiles:
         self._baseurl = local_config['file-store-location']
         """The externally accessible base URL corresponding to the _basedir."""
 
-        if not os.path.isdir(self._basedir):
-            raise RuntimeError(('Configuration error: Base directory {} ' +
-                'not found on local file system').format(self._basedir))
+        try:
+            os.mkdir(self._basedir)
+        except FileExistsError:
+            pass
 
         try:
             os.mkdir(self._to_abs_path('input'))

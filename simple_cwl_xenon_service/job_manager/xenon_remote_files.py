@@ -35,12 +35,13 @@ class XenonRemoteFiles:
         self._basedir = xenon_config['files']['path']
         """The remote path to the base directory where we store our stuff."""
 
-        # Check that basedir exists, don't create it
+        # Create basedir if it doesn't exist
         basedir_rel_path = RelativePath(self._basedir)
         basedir_full_path = self._x.files().newPath(self._fs, basedir_rel_path)
-        if not self._x.files().exists(basedir_full_path):
-            raise RuntimeError(('Configuration error: Base directory {} ' +
-                'not found on remote file system').format(basedir_full_path))
+        try:
+            self._x.files().createDirectories(basedir_full_path)
+        except jpype.JException(xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException):
+            pass
 
         # Create a subdirectory for jobs
         jobsdir_rel_path = RelativePath(self._basedir + '/jobs')
