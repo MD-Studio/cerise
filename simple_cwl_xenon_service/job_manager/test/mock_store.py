@@ -21,7 +21,7 @@ class MockStore:
             test_job_id A str containing a unique identifier
             test_job_type The type of test job. See source.
             test_job_stage A str : "submitted", "resolved", "staged",
-            "destaged", "done"
+            "run", "destaged", "done"
         """
         if test_job_type == "pass":
             self._jobs.append(self._create_pass_job(test_job_id, test_job_stage))
@@ -87,6 +87,34 @@ class MockStore:
                 '{ "file": { "class": "File", "location": "input/hello_world.txt" } }')
 
         if stage == "submitted":
+            return job
+
+        # Resolve
+        job.workflow_content = bytes(
+                "#!/usr/bin/env cwl-runner\n"
+                "\n"
+                "cwlVersion: v1.0\n"
+                "class: CommandLineTool\n"
+                "baseCommand: wc\n"
+                "stdout: output.txt\n"
+                "inputs:\n"
+                "  file:\n"
+                "    type: File\n"
+                "    inputBinding:\n"
+                "      position: 1\n"
+                "\n"
+                "outputs:\n"
+                "  output:\n"
+                "    type: File\n"
+                "    outputBinding: { glob: output.txt }\n", 'utf-8')
+
+        job.input_files = [('file', 'input/hello_world.txt', bytes(
+            'Hello, World!\n'
+            '\n'
+            'Here is a test file for the staging test.\n'
+            '\n', 'utf-8'))]
+
+        if stage == "resolved":
             return job
 
         # Destage
