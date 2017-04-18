@@ -34,7 +34,7 @@ class MockStore:
             test_job_id A str containing a unique identifier
             test_job_type The type of test job. See source.
             test_job_stage A str : "submitted", "resolved", "staged",
-            "run", "destaged", "done"
+            "run", "run_and_updated", "destaged", "done"
         """
         if test_job_type == "pass":
             self._jobs.append(self._create_pass_job(test_job_id, test_job_stage))
@@ -80,7 +80,17 @@ class MockStore:
             job.workdir_path = ""
             return job
 
+        if stage == 'run' or stage == 'run_and_updated':
+            pass_output_dir = os.path.join(self._remote_base_path, 'jobs', job_id, 'work')
+            os.makedirs(pass_output_dir)
+            # put the output in pass_job_dir/stdout.txt
+
+            if stage == 'run_and_updated':
+                job.output = PassJob.output
+            return job
+
         if stage == "destaged":
+            job.output = PassJob.output
             job.output_files = []
             return job
 
@@ -108,8 +118,25 @@ class MockStore:
             job.input_files = WcJob.input_files
             return job
 
+        if stage == 'run' or stage == 'run_and_updated':
+            wc_job_dir = os.path.join(self._remote_base_path, 'jobs', job_id)
+            wc_output_dir = os.path.join(wc_job_dir, 'work')
+            os.makedirs(wc_output_dir)
+            for (name, filename, contents) in WcJob.output_files:
+                wc_output_path = os.path.join(wc_output_dir, filename)
+                with open(wc_output_path, 'wb') as f:
+                    f.write(contents)
+
+            # put the output in wc_job_dir/stdout.txt
+            with open(os.path.join(wc_job_dir, 'stdout.txt'), 'wb') as f:
+                f.write(WcJob.output('file://' + wc_output_dir).encode('utf-8'))
+
+            if stage == 'run_and_updated':
+                job.output = WcJob.output('file://' + wc_output_dir)
+            return job
+
         if stage == 'destaged':
-            job.output = WcJob.output
+            job.output = WcJob.output('')
             job.output_files = WcJob.output_files
             return job
 

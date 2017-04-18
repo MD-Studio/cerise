@@ -11,6 +11,8 @@ class PassJob:
                 'inputs: []\n'
                 'outputs: []\n', 'utf-8')
 
+    output = '{}\n'
+
 class WcJob:
     """A simple job with an input file and an output file.
     """
@@ -40,7 +42,8 @@ class WcJob:
                 'Here is a test file for the staging test.\n'
                 '\n', 'utf-8'))]
 
-    output = '{ "output": { "class": "File", "location": "output.txt" } }\n'
+    def output(job_remote_workdir):
+        return '{ "output": { "class": "File", "location": "' + job_remote_workdir + '/output.txt" } }\n'
 
     output_files = [
                 ('output', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
