@@ -9,8 +9,12 @@ import urllib
 class LocalFiles:
     def __init__(self, job_store, local_config):
         """Create a LocalFiles object.
-        Sets up local directory structure as well, but refuses to
-        create the top-level directory.
+        Sets up local directory structure as well.
+
+        Local configuration consists of the keys 'file-store-path' and
+        'file-store-location'. The former should contain a str with the
+        path of the local file store, the latter a str with a base URL
+        corresponding to this path.
 
         Args:
             local_config: A dict containing key-value pairs with local
