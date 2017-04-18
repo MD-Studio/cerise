@@ -11,6 +11,10 @@ class PassJob:
                 'inputs: []\n'
                 'outputs: []\n', 'utf-8')
 
+    input = '{}'
+
+    remote_input = '{}'
+
     output = '{}\n'
 
 class WcJob:
@@ -41,6 +45,15 @@ class WcJob:
                 '\n'
                 'Here is a test file for the staging test.\n'
                 '\n', 'utf-8'))]
+
+    remote_input = '{ "file": { "class": "File", "location": "work/01_input_hello_world.txt" } }'
+
+    remote_input_files = [('file', '01_input_hello_world.txt', bytes(
+                'Hello, World!\n'
+                '\n'
+                'Here is a test file for the staging test.\n'
+                '\n', 'utf-8'))]
+
 
     def output(job_remote_workdir):
         return '{ "output": { "class": "File", "location": "' + job_remote_workdir + '/output.txt" } }\n'
@@ -74,3 +87,27 @@ class MissingInputJob:
     input = '{ "file": { "class": "File", "location": "input/non_existing_file.txt" } }'
 
     input_files = []
+
+class SlowJob:
+    workflow = bytes(
+            '#!/usr/bin/env cwl-runner\n'
+            '\n'
+            'cwlVersion: v1.0\n'
+            'class: CommandLineTool\n'
+            'baseCommand: bash\n'
+            'arguments:\n'
+            '  - \'-c\'\n'
+            '  - \'sleep 4\''
+            '\n'
+            'inputs: []\n'
+            '\n'
+            'stdout: output.txt\n'
+            'outputs:\n'
+            '  output:\n'
+            '    type: File\n'
+            '    outputBinding: { glob: output.txt }\n', 'utf-8')
+
+    input = '{}'
+
+    remote_input = '{}'
+

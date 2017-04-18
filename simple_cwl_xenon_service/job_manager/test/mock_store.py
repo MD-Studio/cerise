@@ -3,6 +3,7 @@ from .context import simple_cwl_xenon_service
 from .fixture_jobs import PassJob
 from .fixture_jobs import WcJob
 from .fixture_jobs import MissingInputJob
+from .fixture_jobs import SlowJob
 
 from simple_cwl_xenon_service.job_manager.job import Job
 
@@ -77,13 +78,30 @@ class MockStore:
             return job
 
         if stage == "staged":
-            job.workdir_path = ""
+            pass_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
+            job.workdir_path = os.path.join(pass_jobdir, 'work')
+            job.workflow_path = os.path.join(pass_jobdir,'workflow.cwl')
+            job.input_path = os.path.join(pass_jobdir, 'input.json')
+            job.stdout_path = os.path.join(pass_jobdir, 'stdout.txt')
+            job.stderr_path = os.path.join(pass_jobdir, 'stderr.txt')
+
+            os.makedirs(job.workdir_path)
+
+            with open(job.workflow_path, 'wb') as f:
+                f.write(PassJob.workflow)
+
+            with open(job.input_path, 'wb') as f:
+                f.write(PassJob.remote_input.encode('utf-8'))
+
             return job
 
         if stage == 'run' or stage == 'run_and_updated':
-            pass_output_dir = os.path.join(self._remote_base_path, 'jobs', job_id, 'work')
+            pass_job_dir = os.path.join(self._remote_base_path, 'jobs', job_id, 'work')
+            pass_output_dir = os.path.join(pass_job_dir, 'work')
             os.makedirs(pass_output_dir)
-            # put the output in pass_job_dir/stdout.txt
+
+            with open(os.path.join(pass_job_dir, 'stdout.txt'), 'wb') as f:
+                f.write(PassJob.output.encode('utf-8'))
 
             if stage == 'run_and_updated':
                 job.output = PassJob.output
@@ -118,6 +136,30 @@ class MockStore:
             job.input_files = WcJob.input_files
             return job
 
+        if stage == 'staged':
+            wc_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
+            wc_workdir = os.path.join(wc_jobdir, 'work')
+            job.workdir_path = wc_workdir
+            job.workflow_path = os.path.join(wc_jobdir,'workflow.cwl')
+            job.input_path = os.path.join(wc_jobdir, 'input.json')
+            job.stdout_path = os.path.join(wc_jobdir, 'stdout.txt')
+            job.stderr_path = os.path.join(wc_jobdir, 'stderr.txt')
+
+            os.makedirs(wc_workdir)
+
+            with open(job.workflow_path, 'wb') as f:
+                f.write(WcJob.workflow)
+
+            with open(job.input_path, 'wb') as f:
+                f.write(WcJob.remote_input.encode('utf-8'))
+
+            for (name, filename, contents) in WcJob.remote_input_files:
+                wc_input_path = os.path.join(wc_workdir, filename)
+                with open(wc_input_path, 'wb') as f:
+                    f.write(contents)
+
+            return job
+
         if stage == 'run' or stage == 'run_and_updated':
             wc_job_dir = os.path.join(self._remote_base_path, 'jobs', job_id)
             wc_output_dir = os.path.join(wc_job_dir, 'work')
@@ -127,7 +169,6 @@ class MockStore:
                 with open(wc_output_path, 'wb') as f:
                     f.write(contents)
 
-            # put the output in wc_job_dir/stdout.txt
             with open(os.path.join(wc_job_dir, 'stdout.txt'), 'wb') as f:
                 f.write(WcJob.output('file://' + wc_output_dir).encode('utf-8'))
 
@@ -139,6 +180,7 @@ class MockStore:
             job.output = WcJob.output('')
             job.output_files = WcJob.output_files
             return job
+
 
         return ValueError('Invalid stage in _create_wc_job')
 
@@ -155,3 +197,28 @@ class MockStore:
             return job;
 
         return ValueError('Invalid stage in _create_missing_input_job')
+
+    def _create_slow_job(self, job_id, stage):
+        job = Job(job_id, job_id, "input/slow_workflow.cwl", "{}")
+
+        if stage == "staged":
+            slow_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
+            job.workdir_path = os.path.join(slow_jobdir, 'work')
+            job.workflow_path = os.path.join(slow_jobdir,'workflow.cwl')
+            job.input_path = os.path.join(slow_jobdir, 'input.json')
+            job.stdout_path = os.path.join(slow_jobdir, 'stdout.txt')
+            job.stderr_path = os.path.join(slow_jobdir, 'stderr.txt')
+
+            os.makedirs(job.workdir_path)
+
+            with open(job.workflow_path, 'wb') as f:
+                f.write(SlowJob.workflow)
+
+            with open(job.input_path, 'wb') as f:
+                f.write(SlowJob.remote_input.encode('utf-8'))
+
+            return job
+
+        raise ValueError('Invalid stage in _create_slow_job')
+
+

@@ -21,10 +21,10 @@ class XenonJobRunner:
         self._x = xenon
         """The Xenon instance to use."""
         self._sched = self._x.jobs().newScheduler(
-                xenon_config['files'].get('scheme', 'local'),
-                xenon_config['files'].get('location'),
-                xenon_config['files'].get('credential'),
-                xenon_config['files'].get('properties')
+                xenon_config['jobs'].get('scheme', 'local'),
+                xenon_config['jobs'].get('location'),
+                xenon_config['jobs'].get('credential'),
+                xenon_config['jobs'].get('properties')
                 )
         """The Xenon scheduler to start jobs through."""
 
