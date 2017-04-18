@@ -1,6 +1,12 @@
 from .context import simple_cwl_xenon_service
 
+from .fixture_jobs import PassJob
+from .fixture_jobs import WcJob
+from .fixture_jobs import MissingInputJob
+
 from simple_cwl_xenon_service.job_manager.job import Job
+
+import os
 
 class MockStore:
     """Created this by hand rather than using unittest.mock,
@@ -9,13 +15,20 @@ class MockStore:
     """
 
     def __init__(self, test_config):
+        """Create a mock job store.
+
+        Args:
+            test_config A dict with keys 'local-base-path' and
+                'remote-base-path', which are str objects containing
+                paths (on the local machine) where local and remote
+                files are put for testing purposes.
+        """
         self._local_base_path = test_config.get('local-base-path')
         self._remote_base_path = test_config.get('remote-base-path')
         self._jobs = []
 
     def add_test_job(self, test_job_id, test_job_type, test_job_stage):
-        """Create a mock job store containing a single job
-        with the given id, type and stage.
+        """Add a mock job with the given id, type and stage.
 
         Args:
             test_job_id A str containing a unique identifier
@@ -48,93 +61,70 @@ class MockStore:
         pass
 
     def _create_pass_job(self, job_id, stage):
-        # Create
         job = Job(job_id, job_id, "input/pass_workflow.cwl", "{}")
-        if stage == "submitted":
+
+        if stage == 'submitted':
+            pass_wf_path = os.path.join(self._local_base_path, 'input', 'pass_workflow.cwl')
+
+            with open(pass_wf_path, 'wb') as f:
+                f.write(PassJob.workflow)
+
             return job
-
-        # Resolve
-        job.workflow_content = (
-            "#!/usr/bin/env cwl-runner\n"
-            "cwlVersion: v1.0\n"
-            "class: CommandLineTool\n"
-            "baseCommand: echo\n"
-            "inputs: []\n"
-            "outputs: []\n")
-
-        job.input_files = []
 
         if stage == "resolved":
+            job.workflow_content = PassJob.workflow
+            job.input_files = []
             return job
-
-        # Stage
-        job.workdir_path = ""
 
         if stage == "staged":
+            job.workdir_path = ""
             return job
-
-        # Destage
-        job.output_files = []
 
         if stage == "destaged":
+            job.output_files = []
             return job
 
-        return None
+        raise ValueError('Invalid stage in _create_pass_job')
 
     def _create_wc_job(self, job_id, stage):
         # Create
-        job = Job(job_id, job_id, "input/wc_workflow.cwl",
-                '{ "file": { "class": "File", "location": "input/hello_world.txt" } }')
+        job = Job(job_id, job_id, "input/wc_workflow.cwl", WcJob.input)
 
-        if stage == "submitted":
+        if stage == 'submitted':
+            wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
+
+            with open(wc_wf_path, 'wb') as f:
+                f.write(WcJob.workflow)
+
+            for (name, filename, contents) in WcJob.input_files:
+                wc_input_path = os.path.join(self._local_base_path, filename)
+                with open(wc_input_path, 'wb') as f:
+                    f.write(contents)
+
             return job
 
-        # Resolve
-        job.workflow_content = bytes(
-                "#!/usr/bin/env cwl-runner\n"
-                "\n"
-                "cwlVersion: v1.0\n"
-                "class: CommandLineTool\n"
-                "baseCommand: wc\n"
-                "stdout: output.txt\n"
-                "inputs:\n"
-                "  file:\n"
-                "    type: File\n"
-                "    inputBinding:\n"
-                "      position: 1\n"
-                "\n"
-                "outputs:\n"
-                "  output:\n"
-                "    type: File\n"
-                "    outputBinding: { glob: output.txt }\n", 'utf-8')
-
-        job.input_files = [('file', 'input/hello_world.txt', bytes(
-            'Hello, World!\n'
-            '\n'
-            'Here is a test file for the staging test.\n'
-            '\n', 'utf-8'))]
-
-        if stage == "resolved":
+        if stage == 'resolved':
+            job.workflow_content = WcJob.workflow
+            job.input_files = WcJob.input_files
             return job
 
-        # Destage
-        job.output = '{ "output": { "class": "File", "location": "output.txt" } }'
-
-        job.output_files = [
-                ('output', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
-                ]
-
-        if stage == "destaged":
+        if stage == 'destaged':
+            job.output = WcJob.output
+            job.output_files = WcJob.output_files
             return job
 
-        return None
+        return ValueError('Invalid stage in _create_wc_job')
 
     def _create_missing_input_job(self, job_id, stage):
         # Create
-        job = Job(job_id, job_id, "input/wc_workflow.cwl",
-                '{ "file": { "class": "File", "location": "input/non_existing_file.txt" } }')
+        job = Job(job_id, job_id, "input/wc_workflow.cwl", MissingInputJob.input)
 
-        if stage == "submitted":
+        if stage == 'submitted':
+            wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
+
+            with open(wc_wf_path, 'wb') as f:
+                f.write(WcJob.workflow)
+
             return job;
 
-        return None
+        return ValueError('Invalid stage in _create_missing_input_job')

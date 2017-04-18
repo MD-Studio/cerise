@@ -3,6 +3,9 @@ from .context import simple_cwl_xenon_service
 from simple_cwl_xenon_service.job_manager.local_files import LocalFiles
 from .mock_store import MockStore
 
+from .fixture_jobs import PassJob
+from .fixture_jobs import WcJob
+
 import json
 import os
 import pytest
@@ -11,12 +14,10 @@ import time
 import yaml
 
 @pytest.fixture
-def fixture(request):
+def fixture(request, tmpdir):
     result = {}
 
-    thisfile = request.module.__file__
-    thisdir = os.path.dirname(thisfile)
-    basedir = os.path.join(thisdir, 'fixture', 'local_files')
+    basedir = str(tmpdir)
 
     result['output-dir'] = os.path.join(basedir, 'output')
 
@@ -31,8 +32,7 @@ def fixture(request):
 
     result['local-files'] = LocalFiles(result['store'], result['local-files-config'])
 
-    yield result
-    shutil.rmtree(result['output-dir'])
+    return result
 
 def test_init(fixture):
     pass
@@ -40,42 +40,13 @@ def test_init(fixture):
 def test_resolve_no_input(fixture):
     fixture['store'].add_test_job('test_resolve_no_input', 'pass', 'submitted')
     fixture['local-files'].resolve_input('test_resolve_no_input')
-    assert fixture['store'].get_job('test_resolve_no_input').workflow_content == bytes(
-        '#!/usr/bin/env cwl-runner\n'
-        '\n'
-        'cwlVersion: v1.0\n'
-        'class: CommandLineTool\n'
-        'baseCommand: echo\n'
-        'inputs: []\n'
-        'outputs: []\n', 'utf-8')
+    assert fixture['store'].get_job('test_resolve_no_input').workflow_content == PassJob.workflow
 
 def test_resolve_input(fixture):
     fixture['store'].add_test_job('test_resolve_input', 'wc', 'submitted')
     fixture['local-files'].resolve_input('test_resolve_input')
-    assert fixture['store'].get_job('test_resolve_input').workflow_content == bytes(
-        '#!/usr/bin/env cwl-runner\n'
-        '\n'
-        'cwlVersion: v1.0\n'
-        'class: CommandLineTool\n'
-        'baseCommand: wc\n'
-        'stdout: output.txt\n'
-        'inputs:\n'
-        '  file:\n'
-        '    type: File\n'
-        '    inputBinding:\n'
-        '      position: 1\n'
-        '\n'
-        'outputs:\n'
-        '  output:\n'
-        '    type: File\n'
-        '    outputBinding: { glob: output.txt }\n', 'utf-8')
-
-    assert fixture['store'].get_job('test_resolve_input').input_files == [
-            ('file', 'input/hello_world.txt', bytes(
-                'Hello, World!\n'
-                '\n'
-                'Here is a test file for the staging test.\n'
-                '\n', 'utf-8'))]
+    assert fixture['store'].get_job('test_resolve_input').workflow_content == WcJob.workflow
+    assert fixture['store'].get_job('test_resolve_input').input_files == WcJob.input_files
 
 def test_resolve_missing_input(fixture):
     fixture['store'].add_test_job('test_missing_input', 'missing_input', 'submitted')
@@ -98,6 +69,7 @@ def test_publish_no_output(fixture):
     output_dir = os.path.join(fixture['output-dir'], 'test_publish_no_output')
     os.mkdir(output_dir)
     fixture['local-files'].publish_job_output('test_publish_no_output')
+    assert os.listdir(output_dir) == []
 
 def test_publish_output(fixture):
     fixture['store'].add_test_job('test_publish_output', 'wc', 'destaged')
@@ -108,7 +80,7 @@ def test_publish_output(fixture):
     assert os.path.exists(output_path)
     with open(output_path, 'rb') as f:
         contents = f.read()
-        assert contents == bytes(' 4 11 58 hello_world.txt', 'utf-8')
+        assert contents == WcJob.output_files[0][2]
 
 def test_publish_all_output(fixture):
     fixture['store'].add_test_job('test_publish_all_output_1', 'wc', 'destaged')
@@ -125,12 +97,10 @@ def test_publish_all_output(fixture):
     assert os.path.exists(output_path_1)
     with open(output_path_1, 'rb') as f:
         contents = f.read()
-        assert contents == bytes(' 4 11 58 hello_world.txt', 'utf-8')
+        assert contents == WcJob.output_files[0][2]
 
     output_path_2 = os.path.join(output_dir_2, 'output.txt')
     assert os.path.exists(output_path_1)
     with open(output_path_2, 'rb') as f:
         contents = f.read()
-        assert contents == bytes(' 4 11 58 hello_world.txt', 'utf-8')
-
-
+        assert contents == WcJob.output_files[0][2]

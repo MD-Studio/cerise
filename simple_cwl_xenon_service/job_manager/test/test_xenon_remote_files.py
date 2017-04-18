@@ -23,25 +23,14 @@ def x(request):
     yield ret
     ret.close()
 
-@pytest.fixture(scope="module")
-def remote_dir(request):
-    thisfile = request.module.__file__
-    thisdir = os.path.dirname(thisfile)
-    basedir = os.path.join(thisdir, 'fixture', 'xenon_remote_files')
-    if os.path.exists(basedir):
-        shutil.rmtree(basedir)
-    os.mkdir(basedir)
-    yield basedir
-    shutil.rmtree(basedir)
-
 @pytest.fixture
-def fixture(request, remote_dir, x):
+def fixture(request, tmpdir, x):
     result = {}
 
-    result['remote-dir'] = remote_dir
+    result['remote-dir'] = str(tmpdir)
 
     result['store'] = MockStore({
-        'remote-base-path': remote_dir
+        'remote-base-path': result['remote-dir']
         })
 
     result['xenon'] = x
@@ -50,7 +39,7 @@ def fixture(request, remote_dir, x):
             'files': {
                 'scheme': 'local',
                 'location': None,
-                'path': remote_dir,
+                'path': result['remote-dir'],
                 'credential': None,
                 'properties': None
             }}
