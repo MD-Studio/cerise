@@ -11,6 +11,21 @@ from .job_state import JobState
 from .cwl import get_files_from_binding
 
 class XenonRemoteFiles:
+    """Manages a remote directory structure.
+    Expects to be given a remote dir to work within. Inside this
+    directory, it makes a jobs/ directory, and inside that there
+    is a directory for every job.
+
+    Within each job directory are the following files:
+
+    jobs/<job_id>/name.txt contains the user-given name of the job
+    jobs/<job_id>/workflow.cwl contains the workflow to run
+    jobs/<job_id>/work/ contains input and output files, and is the
+        working directory for the job.
+    jobs/<job_id>/stdout.txt is the standard output of the CWL runner
+    jobs/<job_id>/stderr.txt is the standard error of the CWL runner
+    """
+
     def __init__(self, job_store, x, xenon_config={}):
         """Create a XenonRemoteFiles object.
         Sets up remote directory structure as well, but refuses to
