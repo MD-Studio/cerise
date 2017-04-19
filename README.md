@@ -1,6 +1,6 @@
 Simple CWL Xenon Service
 ========================
-[![Build Status](https://api.travis-ci.org/LourensVeen/simple-cwl-xenon-service.svg?branch=master)](https://travis-ci.org/LourensVeen/simple-cwl-xenon-service)
+[![Build Status](https://api.travis-ci.org/LourensVeen/simple-cwl-xenon-service.svg?branch=master)](https://travis-ci.org/LourensVeen/simple-cwl-xenon-service) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/simple-cwl-xenon-service)
 
 This is a simple REST service that can run (some) CWL jobs on some remote
 compute resource. It uses the GA4GH REST API as its interface and PyXenon
