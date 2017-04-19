@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 """ This example demonstrates that you need to run
 'pip install .' in the main directory, before you
-can do 'import simple-cwl-xenon-service' in a Python program
-
-The from __future__ import below is to make this
-code compatible with both Python 2 and 3
+can do 'import simple_cwl_xenon_service' in a Python program
 """
-from __future__ import print_function
 
 try:
-    import simple-cwl-xenon-service
-    print("Succesfully imported simple-cwl-xenon-service!")
+    import simple_cwl_xenon_service
+    print("Succesfully imported simple_cwl_xenon_service!")
 except ImportError:
-    print("Could not import simple-cwl-xenon-service! Maybe you forgot to run 'pip install'")
+    print("Could not import simple_cwl_xenon_service! Maybe you forgot to run 'pip install'")
