@@ -158,7 +158,7 @@ class MockStore:
             with open(job.input_path, 'wb') as f:
                 f.write(WcJob.remote_input.encode('utf-8'))
 
-            for (name, filename, contents) in WcJob.remote_input_files:
+            for (_, filename, contents) in WcJob.remote_input_files:
                 wc_input_path = os.path.join(wc_workdir, filename)
                 with open(wc_input_path, 'wb') as f:
                     f.write(contents)

@@ -2,16 +2,10 @@ from simple_cwl_xenon_service.job_manager.xenon_job_runner import XenonJobRunner
 from simple_cwl_xenon_service.job_manager.job_state import JobState
 
 from .mock_store import MockStore
-from .fixture_jobs import WcJob
-from .fixture_jobs import SlowJob
-from .fixture_jobs import BrokenJob
 
-import json
-import os
 import pytest
 import time
 import xenon
-import yaml
 
 @pytest.fixture(scope="module")
 def xenon_init(request):

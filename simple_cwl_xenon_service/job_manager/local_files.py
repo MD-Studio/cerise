@@ -1,5 +1,4 @@
 from .cwl import get_files_from_binding
-from .job_state import JobState
 
 import json
 import os
