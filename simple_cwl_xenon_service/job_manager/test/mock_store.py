@@ -4,6 +4,7 @@ from .fixture_jobs import PassJob
 from .fixture_jobs import WcJob
 from .fixture_jobs import MissingInputJob
 from .fixture_jobs import SlowJob
+from .fixture_jobs import BrokenJob
 
 from simple_cwl_xenon_service.job_manager.job import Job
 
@@ -220,5 +221,51 @@ class MockStore:
             return job
 
         raise ValueError('Invalid stage in _create_slow_job')
+
+    def _create_broken_job(self, job_id, stage):
+        job = Job(job_id, job_id, "input/broken_workflow.cwl", "{}")
+
+        if stage == 'submitted':
+            pass_wf_path = os.path.join(self._local_base_path, 'input', 'broken_workflow.cwl')
+
+            with open(pass_wf_path, 'wb') as f:
+                f.write(BrokenJob.workflow)
+
+            return job
+
+        if stage == "resolved":
+            job.workflow_content = BrokenJob.workflow
+            job.input_files = []
+            return job
+
+        if stage == "staged":
+            broken_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
+            job.workdir_path = os.path.join(broken_jobdir, 'work')
+            job.workflow_path = os.path.join(broken_jobdir,'workflow.cwl')
+            job.input_path = os.path.join(broken_jobdir, 'input.json')
+            job.stdout_path = os.path.join(broken_jobdir, 'stdout.txt')
+            job.stderr_path = os.path.join(broken_jobdir, 'stderr.txt')
+
+            os.makedirs(job.workdir_path)
+
+            with open(job.workflow_path, 'wb') as f:
+                f.write(BrokenJob.workflow)
+
+            with open(job.input_path, 'wb') as f:
+                f.write(BrokenJob.remote_input.encode('utf-8'))
+
+            return job
+
+        if stage == 'run' or stage == 'run_and_updated':
+            broken_job_dir = os.path.join(self._remote_base_path, 'jobs', job_id, 'work')
+            broken_output_dir = os.path.join(broken_job_dir, 'work')
+            os.makedirs(broken_output_dir)
+
+            with open(os.path.join(broken_job_dir, 'stdout.txt'), 'wb') as f:
+                f.write(BrokenJob.output.encode('utf-8'))
+
+            if stage == 'run_and_updated':
+                job.output = BrokenJob.output
+            return job
 
 

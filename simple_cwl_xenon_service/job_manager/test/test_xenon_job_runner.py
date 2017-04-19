@@ -6,6 +6,7 @@ from simple_cwl_xenon_service.job_manager.job_state import JobState
 from .mock_store import MockStore
 from .fixture_jobs import WcJob
 from .fixture_jobs import SlowJob
+from .fixture_jobs import BrokenJob
 
 import json
 import os
@@ -67,6 +68,18 @@ def test_start_staging_job(fixture):
     fixture['xenon-job-runner'].update_job('test_start_staging_job')
     updated_job = fixture['store'].get_job('test_start_staging_job')
     assert updated_job.state == JobState.SUCCESS
+
+def test_start_broken_job(fixture):
+    fixture['store'].add_test_job('test_start_broken_job', 'broken', 'staged')
+    fixture['xenon-job-runner'].start_job('test_start_broken_job')
+
+    time.sleep(0.5)
+
+    fixture['xenon-job-runner'].update_job('test_start_broken_job')
+    updated_job = fixture['store'].get_job('test_start_broken_job')
+    assert updated_job.state == JobState.PERMANENT_FAILURE
+    assert updated_job.output == ''
+    assert updated_job.output_files is None
 
 def test_update(fixture):
     fixture['store'].add_test_job('test_update', 'slow', 'staged')

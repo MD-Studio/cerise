@@ -111,3 +111,21 @@ class SlowJob:
 
     remote_input = '{}'
 
+class BrokenJob:
+    """A simple job with no inputs or outputs, and an invalid command.
+    """
+    workflow = bytes(
+                '#!/usr/bin/env cwl-runner\n'
+                '\n'
+                'cwlVersion: v1.0\n'
+                'class: CommandLineTool\n'
+                'baseCommand: this_comamnd_does_not_exist\n'
+                'inputs: []\n'
+                'outputs: []\n', 'utf-8')
+
+    input = '{}'
+
+    remote_input = '{}'
+
+    output = ''
+
