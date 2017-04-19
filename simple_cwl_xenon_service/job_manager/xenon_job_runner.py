@@ -34,29 +34,31 @@ class XenonJobRunner:
         Args:
             job_id (str): ID of the job to get the status of.
         """
-        job = self._job_store.get_job(job_id)
+        with self._job_store:
+            job = self._job_store.get_job(job_id)
 
-        # get state
-        if (   job.state == JobState.WAITING
-                or job.state == JobState.RUNNING
-                ):
-            try:
-                xenon_job = job.runner_data
-                xenon_status = self._x.jobs().getJobStatus(xenon_job)
-                job.state = self._xenon_status_to_job_state(xenon_status)
-            except xenon.exceptions.XenonException:
-                # Xenon does not know about this job anymore
-                # We should be able to get a status once after the job
-                # finishes, so something went wrong
-                print('Job disappeared?')
-                job.state = JobState.SYSTEM_ERROR
-                pass
+            # get state
+            if (   job.state == JobState.WAITING
+                    or job.state == JobState.RUNNING
+                    ):
+                try:
+                    xenon_job = job.runner_data
+                    xenon_status = self._x.jobs().getJobStatus(xenon_job)
+                    job.state = self._xenon_status_to_job_state(xenon_status)
+                except xenon.exceptions.XenonException:
+                    # Xenon does not know about this job anymore
+                    # We should be able to get a status once after the job
+                    # finishes, so something went wrong
+                    print('Job disappeared?')
+                    job.state = JobState.SYSTEM_ERROR
+                    pass
 
     def update_all_jobs(self):
         """Get status from Xenon and update store, for all jobs.
         """
-        for job in self._job_store.list_jobs():
-            self.update_job(job.id)
+        with self._job_store:
+            for job in self._job_store.list_jobs():
+                self.update_job(job.id)
 
     def start_job(self, job_id):
         """Get a job from the job store and start it on the compute resource.
@@ -64,22 +66,24 @@ class XenonJobRunner:
         Args:
             job_id (str): The id of the job to start.
         """
-        job = self._job_store.get_job(job_id)
-        print(job.workdir_path)
-        # submit job
-        xenon_jobdesc = xenon.jobs.JobDescription()
-        xenon_jobdesc.setWorkingDirectory(job.workdir_path)
-        xenon_jobdesc.setExecutable('cwl-runner')
-        args = [
-                job.workflow_path,
-                job.input_path
-                ]
-        xenon_jobdesc.setArguments(args)
-        xenon_jobdesc.setStdout(job.stdout_path)
-        xenon_jobdesc.setStderr(job.stderr_path)
-        xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
-        job.runner_data = xenon_job
-        job.state = JobState.WAITING
+        with self._job_store:
+            job = self._job_store.get_job(job_id)
+            print(job.workdir_path)
+            # submit job
+            xenon_jobdesc = xenon.jobs.JobDescription()
+            xenon_jobdesc.setWorkingDirectory(job.workdir_path)
+            xenon_jobdesc.setExecutable('cwl-runner')
+            args = [
+                    job.workflow_path,
+                    job.input_path
+                    ]
+            xenon_jobdesc.setArguments(args)
+            xenon_jobdesc.setStdout(job.stdout_path)
+            xenon_jobdesc.setStderr(job.stderr_path)
+            xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
+            job.runner_data = xenon_job
+            job.state = JobState.WAITING
+
         sleep(1)    # work-around for Xenon local running bug
 
     def cancel_job(self, job_id):
@@ -92,11 +96,12 @@ class XenonJobRunner:
         Args:
             job_id (str): The id of the job to cancel.
         """
-        job = self._job_store.get_job(job_id)
-        if JobState.is_cancellable(job.state):
-            xenon_job = job.runner_data
-            new_status = self._x.jobs().cancelJob(xenon_job)
-            job.state = JobState.CANCELLED
+        with self._job_store:
+            job = self._job_store.get_job(job_id)
+            if JobState.is_cancellable(job.state):
+                xenon_job = job.runner_data
+                new_status = self._x.jobs().cancelJob(xenon_job)
+                job.state = JobState.CANCELLED
 
     def _xenon_status_to_job_state(self, xenon_status):
         """Convert a xenon JobStatus to our JobState.

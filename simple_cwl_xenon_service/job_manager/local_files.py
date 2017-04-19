@@ -59,15 +59,16 @@ class LocalFiles:
         Args:
             job_id (str): The id of the job whose input to resolve.
         """
-        job = self._job_store.get_job(job_id)
+        with self._job_store:
+            job = self._job_store.get_job(job_id)
 
-        job.workflow_content = self._get_content_from_url(job.workflow)
+            job.workflow_content = self._get_content_from_url(job.workflow)
 
-        inputs = json.loads(job.input)
-        job.input_files = []
-        for name, location in get_files_from_binding(inputs):
-            content = self._get_content_from_url(location)
-            job.input_files.append((name, location, content))
+            inputs = json.loads(job.input)
+            job.input_files = []
+            for name, location in get_files_from_binding(inputs):
+                content = self._get_content_from_url(location)
+                job.input_files.append((name, location, content))
 
     def create_output_dir(self, job_id):
         """Create an output directory for a job.
@@ -96,22 +97,24 @@ class LocalFiles:
         Args:
             job_id (str): The id of the job whose output to publish.
         """
-        job = self._job_store.get_job(job_id)
-        if job.output_files is not None:
-            output = json.loads(job.output)
-            for output_name, file_name, content in job.output_files:
-                output_loc = self._write_to_output_file(job_id, file_name, content)
-                output[output_name]['location'] = output_loc
-                output[output_name]['path'] = self._to_abs_path('output/' + job_id + '/' + file_name)
-            job.output = json.dumps(output)
-            job.output_files = None
+        with self._job_store:
+            job = self._job_store.get_job(job_id)
+            if job.output_files is not None:
+                output = json.loads(job.output)
+                for output_name, file_name, content in job.output_files:
+                    output_loc = self._write_to_output_file(job_id, file_name, content)
+                    output[output_name]['location'] = output_loc
+                    output[output_name]['path'] = self._to_abs_path('output/' + job_id + '/' + file_name)
+                job.output = json.dumps(output)
+                job.output_files = None
 
     def publish_all_jobs_output(self):
         """Publish the output of all jobs that have some.
         See publish_job_output() for details.
         """
-        for job in self._job_store.list_jobs():
-            self.publish_job_output(job.id)
+        with self._job_store:
+            for job in self._job_store.list_jobs():
+                self.publish_job_output(job.id)
 
     def _get_content_from_url(self, url):
         """Return the content referenced by a URL.

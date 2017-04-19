@@ -29,6 +29,12 @@ class MockStore:
         self._remote_base_path = test_config.get('remote-base-path')
         self._jobs = []
 
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
     def add_test_job(self, test_job_id, test_job_type, test_job_stage):
         """Add a mock job with the given id, type and stage.
 

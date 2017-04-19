@@ -73,37 +73,38 @@ class XenonRemoteFiles:
         Args:
             job_id (str): The id of the job to stage
         """
-        job = self._job_store.get_job(job_id)
+        with self._job_store:
+            job = self._job_store.get_job(job_id)
 
-        # create work dir
-        self._make_remote_dir(job_id, '')
-        self._make_remote_dir(job_id, 'work')
-        job.workdir_path = self._abs_path(job_id, 'work')
+            # create work dir
+            self._make_remote_dir(job_id, '')
+            self._make_remote_dir(job_id, 'work')
+            job.workdir_path = self._abs_path(job_id, 'work')
 
-        # stage name of the job
-        self._write_remote_file(job_id, 'name.txt', job.name.encode('utf-8'))
+            # stage name of the job
+            self._write_remote_file(job_id, 'name.txt', job.name.encode('utf-8'))
 
-        # stage workflow
-        self._write_remote_file(job_id, 'workflow.cwl', job.workflow_content)
-        job.workflow_path = self._abs_path(job_id, 'workflow.cwl')
+            # stage workflow
+            self._write_remote_file(job_id, 'workflow.cwl', job.workflow_content)
+            job.workflow_path = self._abs_path(job_id, 'workflow.cwl')
 
-        # stage input files
-        inputs = json.loads(job.input)
-        count = 1
-        for name, location, content in job.input_files:
-            staged_name = self._create_input_filename(str(count).zfill(2), location)
-            count += 1
-            self._write_remote_file(job_id, 'work/' + staged_name, content)
-            inputs[name]['location'] = self._abs_path(job_id, 'work/' + staged_name)
+            # stage input files
+            inputs = json.loads(job.input)
+            count = 1
+            for name, location, content in job.input_files:
+                staged_name = self._create_input_filename(str(count).zfill(2), location)
+                count += 1
+                self._write_remote_file(job_id, 'work/' + staged_name, content)
+                inputs[name]['location'] = self._abs_path(job_id, 'work/' + staged_name)
 
-        # stage input description
-        input_json = json.dumps(inputs).encode('utf-8')
-        self._write_remote_file(job_id, 'input.json', input_json)
-        job.input_path = self._abs_path(job_id, 'input.json')
+            # stage input description
+            input_json = json.dumps(inputs).encode('utf-8')
+            self._write_remote_file(job_id, 'input.json', input_json)
+            job.input_path = self._abs_path(job_id, 'input.json')
 
-        # configure output
-        job.stdout_path = self._abs_path(job_id, 'stdout.txt')
-        job.stderr_path = self._abs_path(job_id, 'stderr.txt')
+            # configure output
+            job.stdout_path = self._abs_path(job_id, 'stdout.txt')
+            job.stderr_path = self._abs_path(job_id, 'stderr.txt')
 
     def destage_job_output(self, job_id):
         """Download results of the given job from the compute resource.
@@ -114,18 +115,21 @@ class XenonRemoteFiles:
         Returns:
             List[str, str, bytes]: A list of (name, path, content) tuples.
         """
-        job = self._job_store.get_job(job_id)
-        outputs = json.loads(job.output)
-        output_files = []
-        for output_name, path in get_files_from_binding(outputs):
-            print('Destage path = ' + path + ' for output ' + output_name)
-            prefix = 'file://' + self._basedir + '/jobs/' + job_id + '/work/'
-            if not path.startswith(prefix):
-                raise Exception("Unexpected output location in cwl-runner output: " + path)
-            rel_path = path[len(prefix):]
-            content = self._read_remote_file(job_id, 'work/' + rel_path)
-            output_files.append((output_name, rel_path, content))
+        with self._job_store:
+            job = self._job_store.get_job(job_id)
+            outputs = json.loads(job.output)
+            output_files = []
+            for output_name, path in get_files_from_binding(outputs):
+                print('Destage path = ' + path + ' for output ' + output_name)
+                prefix = 'file://' + self._basedir + '/jobs/' + job_id + '/work/'
+                if not path.startswith(prefix):
+                    raise Exception("Unexpected output location in cwl-runner output: " + path)
+                rel_path = path[len(prefix):]
+                content = self._read_remote_file(job_id, 'work/' + rel_path)
+                output_files.append((output_name, rel_path, content))
 
+        # output_name and rel_path are (immutable) str's, while content
+        # does not come from the store, so we're not leaking here
         return output_files
 
     def delete_job(self, job_id):
@@ -143,26 +147,28 @@ class XenonRemoteFiles:
         Args:
             job_id (str): ID of the job to get the status of.
         """
-        job = self._job_store.get_job(job_id)
+        with self._job_store:
+            job = self._job_store.get_job(job_id)
 
-        # get output
-        output = self._read_remote_file(job_id, 'stdout.txt')
-        if len(output) > 0:
-            job.output = output.decode()
+            # get output
+            output = self._read_remote_file(job_id, 'stdout.txt')
+            if len(output) > 0:
+                job.output = output.decode()
 
-        if job.state == JobState.SUCCESS and job.output_files is None:
-            job.output_files = self.destage_job_output(job_id)
+            if job.state == JobState.SUCCESS and job.output_files is None:
+                job.output_files = self.destage_job_output(job_id)
 
-        # get log
-        log = self._read_remote_file(job_id, 'stderr.txt')
-        if len(log) > 0:
-            job.log = log.decode()
+            # get log
+            log = self._read_remote_file(job_id, 'stderr.txt')
+            if len(log) > 0:
+                job.log = log.decode()
 
     def update_all_jobs(self):
         """Get status from Xenon and update store, for all jobs.
         """
-        for job in self._job_store.list_jobs():
-            self.update_job(job.id)
+        with self._job_store:
+            for job in self._job_store.list_jobs():
+                self.update_job(job.id)
 
     def _create_input_filename(self, unique_prefix, orig_path):
         """Return a string containing a remote filename that

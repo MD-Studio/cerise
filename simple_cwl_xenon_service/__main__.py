@@ -18,7 +18,6 @@ if __name__ == '__main__':
     app = connexion.App(__name__, specification_dir='./swagger_server/swagger/')
     app.app.json_encoder = JSONEncoder
     app.add_api('swagger.yaml', arguments={'title': 'Simple CWL Xenon Service'})
-    # TODO: use config
     app.run(
         host=config['rest-service'].get('hostname', '127.0.0.1'),
         port=config['rest-service'].get('port', '5000')

@@ -2,17 +2,38 @@ from .job import Job
 from .job_description import JobDescription
 from .job_store import JobStore
 
+import threading
 from uuid import uuid4
 
 class InMemoryJobStore(JobStore):
-    """A JobStore that stores jobs in memory
+    """A JobStore that stores jobs in memory.
+    If you're running in a multithreaded environment, you should
+    acquire the store. It's a context manager, so use a with
+    statement:
+
+    with self._store:
+        job = self._store.get_job(id)
+        # go ahead and modify job
+    # don't touch self._store or keep any references to jobs
+
+    Also it's a recursive lock, so having multiple nested with
+    statements is okay.
     """
 
     def __init__(self):
         self._jobs = []
         """A list of Job objects."""
 
-    # Operations
+        self._lock = threading.RLock()
+        """A lock protecting the store."""
+
+    def __enter__(self):
+        self._lock.acquire()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._lock.release()
+
+
     def create_job(self, description):
         """Create a job.
 
