@@ -1,10 +1,6 @@
 import connexion
 from swagger_server.models.job import Job
 from swagger_server.models.job_description import JobDescription
-from datetime import date, datetime
-from typing import List, Dict
-from six import iteritems
-from ..util import deserialize_date, deserialize_datetime
 import flask
 import json
 
@@ -16,13 +12,13 @@ def _internal_job_to_rest_job(job):
     if output:
         output = json.loads(output)
 
-    input = json.loads(job.input)
+    job_input = json.loads(job.input)
 
     return Job(
             id=job.id,
             name=job.name,
             workflow=job.workflow,
-            input=input,
+            input=job_input,
             state=job_state.JobState.to_external_string(job.state),
             output=output,
             log=flask.url_for('.swagger_server_controllers_default_controller_get_job_log_by_id',
@@ -133,7 +129,7 @@ def post_job(body):
         job_manager.job_description.JobDescription(
             name=body.name,
             workflow=body.workflow,
-            input=body.input
+            job_input=body.input
             )
         )
 

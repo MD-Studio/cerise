@@ -17,7 +17,7 @@ except ValueError:
 
 config_file_path = 'config.yml'
 with open(config_file_path) as config_file:
-    config = yaml.load(config_file)
+    config = yaml.safe_load(config_file)
 
 _xenon = xenon.Xenon()
 _job_store = InMemoryJobStore()

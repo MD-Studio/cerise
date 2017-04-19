@@ -1,7 +1,6 @@
 import jpype
 import json
 import re
-import types
 import xenon
 
 from xenon.files import OpenOption
@@ -26,7 +25,7 @@ class XenonRemoteFiles:
     - jobs/<job_id>/stderr.txt is the standard error of the CWL runner
     """
 
-    def __init__(self, job_store, x, xenon_config={}):
+    def __init__(self, job_store, x, xenon_config):
         """Create a XenonRemoteFiles object.
         Sets up remote directory structure as well, but refuses to
         create the top-level directory.
@@ -92,7 +91,7 @@ class XenonRemoteFiles:
             inputs = json.loads(job.input)
             count = 1
             for name, location, content in job.input_files:
-                staged_name = self._create_input_filename(str(count).zfill(2), location)
+                staged_name = _create_input_filename(str(count).zfill(2), location)
                 count += 1
                 self._write_remote_file(job_id, 'work/' + staged_name, content)
                 inputs[name]['location'] = self._abs_path(job_id, 'work/' + staged_name)
@@ -170,30 +169,6 @@ class XenonRemoteFiles:
             for job in self._job_store.list_jobs():
                 self.update_job(job.id)
 
-    def _create_input_filename(self, unique_prefix, orig_path):
-        """Return a string containing a remote filename that
-        resembles the original path this file was submitted with.
-
-        Args:
-            unique_prefix (str): A unique prefix, used to avoid collisions.
-            orig_path (str): A string we will try to resemble to aid
-                debugging.
-        """
-        result = orig_path
-
-        result.replace('/', '_')
-        result.replace('?', '_')
-        result.replace('&', '_')
-        result.replace('=', '_')
-
-        regex = re.compile('[^a-zA-Z0-9_.-]+')
-        result = regex.sub('_', result)
-
-        if len(result) > 39:
-            result = result[:18] + '___' + result[-18:]
-
-        return unique_prefix + '_' + result
-
 
     def _make_remote_dir(self, job_id, rel_path):
         xenonpath = self._x_abs_path(job_id, rel_path)
@@ -270,3 +245,29 @@ class XenonRemoteFiles:
         abs_path = self._abs_path(job_id, rel_path)
         xenon_path = xenon.files.RelativePath(abs_path)
         return self._x.files().newPath(self._fs, xenon_path)
+
+def _create_input_filename(unique_prefix, orig_path):
+    """Return a string containing a remote filename that
+    resembles the original path this file was submitted with.
+
+    Args:
+        unique_prefix (str): A unique prefix, used to avoid collisions.
+        orig_path (str): A string we will try to resemble to aid
+            debugging.
+    """
+    result = orig_path
+
+    result.replace('/', '_')
+    result.replace('?', '_')
+    result.replace('&', '_')
+    result.replace('=', '_')
+
+    regex = re.compile('[^a-zA-Z0-9_.-]+')
+    result = regex.sub('_', result)
+
+    if len(result) > 39:
+        result = result[:18] + '___' + result[-18:]
+
+    return unique_prefix + '_' + result
+
+

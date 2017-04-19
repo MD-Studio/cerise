@@ -1,5 +1,4 @@
 from .job import Job
-from .job_description import JobDescription
 from .job_store import JobStore
 
 import threading
@@ -46,10 +45,10 @@ class InMemoryJobStore(JobStore):
         job_id = uuid4().hex
 
         job = Job(
-                id=job_id,
+                job_id=job_id,
                 name=description.name,
                 workflow=description.workflow,
-                input=description.input)
+                job_input=description.input)
 
         self._jobs.append(job)
 

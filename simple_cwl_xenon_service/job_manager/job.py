@@ -8,7 +8,7 @@ class Job:
     compute resource.
     """
     # Attributes:
-    def __init__(self, id, name, workflow, input):
+    def __init__(self, job_id, name, workflow, job_input):
         """Creates a new Job object.
 
         The state of a newly created job is JobState.WAITING.
@@ -17,16 +17,16 @@ class Job:
             id (str): The id of the job, a string containing a GUID
             name (str): The name of the job, as given by the user
             workflow (str): The URI of the workflow file
-            input (str): An input definition for the job
+            job_input (str): An input definition for the job
         """
         # General description
-        self.id = id
+        self.id = job_id
         """str: Job id, a string containing a UUID."""
         self.name = name
         """str: Name, as specified by the submitter."""
         self.workflow = workflow
         """str: Workflow file URI, as specified by the submitter."""
-        self.input = input
+        self.input = job_input
         """str: Input JSON string, as specified by the submitter."""
 
         # Current status

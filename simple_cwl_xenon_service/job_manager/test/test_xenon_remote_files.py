@@ -1,17 +1,11 @@
-from .context import simple_cwl_xenon_service
-
 from simple_cwl_xenon_service.job_manager.xenon_remote_files import XenonRemoteFiles
 
 from .mock_store import MockStore
 from .fixture_jobs import WcJob
 
-import json
 import os
 import pytest
-import shutil
-import time
 import xenon
-import yaml
 
 @pytest.fixture(scope="module")
 def xenon_init(request):

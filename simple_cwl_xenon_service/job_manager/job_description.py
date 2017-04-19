@@ -5,7 +5,7 @@ class JobDescription:
 
     Describes a job as it is requested to be run by the client.
     """
-    def __init__(self, name, workflow, input):
+    def __init__(self, name, workflow, job_input):
         """Create a new JobDescription.
 
         Args:
@@ -17,7 +17,7 @@ class JobDescription:
         self.name = name
         self.workflow = workflow
 
-        if type(input) is str:
-            self.input = input
+        if isinstance(job_input, str):
+            self.input = job_input
         else:
-            self.input = json.dumps(input)
+            self.input = json.dumps(job_input)

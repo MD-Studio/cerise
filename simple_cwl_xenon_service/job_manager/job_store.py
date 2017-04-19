@@ -1,6 +1,3 @@
-from .job import Job
-from .job_description import JobDescription
-
 class JobStore:
     """Abstract class JobStore. A JobStore stores a list of jobs.
     """

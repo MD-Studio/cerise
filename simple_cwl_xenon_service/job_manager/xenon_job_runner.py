@@ -1,14 +1,11 @@
-import jpype
-import requests
 import xenon
-from xenon.files import OpenOption
 
 from .job_state import JobState
 
 from time import sleep
 
 class XenonJobRunner:
-    def __init__(self, job_store, xenon, xenon_config={}):
+    def __init__(self, job_store, xenon, xenon_config):
         """Create a XenonJobRunner object.
 
         Args:
@@ -44,14 +41,13 @@ class XenonJobRunner:
                 try:
                     xenon_job = job.runner_data
                     xenon_status = self._x.jobs().getJobStatus(xenon_job)
-                    job.state = self._xenon_status_to_job_state(xenon_status)
+                    job.state = _xenon_status_to_job_state(xenon_status)
                 except xenon.exceptions.XenonException:
                     # Xenon does not know about this job anymore
                     # We should be able to get a status once after the job
                     # finishes, so something went wrong
                     print('Job disappeared?')
                     job.state = JobState.SYSTEM_ERROR
-                    pass
 
     def update_all_jobs(self):
         """Get status from Xenon and update store, for all jobs.
@@ -103,30 +99,31 @@ class XenonJobRunner:
                 new_status = self._x.jobs().cancelJob(xenon_job)
                 job.state = JobState.CANCELLED
 
-    def _xenon_status_to_job_state(self, xenon_status):
-        """Convert a xenon JobStatus to our JobState.
 
-        Args:
-            xenon_status (JobStatus): A xenon JobStatus object.
+def _xenon_status_to_job_state(xenon_status):
+    """Convert a xenon JobStatus to our JobState.
 
-        Returns:
-            JobState: A corresponding JobState object.
-        """
-        if xenon_status.isRunning():
-            return JobState.RUNNING
+    Args:
+        xenon_status (JobStatus): A xenon JobStatus object.
 
-        if xenon_status.isDone():
-            if xenon_status.hasException():
-                # TODO: fix, check that it is a JobCanceledException
-                print(xenon_status.getException())
-                return JobState.CANCELLED
+    Returns:
+        JobState: A corresponding JobState object.
+    """
+    if xenon_status.isRunning():
+        return JobState.RUNNING
 
-            exit_code = xenon_status.getExitCode().intValue()
-            if exit_code == 0:
-                return JobState.SUCCESS
-            if exit_code == 1:
-                return JobState.PERMANENT_FAILURE
-            if exit_code == 33:
-                return JobState.PERMANENT_FAILURE
-            return JobState.SYSTEM_ERROR
+    if xenon_status.isDone():
+        if xenon_status.hasException():
+            # TODO: fix, check that it is a JobCanceledException
+            print(xenon_status.getException())
+            return JobState.CANCELLED
+
+        exit_code = xenon_status.getExitCode().intValue()
+        if exit_code == 0:
+            return JobState.SUCCESS
+        if exit_code == 1:
+            return JobState.PERMANENT_FAILURE
+        if exit_code == 33:
+            return JobState.PERMANENT_FAILURE
+        return JobState.SYSTEM_ERROR
 

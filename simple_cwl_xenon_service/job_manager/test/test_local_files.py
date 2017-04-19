@@ -1,17 +1,11 @@
-from .context import simple_cwl_xenon_service
-
 from simple_cwl_xenon_service.job_manager.local_files import LocalFiles
 from .mock_store import MockStore
 
 from .fixture_jobs import PassJob
 from .fixture_jobs import WcJob
 
-import json
 import os
 import pytest
-import shutil
-import time
-import yaml
 
 @pytest.fixture
 def fixture(request, tmpdir):

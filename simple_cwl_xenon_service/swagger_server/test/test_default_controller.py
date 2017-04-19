@@ -2,11 +2,11 @@
 
 from __future__ import absolute_import
 
-from swagger_server.models.job import Job
 from swagger_server.models.job_description import JobDescription
 from . import BaseTestCase
-from six import BytesIO
 from flask import json
+
+import job_manager.job_description
 
 import os.path
 import shutil
@@ -61,7 +61,7 @@ class TestDefaultController(BaseTestCase):
         """
         Test case for delete_job_by_id
 
-        Deleta a job
+        Delete a job
         """
         test_job = self._create_test_job('test_delete_job_by_id')
         # Delete test job

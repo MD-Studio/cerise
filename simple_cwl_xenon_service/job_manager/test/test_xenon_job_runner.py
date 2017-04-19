@@ -1,5 +1,3 @@
-from .context import simple_cwl_xenon_service
-
 from simple_cwl_xenon_service.job_manager.xenon_job_runner import XenonJobRunner
 from simple_cwl_xenon_service.job_manager.job_state import JobState
 

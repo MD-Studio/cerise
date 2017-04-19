@@ -1,5 +1,3 @@
-from .context import simple_cwl_xenon_service
-
 from .fixture_jobs import PassJob
 from .fixture_jobs import WcJob
 from .fixture_jobs import MissingInputJob
@@ -131,7 +129,7 @@ class MockStore:
             with open(wc_wf_path, 'wb') as f:
                 f.write(WcJob.workflow)
 
-            for (name, filename, contents) in WcJob.input_files:
+            for (_, filename, contents) in WcJob.input_files:
                 wc_input_path = os.path.join(self._local_base_path, filename)
                 with open(wc_input_path, 'wb') as f:
                     f.write(contents)
