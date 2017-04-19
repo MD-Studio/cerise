@@ -17,10 +17,10 @@ class InMemoryJobStore(JobStore):
         """Create a job.
 
         Args:
-            description: A JobDescription describing the job.
+            description (JobDescription): A JobDescription describing the job.
 
         Returns:
-            A string containing the job id.
+            str: A string containing the job id.
         """
         job_id = uuid4().hex
 
@@ -38,7 +38,7 @@ class InMemoryJobStore(JobStore):
         """Return a list of all currently known Jobs.
 
         Returns:
-            A list of Job objects.
+            List[Job]: A list of Job objects.
         """
         return self._jobs
 
@@ -46,11 +46,11 @@ class InMemoryJobStore(JobStore):
         """Return the job with the given id.
 
         Args:
-            job_id: A string containing a job id, as obtained from create_job()
+            job_id (str): A string containing a job id, as obtained from create_job()
                 or list_jobs().
 
         Returns:
-            A Job object corresponding to the given id.
+            Job: The Job object corresponding to the given id.
         """
         matching_jobs = [job for job in self._jobs if job.id == job_id]
         assert len(matching_jobs) <= 1
@@ -62,6 +62,6 @@ class InMemoryJobStore(JobStore):
         """Delete the job with the given id.
 
         Args:
-            job_id: A string containing the id of the job to be deleted.
+            job_id (str): A string containing the id of the job to be deleted.
         """
         self._jobs = [job for job in self._jobs if job.id != job_id]

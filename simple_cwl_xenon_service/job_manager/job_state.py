@@ -17,8 +17,11 @@ class JobState(Enum):
 
         A job can be cancelled when it is waiting or running.
 
+        Args:
+            state (JobState): The JobState member to analyse.
+
         Returns:
-            True if a job in this state can be cancelled, False otherwise
+            bool: True if a job in this state can be cancelled, False otherwise
         """
         return (state == JobState.WAITING) or (state == JobState.RUNNING)
 
@@ -26,9 +29,12 @@ class JobState(Enum):
     def is_done(state):
         """Return whether the JobState is one in which the job is done.
 
+        Args:
+            state (JobState): The JobState member to analyse.
+
         Returns:
-            True If a job in this state is not running, and will never
-            run.
+            bool: True If a job in this state is not running, and is not
+            waiting to run at some point in the future.
         """
         return (state != JobState.WAITING) and (state != JobState.RUNNING)
 
@@ -37,7 +43,7 @@ class JobState(Enum):
         """Return a string describing this JobState.
 
         Args:
-            state: The JobState member to convert.
+            state (JobState): The JobState member to convert.
 
         Returns:
             A string describing the argument.

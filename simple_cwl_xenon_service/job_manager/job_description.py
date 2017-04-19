@@ -9,10 +9,10 @@ class JobDescription:
         """Create a new JobDescription.
 
         Args:
-            name: A string containing the name of the job
-            workflow: A string containing a URL pointing to the workflow
-            input: A string containing a json description of the input object,
-            or an object, which will be converted to a json string.
+            name (str): A string containing the name of the job
+            workflow (str): A string containing a URL pointing to the workflow
+            input (str): A string containing a json description of the input object,
+                or an object, which will be converted to a json string.
         """
         self.name = name
         self.workflow = workflow

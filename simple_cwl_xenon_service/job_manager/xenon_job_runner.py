@@ -12,8 +12,8 @@ class XenonJobRunner:
         """Create a XenonJobRunner object.
 
         Args:
-            job_store: The job store to get jobs from.
-            xenon_config: A dict containing key-value pairs with Xenon
+            job_store (JobStore): The job store to get jobs from.
+            xenon_config (Dict): A dict containing key-value pairs with Xenon
                 configuration.
         """
         self._job_store = job_store
@@ -32,7 +32,7 @@ class XenonJobRunner:
         """Get status from Xenon and update store.
 
         Args:
-            job_id: ID of the job to get the status of.
+            job_id (str): ID of the job to get the status of.
         """
         job = self._job_store.get_job(job_id)
 
@@ -62,10 +62,7 @@ class XenonJobRunner:
         """Get a job from the job store and start it on the compute resource.
 
         Args:
-            job_id: The id of the job to start.
-
-        Returns:
-            None
+            job_id (str): The id of the job to start.
         """
         job = self._job_store.get_job(job_id)
         print(job.workdir_path)
@@ -86,6 +83,15 @@ class XenonJobRunner:
         sleep(1)    # work-around for Xenon local running bug
 
     def cancel_job(self, job_id):
+        """Cancel a running job.
+
+        Job must be cancellable, i.e. in JobState.RUNNING or
+        JobState.WAITING. If it isn't cancellable, this
+        function does nothing.
+
+        Args:
+            job_id (str): The id of the job to cancel.
+        """
         job = self._job_store.get_job(job_id)
         if JobState.is_cancellable(job.state):
             xenon_job = job.runner_data
@@ -96,10 +102,10 @@ class XenonJobRunner:
         """Convert a xenon JobStatus to our JobState.
 
         Args:
-            xenon_status: a xenon JobStatus object.
+            xenon_status (JobStatus): A xenon JobStatus object.
 
         Returns:
-            A corresponding JobState object.
+            JobState: A corresponding JobState object.
         """
         if xenon_status.isRunning():
             return JobState.RUNNING

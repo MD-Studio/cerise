@@ -17,17 +17,17 @@ class LocalFiles:
         corresponding to this path.
 
         Args:
-            local_config: A dict containing key-value pairs with local
-                configuration.
+            local_config (Dict): A dict containing key-value pairs with
+                local configuration.
         """
         self._job_store = job_store
-        """The job store to get jobs from."""
+        """JobStore: The job store to get jobs from."""
 
         self._basedir = local_config['file-store-path']
-        """The local path to the base directory where we store our stuff."""
+        """str: The local path to the base directory where we store our stuff."""
 
         self._baseurl = local_config['file-store-location']
-        """The externally accessible base URL corresponding to the _basedir."""
+        """str: The externally accessible base URL corresponding to the _basedir."""
 
         try:
             os.mkdir(self._basedir)
@@ -57,7 +57,7 @@ class LocalFiles:
         This function will also load remote http:// URLs.
 
         Args:
-            job_id: The id of the job whose input to resolve.
+            job_id (str): The id of the job whose input to resolve.
         """
         job = self._job_store.get_job(job_id)
 
@@ -73,7 +73,7 @@ class LocalFiles:
         """Create an output directory for a job.
 
         Args:
-            job_id: The id of the job to make a work directory for.
+            job_id (str): The id of the job to make a work directory for.
         """
         os.mkdir(self._to_abs_path('output/' + job_id))
 
@@ -82,7 +82,7 @@ class LocalFiles:
         This will remove the directory and everything in it.
 
         Args:
-            job_id: The id of the job whose output directory to delete.
+            job_id (str): The id of the job whose output directory to delete.
         """
         shutil.rmtree(self._to_abs_path('output/' + job_id))
 
@@ -94,7 +94,7 @@ class LocalFiles:
         published files, then sets .output_files to None.
 
         Args:
-            job_id: The id of the job whose output to publish.
+            job_id (str): The id of the job whose output to publish.
         """
         job = self._job_store.get_job(job_id)
         if job.output_files is not None:
@@ -121,10 +121,10 @@ class LocalFiles:
         remote URLs will be downloaded.
 
         Args:
-            url A str containing the URL to get the content of
+            url (str): The URL to get the content of
 
         Returns:
-            A bytes object with the contents of the file
+            bytes: The contents of the file
         """
         parsed_url = urllib.parse.urlparse(url, scheme='file')
 
@@ -137,10 +137,10 @@ class LocalFiles:
         """Read data from a local file.
 
         Args:
-            rel_path: A string with a path relative to the local base directory
+            rel_path (str): A path relative to the local base directory
 
         Returns:
-            A bytes-object containing the contents of the file.
+            bytes: The contents of the file.
         """
         with open(self._to_abs_path(rel_path), 'rb') as f:
             data = f.read()
@@ -150,12 +150,12 @@ class LocalFiles:
         """Write the data to a local file.
 
         Args:
-            job_id: The id of the job to write data for
-            rel_path: A string with a path relative to the job's output directory
-            data: A bytes-object containing the data to write
+            job_id (str): The id of the job to write data for
+            rel_path (str): A path relative to the job's output directory
+            data (bytes): The data to write
 
         Returns:
-            A string containing an external URL that points to the file
+            str: An external URL that points to the file
         """
         with open(self._to_abs_path('output/' + job_id + '/' + rel_path), 'wb') as f:
             f.write(data)

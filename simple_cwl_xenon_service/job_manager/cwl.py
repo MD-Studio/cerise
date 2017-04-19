@@ -4,12 +4,12 @@ def get_files_from_binding(cwl_binding):
     omitted.
 
     Args:
-        cwl_binding: A dict structure parsed from a JSON CWL binding
+        cwl_binding (Dict): A dict structure parsed from a JSON CWL binding
 
     Returns:
-        A list of (name, location) tuples, where name is
-        a str containing the input or output name, and
-        location a str containing the URL.
+        List[Tuple[str, str]]: A list of (name, location) tuples,
+        where name contains the input or output name, and
+        location the URL.
     """
     result = []
     for name, value in cwl_binding.items():

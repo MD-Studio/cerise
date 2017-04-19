@@ -18,12 +18,12 @@ class XenonRemoteFiles:
 
     Within each job directory are the following files:
 
-    jobs/<job_id>/name.txt contains the user-given name of the job
-    jobs/<job_id>/workflow.cwl contains the workflow to run
-    jobs/<job_id>/work/ contains input and output files, and is the
-        working directory for the job.
-    jobs/<job_id>/stdout.txt is the standard output of the CWL runner
-    jobs/<job_id>/stderr.txt is the standard error of the CWL runner
+    - jobs/<job_id>/name.txt contains the user-given name of the job
+    - jobs/<job_id>/workflow.cwl contains the workflow to run
+    - jobs/<job_id>/work/ contains input and output files, and is the
+      working directory for the job.
+    - jobs/<job_id>/stdout.txt is the standard output of the CWL runner
+    - jobs/<job_id>/stderr.txt is the standard error of the CWL runner
     """
 
     def __init__(self, job_store, x, xenon_config={}):
@@ -32,23 +32,23 @@ class XenonRemoteFiles:
         create the top-level directory.
 
         Args:
-            x: The Xenon object to use.
-            xenon_config: A dict containing key-value pairs with Xenon
-                configuration.
+            x (Xenon): The Xenon object to use.
+            xenon_config (Dict): A dict containing key-value pairs with
+                Xenon configuration.
         """
         self._job_store = job_store
-        """The JobStore instance to use."""
+        """JobStore: The job store to use."""
         self._x = x
-        """The Xenon instance to use."""
+        """Xenon: The Xenon instance to use."""
         self._fs = self._x.files().newFileSystem(
                 xenon_config['files'].get('scheme', 'local'),
                 xenon_config['files'].get('location'),
                 xenon_config['files'].get('credential'),
                 xenon_config['files'].get('properties')
                 )
-        """The Xenon remote file system to stage to."""
+        """FileSystem: The Xenon remote file system to stage to."""
         self._basedir = xenon_config['files']['path']
-        """The remote path to the base directory where we store our stuff."""
+        """str: The remote path to the base directory where we store our stuff."""
 
         # Create basedir if it doesn't exist
         basedir_rel_path = RelativePath(self._basedir)
@@ -71,7 +71,7 @@ class XenonRemoteFiles:
         the remote resource.
 
         Args:
-            job_id The id of the job to stage
+            job_id (str): The id of the job to stage
         """
         job = self._job_store.get_job(job_id)
 
@@ -109,11 +109,10 @@ class XenonRemoteFiles:
         """Download results of the given job from the compute resource.
 
         Args:
-            job_id: The id of the job to download results of.
+            job_id (str): The id of the job to download results of.
 
         Returns:
-            A dictionary with output names as keys, and file contents
-            as values.
+            List[str, str, bytes]: A list of (name, path, content) tuples.
         """
         job = self._job_store.get_job(job_id)
         outputs = json.loads(job.output)
@@ -134,7 +133,7 @@ class XenonRemoteFiles:
         This will remove the directory and everything in it.
 
         Args:
-            job_id: The id of the job whose work directory to delete.
+            job_id (str): The id of the job whose work directory to delete.
         """
         self._rm_remote_dir(job_id, '')
 
@@ -142,7 +141,7 @@ class XenonRemoteFiles:
         """Get status from Xenon and update store.
 
         Args:
-            job_id: ID of the job to get the status of.
+            job_id (str): ID of the job to get the status of.
         """
         job = self._job_store.get_job(job_id)
 
@@ -170,9 +169,9 @@ class XenonRemoteFiles:
         resembles the original path this file was submitted with.
 
         Args:
-            unique_prefix: A unique prefix, used to avoid collisions
-            orig_path: A string we will try to resemble to aid
-            debugging
+            unique_prefix (str): A unique prefix, used to avoid collisions.
+            orig_path (str): A string we will try to resemble to aid
+                debugging.
         """
         result = orig_path
 
@@ -213,9 +212,9 @@ class XenonRemoteFiles:
         """Write a file on the remote resource containing the given raw data.
 
         Args:
-            job_id: The id of the job to write data for
-            rel_path: A string with a path relative to the job's directory
-            data: A bytes-object containing the data to write
+            job_id (str): The id of the job to write data for
+            rel_path (str): A path relative to the job's directory
+            data (bytes): The data to write
         """
         x_remote_path = self._x_abs_path(job_id, rel_path)
         stream = self._x.files().newOutputStream(x_remote_path, [OpenOption.CREATE, OpenOption.TRUNCATE])
@@ -226,8 +225,8 @@ class XenonRemoteFiles:
         """Read data from a remote file.
 
         Args:
-            job_id: A job from whose work dir a file is read
-            rel_path: A string with a path relative to the job's directory
+            job_id (str): A job from whose work dir a file is read
+            rel_path (str): A path relative to the job's directory
         """
         result = bytearray()
 
@@ -246,8 +245,8 @@ class XenonRemoteFiles:
         """Return an absolute remote path given a job-relative path.
 
         Args:
-            job_id: A job from whose dir a file is read
-            rel_path: A string with a path relative to the job's directory
+            job_id (str): A job from whose dir a file is read
+            rel_path (str): A a path relative to the job's directory
         """
         return self._basedir + '/jobs/' + job_id + '/' + rel_path
 
@@ -256,8 +255,11 @@ class XenonRemoteFiles:
         corresponding to the given relative path.
 
         Args:
-            job_id: A job from whose dir a file is read
-            rel_path: A string with a path relative to the job's directory
+            job_id (str): A job from whose dir a file is read
+            rel_path (str): A path relative to the job's directory
+
+        Returns:
+            Path: A Xenon Path object corresponding to the input
         """
         abs_path = self._abs_path(job_id, rel_path)
         xenon_path = xenon.files.RelativePath(abs_path)
