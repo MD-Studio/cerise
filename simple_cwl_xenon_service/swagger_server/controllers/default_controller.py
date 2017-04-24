@@ -78,8 +78,8 @@ def get_job_by_id(jobId):
         flask.abort(404, "Job not found")
 
     job_manager.job_runner().update_job(jobId)
-    job_manager.remote_files().update_job(jobId)
-    job_manager.local_files().publish_job_output(jobId)
+    output_files = job_manager.remote_files().update_job(jobId)
+    job_manager.local_files().publish_job_output(jobId, output_files)
 
     return _internal_job_to_rest_job(job)
 
@@ -106,12 +106,14 @@ def get_jobs():
     :rtype: List[Job]
     """
 
-    job_manager.job_runner().update_all_jobs()
-    job_manager.remote_files().update_all_jobs()
-    job_manager.local_files().publish_all_jobs_output()
-    job_list = job_manager.job_store().list_jobs()
+    with job_manager.job_store():
+        job_list = job_manager.job_store().list_jobs()
+        for job in job_list:
+            job_manager.job_runner().update_job(job.id)
+            output_files = job_manager.remote_files().update_job(job.id)
+            job_manager.local_files().publish_job_output(job.id, output_files)
 
-    return [_internal_job_to_rest_job(job) for job in job_list]
+        return [_internal_job_to_rest_job(job) for job in job_list]
 
 def post_job(body):
     """
@@ -133,8 +135,8 @@ def post_job(body):
             )
         )
 
-    job_manager.local_files().resolve_input(job_id)
-    job_manager.remote_files().stage_job(job_id)
+    input_files = job_manager.local_files().resolve_input(job_id)
+    job_manager.remote_files().stage_job(job_id, input_files)
     job_manager.local_files().create_output_dir(job_id)
     job_manager.job_runner().start_job(job_id)
 

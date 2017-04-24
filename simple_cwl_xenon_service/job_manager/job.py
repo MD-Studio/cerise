@@ -43,11 +43,6 @@ class Job:
         description file, or None if it has not been resolved yet.
         """
 
-        self.input_files = None
-        """Union[List[Tuple[str, str, bytes]], NoneType]: A list of
-        (input_name, location, content) of input file contents,
-        or None if there is no input yet."""
-
         # Post-staging data
         self.workdir_path = ''
         """str: The absolute remote path of the working directory."""
@@ -61,10 +56,10 @@ class Job:
         """str: The absolute remote path of the standard error dump."""
 
         # Post-destaging data
-        self.output_files = None
-        """Union[List[str, str, bytes], NoneType]: A list of
-        (output_name, file_name, content) of output file contents,
-        or None if there is no output yet."""
+        self.output_files_published = False
+        """bool: Whether the output files have been published yet.
+        Bit of a stopgap until we add more detailed state.
+        """
 
         # Internal data
         self.runner_data = None

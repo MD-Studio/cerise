@@ -38,9 +38,9 @@ def test_resolve_no_input(fixture):
 
 def test_resolve_input(fixture):
     fixture['store'].add_test_job('test_resolve_input', 'wc', 'submitted')
-    fixture['local-files'].resolve_input('test_resolve_input')
+    input_files = fixture['local-files'].resolve_input('test_resolve_input')
     assert fixture['store'].get_job('test_resolve_input').workflow_content == WcJob.workflow
-    assert fixture['store'].get_job('test_resolve_input').input_files == WcJob.input_files
+    assert input_files == WcJob.input_files
 
 def test_resolve_missing_input(fixture):
     fixture['store'].add_test_job('test_missing_input', 'missing_input', 'submitted')
@@ -59,42 +59,23 @@ def test_delete_output_dir(fixture):
     assert not os.path.exists(output_dir)
 
 def test_publish_no_output(fixture):
-    fixture['store'].add_test_job('test_publish_no_output', 'pass', 'submitted')
+    fixture['store'].add_test_job('test_publish_no_output', 'pass', 'destaged')
     output_dir = os.path.join(fixture['output-dir'], 'test_publish_no_output')
     os.mkdir(output_dir)
-    fixture['local-files'].publish_job_output('test_publish_no_output')
+    fixture['local-files'].publish_job_output('test_publish_no_output', [])
     assert os.listdir(output_dir) == []
 
 def test_publish_output(fixture):
     fixture['store'].add_test_job('test_publish_output', 'wc', 'destaged')
+    output_files = fixture['store'].get_output_files('wc')
+
     output_dir = os.path.join(fixture['output-dir'], 'test_publish_output')
     os.mkdir(output_dir)
-    fixture['local-files'].publish_job_output('test_publish_output')
+
+    fixture['local-files'].publish_job_output('test_publish_output', output_files)
+
     output_path = os.path.join(output_dir, 'output.txt')
     assert os.path.exists(output_path)
     with open(output_path, 'rb') as f:
-        contents = f.read()
-        assert contents == WcJob.output_files[0][2]
-
-def test_publish_all_output(fixture):
-    fixture['store'].add_test_job('test_publish_all_output_1', 'wc', 'destaged')
-    fixture['store'].add_test_job('test_publish_all_output_2', 'wc', 'destaged')
-
-    output_dir_1 = os.path.join(fixture['output-dir'], 'test_publish_all_output_1')
-    os.mkdir(output_dir_1)
-    output_dir_2 = os.path.join(fixture['output-dir'], 'test_publish_all_output_2')
-    os.mkdir(output_dir_2)
-
-    fixture['local-files'].publish_all_jobs_output()
-
-    output_path_1 = os.path.join(output_dir_1, 'output.txt')
-    assert os.path.exists(output_path_1)
-    with open(output_path_1, 'rb') as f:
-        contents = f.read()
-        assert contents == WcJob.output_files[0][2]
-
-    output_path_2 = os.path.join(output_dir_2, 'output.txt')
-    assert os.path.exists(output_path_1)
-    with open(output_path_2, 'rb') as f:
         contents = f.read()
         assert contents == WcJob.output_files[0][2]

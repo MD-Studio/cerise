@@ -50,13 +50,14 @@ def test_init(fixture):
 
 def test_stage_job(fixture):
     fixture['store'].add_test_job('test_stage_job', 'wc', 'resolved')
-    fixture['xenon-remote-files'].stage_job('test_stage_job')
+    input_files = fixture['store'].get_input_files('wc')
+    fixture['xenon-remote-files'].stage_job('test_stage_job', input_files)
 
     remote_file = os.path.join(fixture['remote-dir'], 'jobs',
             'test_stage_job', 'work', '01_input_hello_world.txt')
     with open(remote_file, 'rb') as f:
         contents = f.read()
-        assert contents == fixture['store'].get_job('test_stage_job').input_files[0][2]
+        assert contents == input_files[0][2]
 
 def test_destage_job_no_output(fixture):
     fixture['store'].add_test_job('test_destage_job_no_output', 'pass', 'run_and_updated')
@@ -81,16 +82,3 @@ def test_update_job(fixture):
     wc_remote_workdir = os.path.join(fixture['remote-dir'], 'jobs', 'test_update_job', 'work')
     assert fixture['store'].get_job('test_update_job').output == WcJob.output('file://' + wc_remote_workdir)
     # check that we have the log?
-
-def test_update_all_jobs(fixture):
-    fixture['store'].add_test_job('test_update_all_jobs_1', 'wc', 'run')
-    fixture['store'].add_test_job('test_update_all_jobs_2', 'wc', 'run')
-    fixture['xenon-remote-files'].update_all_jobs()
-
-    wc_remote_workdir_1 = os.path.join(fixture['remote-dir'], 'jobs', 'test_update_all_jobs_1', 'work')
-    assert (fixture['store'].get_job('test_update_all_jobs_1').output ==
-        WcJob.output('file://' + wc_remote_workdir_1))
-
-    wc_remote_workdir_2 = os.path.join(fixture['remote-dir'], 'jobs', 'test_update_all_jobs_2', 'work')
-    assert (fixture['store'].get_job('test_update_all_jobs_2').output ==
-        WcJob.output('file://' + wc_remote_workdir_2))

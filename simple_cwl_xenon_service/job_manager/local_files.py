@@ -64,10 +64,12 @@ class LocalFiles:
             job.workflow_content = self._get_content_from_url(job.workflow)
 
             inputs = json.loads(job.input)
-            job.input_files = []
+            input_files = []
             for name, location in get_files_from_binding(inputs):
                 content = self._get_content_from_url(location)
-                job.input_files.append((name, location, content))
+                input_files.append((name, location, content))
+
+            return input_files
 
     def create_output_dir(self, job_id):
         """Create an output directory for a job.
@@ -86,7 +88,7 @@ class LocalFiles:
         """
         shutil.rmtree(self._to_abs_path('output/' + job_id))
 
-    def publish_job_output(self, job_id):
+    def publish_job_output(self, job_id, output_files):
         """Write output files to the local output dir for this job.
 
         Uses the .output_files property of the job to get data, and
@@ -98,22 +100,15 @@ class LocalFiles:
         """
         with self._job_store:
             job = self._job_store.get_job(job_id)
-            if job.output_files is not None:
+            if output_files is not None:
                 output = json.loads(job.output)
-                for output_name, file_name, content in job.output_files:
+                for output_name, file_name, content in output_files:
                     output_loc = self._write_to_output_file(job_id, file_name, content)
                     output[output_name]['location'] = output_loc
                     output[output_name]['path'] = self._to_abs_path('output/' + job_id + '/' + file_name)
-                job.output = json.dumps(output)
-                job.output_files = None
 
-    def publish_all_jobs_output(self):
-        """Publish the output of all jobs that have some.
-        See publish_job_output() for details.
-        """
-        with self._job_store:
-            for job in self._job_store.list_jobs():
-                self.publish_job_output(job.id)
+                job.output = json.dumps(output)
+                job.output_files_published = True
 
     def _get_content_from_url(self, url):
         """Return the content referenced by a URL.

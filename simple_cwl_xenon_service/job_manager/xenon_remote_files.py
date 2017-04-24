@@ -65,7 +65,7 @@ class XenonRemoteFiles:
         except jpype.JException(xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException):
             pass
 
-    def stage_job(self, job_id):
+    def stage_job(self, job_id, input_files):
         """Stage a job. Copies any necessary files to
         the remote resource.
 
@@ -90,7 +90,7 @@ class XenonRemoteFiles:
             # stage input files
             inputs = json.loads(job.input)
             count = 1
-            for name, location, content in job.input_files:
+            for name, location, content in input_files:
                 staged_name = _create_input_filename(str(count).zfill(2), location)
                 count += 1
                 self._write_remote_file(job_id, 'work/' + staged_name, content)
@@ -146,6 +146,7 @@ class XenonRemoteFiles:
         Args:
             job_id (str): ID of the job to get the status of.
         """
+        output_files = None
         with self._job_store:
             job = self._job_store.get_job(job_id)
 
@@ -154,21 +155,15 @@ class XenonRemoteFiles:
             if len(output) > 0:
                 job.output = output.decode()
 
-            if job.state == JobState.SUCCESS and job.output_files is None:
-                job.output_files = self.destage_job_output(job_id)
+            if job.state == JobState.SUCCESS and not job.output_files_published:
+                output_files = self.destage_job_output(job_id)
 
             # get log
             log = self._read_remote_file(job_id, 'stderr.txt')
             if len(log) > 0:
                 job.log = log.decode()
 
-    def update_all_jobs(self):
-        """Get status from Xenon and update store, for all jobs.
-        """
-        with self._job_store:
-            for job in self._job_store.list_jobs():
-                self.update_job(job.id)
-
+            return output_files
 
     def _make_remote_dir(self, job_id, rel_path):
         xenonpath = self._x_abs_path(job_id, rel_path)

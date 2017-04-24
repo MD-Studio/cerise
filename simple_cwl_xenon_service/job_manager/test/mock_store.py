@@ -57,6 +57,22 @@ class MockStore:
         elif test_job_type == "complex":
             self._jobs.append(self._create_complex_job(test_job_id, test_job_stage))
 
+    def get_input_files(self, test_job_type):
+        if test_job_type == "pass":
+            return []
+        elif test_job_type == "broken":
+            return []
+        elif test_job_type == "wc":
+            return WcJob.input_files
+        raise NotImplementedError
+
+    def get_output_files(self, test_job_type):
+        if test_job_type == "pass":
+            return []
+        elif test_job_type == "wc":
+            return WcJob.output_files
+        raise NotImplementedError
+
     def list_jobs(self):
         return self._jobs
 
@@ -79,7 +95,6 @@ class MockStore:
 
         if stage == "resolved":
             job.workflow_content = PassJob.workflow
-            job.input_files = []
             return job
 
         if stage == "staged":
@@ -114,7 +129,6 @@ class MockStore:
 
         if stage == "destaged":
             job.output = PassJob.output
-            job.output_files = []
             return job
 
         raise ValueError('Invalid stage in _create_pass_job')
@@ -138,7 +152,6 @@ class MockStore:
 
         if stage == 'resolved':
             job.workflow_content = WcJob.workflow
-            job.input_files = WcJob.input_files
             return job
 
         if stage == 'staged':
@@ -183,7 +196,6 @@ class MockStore:
 
         if stage == 'destaged':
             job.output = WcJob.output('')
-            job.output_files = WcJob.output_files
             return job
 
 
@@ -239,7 +251,6 @@ class MockStore:
 
         if stage == "resolved":
             job.workflow_content = BrokenJob.workflow
-            job.input_files = []
             return job
 
         if stage == "staged":
