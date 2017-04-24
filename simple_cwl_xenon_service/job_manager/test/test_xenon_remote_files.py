@@ -80,5 +80,5 @@ def test_update_job(fixture):
     fixture['store'].add_test_job('test_update_job', 'wc', 'run')
     fixture['xenon-remote-files'].update_job('test_update_job')
     wc_remote_workdir = os.path.join(fixture['remote-dir'], 'jobs', 'test_update_job', 'work')
-    assert fixture['store'].get_job('test_update_job').output == WcJob.output('file://' + wc_remote_workdir)
+    assert fixture['store'].get_job('test_update_job').remote_output == WcJob.remote_output('file://' + wc_remote_workdir)
     # check that we have the log?

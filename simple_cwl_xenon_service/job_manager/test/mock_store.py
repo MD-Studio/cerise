@@ -63,12 +63,12 @@ class MockStore:
         elif test_job_type == "broken":
             return []
         elif test_job_type == "wc":
-            return WcJob.input_files
+            return WcJob.local_input_files
         raise NotImplementedError
 
     def get_output_files(self, test_job_type):
         if test_job_type == "pass":
-            return []
+            return None
         elif test_job_type == "wc":
             return WcJob.output_files
         raise NotImplementedError
@@ -99,18 +99,18 @@ class MockStore:
 
         if stage == "staged":
             pass_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
-            job.workdir_path = os.path.join(pass_jobdir, 'work')
-            job.workflow_path = os.path.join(pass_jobdir,'workflow.cwl')
-            job.input_path = os.path.join(pass_jobdir, 'input.json')
-            job.stdout_path = os.path.join(pass_jobdir, 'stdout.txt')
-            job.stderr_path = os.path.join(pass_jobdir, 'stderr.txt')
+            job.remote_workdir_path = os.path.join(pass_jobdir, 'work')
+            job.remote_workflow_path = os.path.join(pass_jobdir,'workflow.cwl')
+            job.remote_input_path = os.path.join(pass_jobdir, 'input.json')
+            job.remote_stdout_path = os.path.join(pass_jobdir, 'stdout.txt')
+            job.remote_stderr_path = os.path.join(pass_jobdir, 'stderr.txt')
 
-            os.makedirs(job.workdir_path)
+            os.makedirs(job.remote_workdir_path)
 
-            with open(job.workflow_path, 'wb') as f:
+            with open(job.remote_workflow_path, 'wb') as f:
                 f.write(PassJob.workflow)
 
-            with open(job.input_path, 'wb') as f:
+            with open(job.remote_input_path, 'wb') as f:
                 f.write(PassJob.remote_input.encode('utf-8'))
 
             return job
@@ -121,21 +121,22 @@ class MockStore:
             os.makedirs(pass_output_dir)
 
             with open(os.path.join(pass_job_dir, 'stdout.txt'), 'wb') as f:
-                f.write(PassJob.output.encode('utf-8'))
+                f.write(PassJob.remote_output.encode('utf-8'))
 
             if stage == 'run_and_updated':
-                job.output = PassJob.output
+                job.remote_output = PassJob.remote_output
             return job
 
         if stage == "destaged":
-            job.output = PassJob.output
+            job.remote_output = PassJob.remote_output
+            job.local_output = PassJob.local_output
             return job
 
         raise ValueError('Invalid stage in _create_pass_job')
 
     def _create_wc_job(self, job_id, stage):
         # Create
-        job = Job(job_id, job_id, "input/wc_workflow.cwl", WcJob.input)
+        job = Job(job_id, job_id, "input/wc_workflow.cwl", WcJob.local_input)
 
         if stage == 'submitted':
             wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
@@ -143,7 +144,7 @@ class MockStore:
             with open(wc_wf_path, 'wb') as f:
                 f.write(WcJob.workflow)
 
-            for (_, filename, contents) in WcJob.input_files:
+            for (_, filename, contents) in WcJob.local_input_files:
                 wc_input_path = os.path.join(self._local_base_path, filename)
                 with open(wc_input_path, 'wb') as f:
                     f.write(contents)
@@ -157,18 +158,18 @@ class MockStore:
         if stage == 'staged':
             wc_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
             wc_workdir = os.path.join(wc_jobdir, 'work')
-            job.workdir_path = wc_workdir
-            job.workflow_path = os.path.join(wc_jobdir,'workflow.cwl')
-            job.input_path = os.path.join(wc_jobdir, 'input.json')
-            job.stdout_path = os.path.join(wc_jobdir, 'stdout.txt')
-            job.stderr_path = os.path.join(wc_jobdir, 'stderr.txt')
+            job.remote_workdir_path = wc_workdir
+            job.remote_workflow_path = os.path.join(wc_jobdir,'workflow.cwl')
+            job.remote_input_path = os.path.join(wc_jobdir, 'input.json')
+            job.remote_stdout_path = os.path.join(wc_jobdir, 'stdout.txt')
+            job.remote_stderr_path = os.path.join(wc_jobdir, 'stderr.txt')
 
             os.makedirs(wc_workdir)
 
-            with open(job.workflow_path, 'wb') as f:
+            with open(job.remote_workflow_path, 'wb') as f:
                 f.write(WcJob.workflow)
 
-            with open(job.input_path, 'wb') as f:
+            with open(job.remote_input_path, 'wb') as f:
                 f.write(WcJob.remote_input.encode('utf-8'))
 
             for (_, filename, contents) in WcJob.remote_input_files:
@@ -188,22 +189,22 @@ class MockStore:
                     f.write(contents)
 
             with open(os.path.join(wc_job_dir, 'stdout.txt'), 'wb') as f:
-                f.write(WcJob.output('file://' + wc_output_dir).encode('utf-8'))
+                f.write(WcJob.remote_output('file://' + wc_output_dir).encode('utf-8'))
 
             if stage == 'run_and_updated':
-                job.output = WcJob.output('file://' + wc_output_dir)
+                job.remote_output = WcJob.remote_output('file://' + wc_output_dir)
             return job
 
         if stage == 'destaged':
-            job.output = WcJob.output('')
+            job.remote_output = WcJob.remote_output('')
+            job.local_output = WcJob.local_output
             return job
-
 
         return ValueError('Invalid stage in _create_wc_job')
 
     def _create_missing_input_job(self, job_id, stage):
         # Create
-        job = Job(job_id, job_id, "input/wc_workflow.cwl", MissingInputJob.input)
+        job = Job(job_id, job_id, "input/wc_workflow.cwl", MissingInputJob.local_input)
 
         if stage == 'submitted':
             wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
@@ -220,18 +221,18 @@ class MockStore:
 
         if stage == "staged":
             slow_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
-            job.workdir_path = os.path.join(slow_jobdir, 'work')
-            job.workflow_path = os.path.join(slow_jobdir,'workflow.cwl')
-            job.input_path = os.path.join(slow_jobdir, 'input.json')
-            job.stdout_path = os.path.join(slow_jobdir, 'stdout.txt')
-            job.stderr_path = os.path.join(slow_jobdir, 'stderr.txt')
+            job.remote_workdir_path = os.path.join(slow_jobdir, 'work')
+            job.remote_workflow_path = os.path.join(slow_jobdir,'workflow.cwl')
+            job.remote_input_path = os.path.join(slow_jobdir, 'input.json')
+            job.remote_stdout_path = os.path.join(slow_jobdir, 'stdout.txt')
+            job.remote_stderr_path = os.path.join(slow_jobdir, 'stderr.txt')
 
-            os.makedirs(job.workdir_path)
+            os.makedirs(job.remote_workdir_path)
 
-            with open(job.workflow_path, 'wb') as f:
+            with open(job.remote_workflow_path, 'wb') as f:
                 f.write(SlowJob.workflow)
 
-            with open(job.input_path, 'wb') as f:
+            with open(job.remote_input_path, 'wb') as f:
                 f.write(SlowJob.remote_input.encode('utf-8'))
 
             return job
@@ -255,18 +256,18 @@ class MockStore:
 
         if stage == "staged":
             broken_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
-            job.workdir_path = os.path.join(broken_jobdir, 'work')
-            job.workflow_path = os.path.join(broken_jobdir,'workflow.cwl')
-            job.input_path = os.path.join(broken_jobdir, 'input.json')
-            job.stdout_path = os.path.join(broken_jobdir, 'stdout.txt')
-            job.stderr_path = os.path.join(broken_jobdir, 'stderr.txt')
+            job.remote_workdir_path = os.path.join(broken_jobdir, 'work')
+            job.remote_workflow_path = os.path.join(broken_jobdir,'workflow.cwl')
+            job.remote_input_path = os.path.join(broken_jobdir, 'input.json')
+            job.remote_stdout_path = os.path.join(broken_jobdir, 'stdout.txt')
+            job.remote_stderr_path = os.path.join(broken_jobdir, 'stderr.txt')
 
-            os.makedirs(job.workdir_path)
+            os.makedirs(job.remote_workdir_path)
 
-            with open(job.workflow_path, 'wb') as f:
+            with open(job.remote_workflow_path, 'wb') as f:
                 f.write(BrokenJob.workflow)
 
-            with open(job.input_path, 'wb') as f:
+            with open(job.remote_input_path, 'wb') as f:
                 f.write(BrokenJob.remote_input.encode('utf-8'))
 
             return job
@@ -280,7 +281,7 @@ class MockStore:
                 f.write(BrokenJob.output.encode('utf-8'))
 
             if stage == 'run_and_updated':
-                job.output = BrokenJob.output
+                job.remote_output = BrokenJob.remote_output
             return job
 
 

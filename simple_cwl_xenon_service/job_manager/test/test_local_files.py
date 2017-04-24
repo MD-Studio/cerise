@@ -40,7 +40,7 @@ def test_resolve_input(fixture):
     fixture['store'].add_test_job('test_resolve_input', 'wc', 'submitted')
     input_files = fixture['local-files'].resolve_input('test_resolve_input')
     assert fixture['store'].get_job('test_resolve_input').workflow_content == WcJob.workflow
-    assert input_files == WcJob.input_files
+    assert input_files == WcJob.local_input_files
 
 def test_resolve_missing_input(fixture):
     fixture['store'].add_test_job('test_missing_input', 'missing_input', 'submitted')
@@ -62,7 +62,7 @@ def test_publish_no_output(fixture):
     fixture['store'].add_test_job('test_publish_no_output', 'pass', 'destaged')
     output_dir = os.path.join(fixture['output-dir'], 'test_publish_no_output')
     os.mkdir(output_dir)
-    fixture['local-files'].publish_job_output('test_publish_no_output', [])
+    fixture['local-files'].publish_job_output('test_publish_no_output', None)
     assert os.listdir(output_dir) == []
 
 def test_publish_output(fixture):

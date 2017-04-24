@@ -11,11 +11,13 @@ class PassJob:
                 'inputs: []\n'
                 'outputs: []\n', 'utf-8')
 
-    input = '{}'
+    local_input = '{}'
 
     remote_input = '{}'
 
-    output = '{}\n'
+    remote_output = '{}\n'
+
+    local_output = '{}'
 
 class WcJob:
     """A simple job with an input file and an output file.
@@ -38,9 +40,9 @@ class WcJob:
                 '    type: File\n'
                 '    outputBinding: { glob: output.txt }\n', 'utf-8')
 
-    input = '{ "file": { "class": "File", "location": "input/hello_world.txt" } }'
+    local_input = '{ "file": { "class": "File", "location": "input/hello_world.txt" } }'
 
-    input_files = [('file', 'input/hello_world.txt', bytes(
+    local_input_files = [('file', 'input/hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'
@@ -55,12 +57,14 @@ class WcJob:
                 '\n', 'utf-8'))]
 
 
-    def output(job_remote_workdir):
+    def remote_output(job_remote_workdir):
         return '{ "output": { "class": "File", "location": "' + job_remote_workdir + '/output.txt" } }\n'
 
     output_files = [
                 ('output', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
                 ]
+
+    local_output = '{ "output": { "class": "File", "location": "output.txt" } }\n'
 
 
 class MissingInputJob:
@@ -84,7 +88,7 @@ class MissingInputJob:
                 '    type: File\n'
                 '    outputBinding: { glob: output.txt }\n', 'utf-8')
 
-    input = '{ "file": { "class": "File", "location": "input/non_existing_file.txt" } }'
+    local_input = '{ "file": { "class": "File", "location": "input/non_existing_file.txt" } }'
 
     input_files = []
 
@@ -107,7 +111,7 @@ class SlowJob:
             '    type: File\n'
             '    outputBinding: { glob: output.txt }\n', 'utf-8')
 
-    input = '{}'
+    local_input = '{}'
 
     remote_input = '{}'
 
@@ -123,7 +127,7 @@ class BrokenJob:
                 'inputs: []\n'
                 'outputs: []\n', 'utf-8')
 
-    input = '{}'
+    local_input = '{}'
 
     remote_input = '{}'
 

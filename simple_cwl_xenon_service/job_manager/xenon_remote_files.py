@@ -78,17 +78,17 @@ class XenonRemoteFiles:
             # create work dir
             self._make_remote_dir(job_id, '')
             self._make_remote_dir(job_id, 'work')
-            job.workdir_path = self._abs_path(job_id, 'work')
+            job.remote_workdir_path = self._abs_path(job_id, 'work')
 
             # stage name of the job
             self._write_remote_file(job_id, 'name.txt', job.name.encode('utf-8'))
 
             # stage workflow
             self._write_remote_file(job_id, 'workflow.cwl', job.workflow_content)
-            job.workflow_path = self._abs_path(job_id, 'workflow.cwl')
+            job.remote_workflow_path = self._abs_path(job_id, 'workflow.cwl')
 
             # stage input files
-            inputs = json.loads(job.input)
+            inputs = json.loads(job.local_input)
             count = 1
             for name, location, content in input_files:
                 staged_name = _create_input_filename(str(count).zfill(2), location)
@@ -97,13 +97,13 @@ class XenonRemoteFiles:
                 inputs[name]['location'] = self._abs_path(job_id, 'work/' + staged_name)
 
             # stage input description
-            input_json = json.dumps(inputs).encode('utf-8')
-            self._write_remote_file(job_id, 'input.json', input_json)
-            job.input_path = self._abs_path(job_id, 'input.json')
+            inputs_json = json.dumps(inputs).encode('utf-8')
+            self._write_remote_file(job_id, 'input.json', inputs_json)
+            job.remote_input_path = self._abs_path(job_id, 'input.json')
 
             # configure output
-            job.stdout_path = self._abs_path(job_id, 'stdout.txt')
-            job.stderr_path = self._abs_path(job_id, 'stderr.txt')
+            job.remote_stdout_path = self._abs_path(job_id, 'stdout.txt')
+            job.remote_stderr_path = self._abs_path(job_id, 'stderr.txt')
 
     def destage_job_output(self, job_id):
         """Download results of the given job from the compute resource.
@@ -116,7 +116,7 @@ class XenonRemoteFiles:
         """
         with self._job_store:
             job = self._job_store.get_job(job_id)
-            outputs = json.loads(job.output)
+            outputs = json.loads(job.remote_output)
             output_files = []
             for output_name, path in get_files_from_binding(outputs):
                 print('Destage path = ' + path + ' for output ' + output_name)
@@ -153,7 +153,7 @@ class XenonRemoteFiles:
             # get output
             output = self._read_remote_file(job_id, 'stdout.txt')
             if len(output) > 0:
-                job.output = output.decode()
+                job.remote_output = output.decode()
 
             if job.state == JobState.SUCCESS and not job.output_files_published:
                 output_files = self.destage_job_output(job_id)

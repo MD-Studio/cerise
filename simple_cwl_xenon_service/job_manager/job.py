@@ -26,7 +26,7 @@ class Job:
         """str: Name, as specified by the submitter."""
         self.workflow = workflow
         """str: Workflow file URI, as specified by the submitter."""
-        self.input = job_input
+        self.local_input = job_input
         """str: Input JSON string, as specified by the submitter."""
 
         # Current status
@@ -44,15 +44,15 @@ class Job:
         """
 
         # Post-staging data
-        self.workdir_path = ''
+        self.remote_workdir_path = ''
         """str: The absolute remote path of the working directory."""
-        self.workflow_path = ''
+        self.remote_workflow_path = ''
         """str: The absolute remote path of the CWL workflow file."""
-        self.input_path = ''
+        self.remote_input_path = ''
         """str: The absolute remote path of the input description file."""
-        self.stdout_path = ''
+        self.remote_stdout_path = ''
         """str: The absolute remote path of the standard output dump."""
-        self.stderr_path = ''
+        self.remote_stderr_path = ''
         """str: The absolute remote path of the standard error dump."""
 
         # Post-destaging data

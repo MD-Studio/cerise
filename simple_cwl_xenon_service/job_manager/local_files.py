@@ -63,7 +63,7 @@ class LocalFiles:
 
             job.workflow_content = self._get_content_from_url(job.workflow)
 
-            inputs = json.loads(job.input)
+            inputs = json.loads(job.local_input)
             input_files = []
             for name, location in get_files_from_binding(inputs):
                 content = self._get_content_from_url(location)
@@ -101,13 +101,13 @@ class LocalFiles:
         with self._job_store:
             job = self._job_store.get_job(job_id)
             if output_files is not None:
-                output = json.loads(job.output)
+                output = json.loads(job.remote_output)
                 for output_name, file_name, content in output_files:
                     output_loc = self._write_to_output_file(job_id, file_name, content)
                     output[output_name]['location'] = output_loc
                     output[output_name]['path'] = self._to_abs_path('output/' + job_id + '/' + file_name)
 
-                job.output = json.dumps(output)
+                job.local_output = json.dumps(output)
                 job.output_files_published = True
 
     def _get_content_from_url(self, url):

@@ -8,11 +8,8 @@ import job_manager
 from job_manager import job_state
 
 def _internal_job_to_rest_job(job):
-    output = job.output
-    if output:
-        output = json.loads(output)
-
-    job_input = json.loads(job.input)
+    job_output = json.loads(getattr(job, 'local_output', '{}'))
+    job_input = json.loads(job.local_input)
 
     return Job(
             id=job.id,
@@ -20,7 +17,7 @@ def _internal_job_to_rest_job(job):
             workflow=job.workflow,
             input=job_input,
             state=job_state.JobState.to_external_string(job.state),
-            output=output,
+            output=job_output,
             log=flask.url_for('.swagger_server_controllers_default_controller_get_job_log_by_id',
                 jobId=job.id,
                 _external=True)
@@ -36,7 +33,6 @@ def cancel_job_by_id(jobId):
 
     :rtype: Job
     """
-
     job = job_manager.job_store().get_job(jobId)
     if not job:
         flask.abort(404, "Job not found")

@@ -64,18 +64,17 @@ class XenonJobRunner:
         """
         with self._job_store:
             job = self._job_store.get_job(job_id)
-            print(job.workdir_path)
             # submit job
             xenon_jobdesc = xenon.jobs.JobDescription()
-            xenon_jobdesc.setWorkingDirectory(job.workdir_path)
+            xenon_jobdesc.setWorkingDirectory(job.remote_workdir_path)
             xenon_jobdesc.setExecutable('cwl-runner')
             args = [
-                    job.workflow_path,
-                    job.input_path
+                    job.remote_workflow_path,
+                    job.remote_input_path
                     ]
             xenon_jobdesc.setArguments(args)
-            xenon_jobdesc.setStdout(job.stdout_path)
-            xenon_jobdesc.setStderr(job.stderr_path)
+            xenon_jobdesc.setStdout(job.remote_stdout_path)
+            xenon_jobdesc.setStderr(job.remote_stderr_path)
             xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
             job.runner_data = xenon_job
             job.state = JobState.WAITING
