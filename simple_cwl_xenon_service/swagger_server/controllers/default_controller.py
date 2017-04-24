@@ -33,11 +33,12 @@ def cancel_job_by_id(jobId):
 
     :rtype: Job
     """
-    job = job_manager.job_store().get_job(jobId)
-    if not job:
-        flask.abort(404, "Job not found")
+    with job_manager.job_store():
+        job = job_manager.job_store().get_job(jobId)
+        if not job:
+            flask.abort(404, "Job not found")
 
-    job_manager.job_runner().cancel_job(jobId)
+        job_manager.job_runner().cancel_job(jobId)
 
     return flask.url_for('.swagger_server_controllers_default_controller_get_job_by_id',
             jobId=job.id,
@@ -53,10 +54,11 @@ def delete_job_by_id(jobId):
 
     :rtype: None
     """
-    job_manager.job_runner().cancel_job(jobId)
-    job_manager.remote_files().delete_job(jobId)
-    job_manager.local_files().delete_output_dir(jobId)
-    job_manager.job_store().delete_job(jobId)
+    with job_manager.job_store():
+        job_manager.job_runner().cancel_job(jobId)
+        job_manager.remote_files().delete_job(jobId)
+        job_manager.local_files().delete_output_dir(jobId)
+        job_manager.job_store().delete_job(jobId)
     return None, 204
 
 
@@ -69,13 +71,14 @@ def get_job_by_id(jobId):
 
     :rtype: Job
     """
-    job = job_manager.job_store().get_job(jobId)
-    if not job:
-        flask.abort(404, "Job not found")
+    with job_manager.job_store():
+        job = job_manager.job_store().get_job(jobId)
+        if not job:
+            flask.abort(404, "Job not found")
 
-    job_manager.job_runner().update_job(jobId)
-    output_files = job_manager.remote_files().update_job(jobId)
-    job_manager.local_files().publish_job_output(jobId, output_files)
+        job_manager.job_runner().update_job(jobId)
+        output_files = job_manager.remote_files().update_job(jobId)
+        job_manager.local_files().publish_job_output(jobId, output_files)
 
     return _internal_job_to_rest_job(job)
 
@@ -89,9 +92,9 @@ def get_job_log_by_id(jobId):
 
     :rtype: str
     """
-    job_manager.remote_files().update_job(jobId)
-
-    return job_manager.job_store().get_job(jobId).log
+    with job_manager.job_store():
+        job_manager.remote_files().update_job(jobId)
+        return job_manager.job_store().get_job(jobId).log
 
 
 def get_jobs():
@@ -123,18 +126,19 @@ def post_job(body):
     if connexion.request.is_json:
         body = JobDescription.from_dict(connexion.request.get_json())
 
-    job_id = job_manager.job_store().create_job(
-        job_manager.job_description.JobDescription(
-            name=body.name,
-            workflow=body.workflow,
-            job_input=body.input
+    with job_manager.job_store():
+        job_id = job_manager.job_store().create_job(
+            job_manager.job_description.JobDescription(
+                name=body.name,
+                workflow=body.workflow,
+                job_input=body.input
+                )
             )
-        )
 
-    input_files = job_manager.local_files().resolve_input(job_id)
-    job_manager.remote_files().stage_job(job_id, input_files)
-    job_manager.local_files().create_output_dir(job_id)
-    job_manager.job_runner().start_job(job_id)
+        input_files = job_manager.local_files().resolve_input(job_id)
+        job_manager.remote_files().stage_job(job_id, input_files)
+        job_manager.local_files().create_output_dir(job_id)
+        job_manager.job_runner().start_job(job_id)
 
-    job = job_manager.job_store().get_job(job_id)
-    return _internal_job_to_rest_job(job)
+        job = job_manager.job_store().get_job(job_id)
+        return _internal_job_to_rest_job(job)
