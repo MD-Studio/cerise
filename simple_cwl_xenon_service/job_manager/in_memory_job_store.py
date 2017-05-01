@@ -1,4 +1,4 @@
-from .job import Job
+from .in_memory_job import InMemoryJob
 from .job_store import JobStore
 
 import threading
@@ -21,7 +21,7 @@ class InMemoryJobStore(JobStore):
 
     def __init__(self):
         self._jobs = []
-        """A list of Job objects."""
+        """A list of InMemoryJob objects."""
 
         self._lock = threading.RLock()
         """A lock protecting the store."""
@@ -44,7 +44,7 @@ class InMemoryJobStore(JobStore):
         """
         job_id = uuid4().hex
 
-        job = Job(
+        job = InMemoryJob(
                 job_id=job_id,
                 name=description.name,
                 workflow=description.workflow,
@@ -55,10 +55,10 @@ class InMemoryJobStore(JobStore):
         return job_id
 
     def list_jobs(self):
-        """Return a list of all currently known Jobs.
+        """Return a list of all currently known jobs.
 
         Returns:
-            List[Job]: A list of Job objects.
+            List[InMemoryJob]: A list of InMemoryJob objects.
         """
         return self._jobs
 
@@ -70,7 +70,7 @@ class InMemoryJobStore(JobStore):
                 or list_jobs().
 
         Returns:
-            Job: The Job object corresponding to the given id.
+            InMemoryJob: The job object corresponding to the given id.
         """
         matching_jobs = [job for job in self._jobs if job.id == job_id]
         assert len(matching_jobs) <= 1

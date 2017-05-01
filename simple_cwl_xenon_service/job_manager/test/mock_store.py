@@ -4,7 +4,7 @@ from .fixture_jobs import MissingInputJob
 from .fixture_jobs import SlowJob
 from .fixture_jobs import BrokenJob
 
-from simple_cwl_xenon_service.job_manager.job import Job
+from simple_cwl_xenon_service.job_manager.in_memory_job import InMemoryJob
 from simple_cwl_xenon_service.job_manager.job_state import JobState
 
 import os
@@ -84,7 +84,7 @@ class MockStore:
         pass
 
     def _create_pass_job(self, job_id, stage):
-        job = Job(job_id, job_id, "input/pass_workflow.cwl", "{}")
+        job = InMemoryJob(job_id, job_id, "input/pass_workflow.cwl", "{}")
 
         if stage == 'submitted':
             pass_wf_path = os.path.join(self._local_base_path, 'input', 'pass_workflow.cwl')
@@ -142,7 +142,7 @@ class MockStore:
 
     def _create_wc_job(self, job_id, stage):
         # Create
-        job = Job(job_id, job_id, "input/wc_workflow.cwl", WcJob.local_input)
+        job = InMemoryJob(job_id, job_id, "input/wc_workflow.cwl", WcJob.local_input)
 
         if stage == 'submitted':
             wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
@@ -215,7 +215,7 @@ class MockStore:
 
     def _create_missing_input_job(self, job_id, stage):
         # Create
-        job = Job(job_id, job_id, "input/wc_workflow.cwl", MissingInputJob.local_input)
+        job = InMemoryJob(job_id, job_id, "input/wc_workflow.cwl", MissingInputJob.local_input)
 
         if stage == 'submitted':
             wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
@@ -228,7 +228,7 @@ class MockStore:
         return ValueError('Invalid stage in _create_missing_input_job')
 
     def _create_slow_job(self, job_id, stage):
-        job = Job(job_id, job_id, "input/slow_workflow.cwl", "{}")
+        job = InMemoryJob(job_id, job_id, "input/slow_workflow.cwl", "{}")
 
         if stage == "staged":
             slow_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
@@ -252,7 +252,7 @@ class MockStore:
         raise ValueError('Invalid stage in _create_slow_job')
 
     def _create_broken_job(self, job_id, stage):
-        job = Job(job_id, job_id, "input/broken_workflow.cwl", "{}")
+        job = InMemoryJob(job_id, job_id, "input/broken_workflow.cwl", "{}")
 
         if stage == 'submitted':
             pass_wf_path = os.path.join(self._local_base_path, 'input', 'broken_workflow.cwl')

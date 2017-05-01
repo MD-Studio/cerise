@@ -1,6 +1,6 @@
 from .job_state import JobState
 
-class Job:
+class InMemoryJob:
     """This class provides the internal representation of a job. These
     are stored inside the service. Note that there is also a JobDescription,
     which is defined in the Swagger definition and part of the REST API,
