@@ -10,6 +10,8 @@ class JobState(Enum):
     TEMPORARY_FAILURE = "TemporaryFailure"
     PERMANENT_FAILURE = "PermanentFailure"
 
+    FINISHED = "Finished"   # temporary hack
+
     @staticmethod
     def is_cancellable(state):
         """Return whether the JobState is one in which a job can be

@@ -88,6 +88,7 @@ class TestDefaultController(BaseTestCase):
                                     method='GET')
         self.assert200(response, "Response body is : " + response.data.decode('utf-8'))
 
+        print(response.json)
         assert all(item in response.json for item in test_job)
         out_file_path = response.json['output']['output']['path']
         with open(out_file_path, 'r') as f:

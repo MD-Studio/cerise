@@ -76,8 +76,11 @@ def get_job_by_id(jobId):
         if not job:
             flask.abort(404, "Job not found")
 
+        print("Updating...")
         job_manager.job_runner().update_job(jobId)
+        print("Updating 2...")
         output_files = job_manager.remote_files().update_job(jobId)
+        print("Publishing...")
         job_manager.local_files().publish_job_output(jobId, output_files)
 
     return _internal_job_to_rest_job(job)

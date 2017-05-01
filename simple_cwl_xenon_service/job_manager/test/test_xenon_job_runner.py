@@ -49,7 +49,7 @@ def test_start_job(fixture):
 
     fixture['xenon-job-runner'].update_job('test_start_job')
     updated_job = fixture['store'].get_job('test_start_job')
-    assert updated_job.state == JobState.SUCCESS
+    assert updated_job.state == JobState.FINISHED
 
 def test_start_staging_job(fixture):
     fixture['store'].add_test_job('test_start_staging_job', 'wc', 'staged')
@@ -59,7 +59,7 @@ def test_start_staging_job(fixture):
 
     fixture['xenon-job-runner'].update_job('test_start_staging_job')
     updated_job = fixture['store'].get_job('test_start_staging_job')
-    assert updated_job.state == JobState.SUCCESS
+    assert updated_job.state == JobState.FINISHED
 
 def test_start_broken_job(fixture):
     fixture['store'].add_test_job('test_start_broken_job', 'broken', 'staged')
@@ -69,7 +69,7 @@ def test_start_broken_job(fixture):
 
     fixture['xenon-job-runner'].update_job('test_start_broken_job')
     updated_job = fixture['store'].get_job('test_start_broken_job')
-    assert updated_job.state == JobState.PERMANENT_FAILURE
+    assert updated_job.state == JobState.FINISHED
     assert updated_job.output == ''
 
 def test_update(fixture):
@@ -86,7 +86,7 @@ def test_update(fixture):
 
     fixture['xenon-job-runner'].update_job('test_update')
     updated_job = fixture['store'].get_job('test_update')
-    assert updated_job.state == JobState.SUCCESS
+    assert updated_job.state == JobState.FINISHED
 
 def test_cancel(fixture):
     fixture['store'].add_test_job('test_cancel', 'slow', 'staged')
