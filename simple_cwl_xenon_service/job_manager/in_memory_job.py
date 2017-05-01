@@ -59,8 +59,8 @@ class InMemoryJob:
         # Should there be the location of the destaged files here?
 
         # Internal data
-        self.runner_data = None
-        """Any: Unspecified object with data for XenonJobRunner."""
+        self.remote_job_id = None
+        """str: The id the remote scheduler gave to this job."""
 
     def try_transition(self, from_state, to_state):
         """Attempts to transition the job's state to a new one.

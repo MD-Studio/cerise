@@ -37,7 +37,7 @@ class XenonJobRunner:
             # get state
             if JobState.is_remote(job.state):
                 active_jobs = self._x.jobs().getJobs(self._sched, [])
-                xenon_job = [x_job for x_job in active_jobs if x_job.getIdentifier() == job.runner_data]
+                xenon_job = [x_job for x_job in active_jobs if x_job.getIdentifier() == job.remote_job_id]
                 print("Xenon job:")
                 print(xenon_job)
                 if len(xenon_job) == 1:
@@ -78,7 +78,7 @@ class XenonJobRunner:
             xenon_jobdesc.setStdout(job.remote_stdout_path)
             xenon_jobdesc.setStderr(job.remote_stderr_path)
             xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
-            job.runner_data = xenon_job.getIdentifier()
+            job.remote_job_id = xenon_job.getIdentifier()
             if not job.try_transition(JobState.STAGING, JobState.WAITING):
                 job.state = JobState.SYSTEM_ERROR
 
@@ -98,7 +98,7 @@ class XenonJobRunner:
             job = self._job_store.get_job(job_id)
             if JobState.is_remote(job.state):
                 active_jobs = self._x.jobs().getJobs(self._sched, [])
-                xenon_job = [x_job for x_job in active_jobs if x_job.getIdentifier() == job.runner_data]
+                xenon_job = [x_job for x_job in active_jobs if x_job.getIdentifier() == job.remote_job_id]
                 if len(xenon_job) == 1:
                     new_state = self._x.jobs().cancelJob(xenon_job[0])
                     if new_state.isRunning():
