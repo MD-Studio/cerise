@@ -162,17 +162,15 @@ class XenonRemoteFiles:
             if len(log) > 0:
                 job.log = log.decode()
                 if job.state == JobState.FINISHED:
-                    if 'Final process status is success' in job.log:
-                        job.state = JobState.SUCCESS
-                    elif 'Final process status is permanentFail' in job.log:
+                    if 'Final process status is permanentFail' in job.log:
                         job.state = JobState.PERMANENT_FAILURE
                     elif 'Final process status is temporaryFail' in job.log:
                         job.state = JobState.TEMPORARY_FAILURE
-                    else:
+                    elif not 'Final process status is success' in job.log:
                         job.state = JobState.CANCELLED
 
             # get output files, if any
-            if job.state == JobState.SUCCESS and not job.output_files_published:
+            if job.try_transition(JobState.FINISHED, JobState.DESTAGING):
                 output_files = self.destage_job_output(job_id)
 
             return output_files

@@ -11,7 +11,7 @@ class Job:
     def __init__(self, job_id, name, workflow, job_input):
         """Creates a new Job object.
 
-        The state of a newly created job is JobState.WAITING.
+        The state of a newly created job is JobState.SUBMITTED.
 
         Args:
             id (str): The id of the job, a string containing a GUID
@@ -30,7 +30,7 @@ class Job:
         """str: Input JSON string, as specified by the submitter."""
 
         # Current status
-        self.state = JobState.WAITING
+        self.state = JobState.SUBMITTED
         """JobState: Current state of the job."""
         self.log = ''
         """str: Log output as of last update."""
@@ -56,11 +56,27 @@ class Job:
         """str: The absolute remote path of the standard error dump."""
 
         # Post-destaging data
-        self.output_files_published = False
-        """bool: Whether the output files have been published yet.
-        Bit of a stopgap until we add more detailed state.
-        """
+        # Should there be the location of the destaged files here?
 
         # Internal data
         self.runner_data = None
         """Any: Unspecified object with data for XenonJobRunner."""
+
+    def try_transition(self, from_state, to_state):
+        """Attempts to transition the job's state to a new one.
+
+        If the current state equals from_state, it is set to to_state,
+        and True is returned, otherwise False is returned and the
+        current state remains what it was.
+
+        Args:
+            from_state (JobState): The expected current state
+            to_state (JobState): The desired next state
+
+        Returns:
+            True iff the transition was successful.
+        """
+        if self.state == from_state:
+            self.state = to_state
+            return True
+        return False

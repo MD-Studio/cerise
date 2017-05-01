@@ -95,9 +95,12 @@ def test_cancel(fixture):
     time.sleep(2)
     fixture['xenon-job-runner'].cancel_job('test_cancel')
 
+    fixture['xenon-job-runner'].update_job('test_cancel')
     updated_job = fixture['store'].get_job('test_cancel')
     assert updated_job.state == JobState.CANCELLED
 
     fixture['xenon-job-runner'].cancel_job('test_cancel')
     assert updated_job.state == JobState.CANCELLED
 
+    fixture['xenon-job-runner'].update_job('test_cancel')
+    assert updated_job.state == JobState.CANCELLED

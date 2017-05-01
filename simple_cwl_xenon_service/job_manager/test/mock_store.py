@@ -5,6 +5,7 @@ from .fixture_jobs import SlowJob
 from .fixture_jobs import BrokenJob
 
 from simple_cwl_xenon_service.job_manager.job import Job
+from simple_cwl_xenon_service.job_manager.job_state import JobState
 
 import os
 
@@ -95,6 +96,7 @@ class MockStore:
 
         if stage == "resolved":
             job.workflow_content = PassJob.workflow
+            job.state = JobState.STAGING
             return job
 
         if stage == "staged":
@@ -104,6 +106,7 @@ class MockStore:
             job.remote_input_path = os.path.join(pass_jobdir, 'input.json')
             job.remote_stdout_path = os.path.join(pass_jobdir, 'stdout.txt')
             job.remote_stderr_path = os.path.join(pass_jobdir, 'stderr.txt')
+            job.state = JobState.STAGING
 
             os.makedirs(job.remote_workdir_path)
 
@@ -122,14 +125,17 @@ class MockStore:
 
             with open(os.path.join(pass_job_dir, 'stdout.txt'), 'wb') as f:
                 f.write(PassJob.remote_output.encode('utf-8'))
+            job.state = JobState.FINISHED
 
             if stage == 'run_and_updated':
                 job.remote_output = PassJob.remote_output
+                job.state = JobState.DESTAGING
             return job
 
         if stage == "destaged":
             job.remote_output = PassJob.remote_output
             job.local_output = PassJob.local_output
+            job.state = JobState.DESTAGING
             return job
 
         raise ValueError('Invalid stage in _create_pass_job')
@@ -153,6 +159,7 @@ class MockStore:
 
         if stage == 'resolved':
             job.workflow_content = WcJob.workflow
+            job.state = JobState.STAGING
             return job
 
         if stage == 'staged':
@@ -163,6 +170,7 @@ class MockStore:
             job.remote_input_path = os.path.join(wc_jobdir, 'input.json')
             job.remote_stdout_path = os.path.join(wc_jobdir, 'stdout.txt')
             job.remote_stderr_path = os.path.join(wc_jobdir, 'stderr.txt')
+            job.state = JobState.STAGING
 
             os.makedirs(wc_workdir)
 
@@ -190,14 +198,17 @@ class MockStore:
 
             with open(os.path.join(wc_job_dir, 'stdout.txt'), 'wb') as f:
                 f.write(WcJob.remote_output('file://' + wc_output_dir).encode('utf-8'))
+            job.state = JobState.FINISHED
 
             if stage == 'run_and_updated':
                 job.remote_output = WcJob.remote_output('file://' + wc_output_dir)
+                job.state = JobState.DESTAGING
             return job
 
         if stage == 'destaged':
             job.remote_output = WcJob.remote_output('')
             job.local_output = WcJob.local_output
+            job.state = JobState.DESTAGING
             return job
 
         return ValueError('Invalid stage in _create_wc_job')
@@ -226,6 +237,7 @@ class MockStore:
             job.remote_input_path = os.path.join(slow_jobdir, 'input.json')
             job.remote_stdout_path = os.path.join(slow_jobdir, 'stdout.txt')
             job.remote_stderr_path = os.path.join(slow_jobdir, 'stderr.txt')
+            job.state = JobState.STAGING
 
             os.makedirs(job.remote_workdir_path)
 
@@ -252,6 +264,7 @@ class MockStore:
 
         if stage == "resolved":
             job.workflow_content = BrokenJob.workflow
+            job.state = JobState.STAGING
             return job
 
         if stage == "staged":
@@ -261,6 +274,7 @@ class MockStore:
             job.remote_input_path = os.path.join(broken_jobdir, 'input.json')
             job.remote_stdout_path = os.path.join(broken_jobdir, 'stdout.txt')
             job.remote_stderr_path = os.path.join(broken_jobdir, 'stderr.txt')
+            job.state = JobState.STAGING
 
             os.makedirs(job.remote_workdir_path)
 
@@ -280,8 +294,12 @@ class MockStore:
             with open(os.path.join(broken_job_dir, 'stdout.txt'), 'wb') as f:
                 f.write(BrokenJob.output.encode('utf-8'))
 
+            job.state = JobState.FINISHED
+
             if stage == 'run_and_updated':
                 job.remote_output = BrokenJob.remote_output
+                job.state = JobState.DESTAGING
+
             return job
 
 

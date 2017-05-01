@@ -1,62 +1,95 @@
 from enum import Enum
+
 class JobState(Enum):
     """Enum JobState
     """
+    # Normal processing
+    SUBMITTED = "Submitted"
+    STAGING = "Staging"
     WAITING = "Waiting"
     RUNNING = "Running"
+    FINISHED = "Finished"
+    DESTAGING = "Destaging"
     SUCCESS = "Success"
+
+    # Cancellation
+    STAGING_CR = "StagingCR"
+    WAITING_CR = "WaitingCR"
+    RUNNING_CR = "RunningCR"
+    DESTAGING_CR = "DestagingCR"
     CANCELLED = "Cancelled"
+
+    # Error states
     SYSTEM_ERROR = "SystemError"
     TEMPORARY_FAILURE = "TemporaryFailure"
     PERMANENT_FAILURE = "PermanentFailure"
 
-    FINISHED = "Finished"   # temporary hack
-
     @staticmethod
-    def is_cancellable(state):
-        """Return whether the JobState is one in which a job can be
-        cancelled.
+    def cancellation_active(state):
+        """Return whether the JobState indicates that the job has been
+        marked for cancellation, but is not cancelled yet.
 
-        A job can be cancelled when it is waiting or running.
+        These are the _CR states.
 
         Args:
             state (JobState): The JobState member to analyse.
 
         Returns:
-            bool: True if a job in this state can be cancelled, False otherwise
+            bool: True if a job in this state has been marked for
+                  cancellation.
         """
-        return (state == JobState.WAITING) or (state == JobState.RUNNING)
+        return state in [JobState.STAGING_CR,
+                         JobState.WAITING_CR,
+                         JobState.RUNNING_CR,
+                         JobState.DESTAGING_CR]
 
     @staticmethod
-    def is_done(state):
-        """Return whether the JobState is one in which the job is done.
+    def is_remote(state):
+        """Return whether the state is one in which we expect the
+        remote resource to do something to advance it to the next
+        state.
+
+        These are WAITING, RUNNING, and the corresponding _CR states.
 
         Args:
             state (JobState): The JobState member to analyse.
 
         Returns:
-            bool: True If a job in this state is not running, and is not
-            waiting to run at some point in the future.
+            bool: True iff this state is remote.
         """
-        return (state != JobState.WAITING) and (state != JobState.RUNNING)
+        return state in [JobState.WAITING,
+                         JobState.WAITING_CR,
+                         JobState.RUNNING,
+                         JobState.RUNNING_CR]
 
     @staticmethod
-    def to_external_string(state):
-        """Return a string describing this JobState.
+    def to_cwl_state_string(state):
+        """Return a string containing the CWL state corresponding to
+        this state.
 
         Args:
             state (JobState): The JobState member to convert.
 
         Returns:
-            A string describing the argument.
+            A string describing the argument as a CWL state.
         """
-        state_to_string = {
+        state_to_cwl_string = {
+            JobState.SUBMITTED: 'Waiting',
+            JobState.STAGING: 'Waiting',
             JobState.WAITING: 'Waiting',
             JobState.RUNNING: 'Running',
+            JobState.FINISHED: 'Running',
+            JobState.DESTAGING: 'Running',
             JobState.SUCCESS: 'Success',
+
+            JobState.STAGING_CR: 'Waiting',
+            JobState.WAITING_CR: 'Waiting',
+            JobState.RUNNING_CR: 'Running',
+            JobState.DESTAGING_CR: 'Running',
             JobState.CANCELLED: 'Cancelled',
+
             JobState.SYSTEM_ERROR: 'SystemError',
             JobState.TEMPORARY_FAILURE: 'TemporaryFailure',
             JobState.PERMANENT_FAILURE: 'PermanentFailure',
         }
-        return state_to_string[state]
+        return state_to_cwl_string[state]

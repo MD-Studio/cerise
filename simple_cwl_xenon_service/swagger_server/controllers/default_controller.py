@@ -16,7 +16,7 @@ def _internal_job_to_rest_job(job):
             name=job.name,
             workflow=job.workflow,
             input=job_input,
-            state=job_state.JobState.to_external_string(job.state),
+            state=job_state.JobState.to_cwl_state_string(job.state),
             output=job_output,
             log=flask.url_for('.swagger_server_controllers_default_controller_get_job_log_by_id',
                 jobId=job.id,
@@ -39,6 +39,7 @@ def cancel_job_by_id(jobId):
             flask.abort(404, "Job not found")
 
         job_manager.job_runner().cancel_job(jobId)
+        job_manager.job_runner().update_job(jobId)
 
     return flask.url_for('.swagger_server_controllers_default_controller_get_job_by_id',
             jobId=job.id,
@@ -56,6 +57,7 @@ def delete_job_by_id(jobId):
     """
     with job_manager.job_store():
         job_manager.job_runner().cancel_job(jobId)
+        # Wait until it is gone?
         job_manager.remote_files().delete_job(jobId)
         job_manager.local_files().delete_output_dir(jobId)
         job_manager.job_store().delete_job(jobId)
@@ -76,11 +78,8 @@ def get_job_by_id(jobId):
         if not job:
             flask.abort(404, "Job not found")
 
-        print("Updating...")
         job_manager.job_runner().update_job(jobId)
-        print("Updating 2...")
         output_files = job_manager.remote_files().update_job(jobId)
-        print("Publishing...")
         job_manager.local_files().publish_job_output(jobId, output_files)
 
     return _internal_job_to_rest_job(job)
@@ -138,10 +137,14 @@ def post_job(body):
                 )
             )
 
-        input_files = job_manager.local_files().resolve_input(job_id)
-        job_manager.remote_files().stage_job(job_id, input_files)
-        job_manager.local_files().create_output_dir(job_id)
-        job_manager.job_runner().start_job(job_id)
-
         job = job_manager.job_store().get_job(job_id)
+
+        if job.try_transition(job_state.JobState.SUBMITTED, job_state.JobState.STAGING):
+            input_files = job_manager.local_files().resolve_input(job_id)
+            job_manager.remote_files().stage_job(job_id, input_files)
+            job_manager.local_files().create_output_dir(job_id)
+            job_manager.job_runner().start_job(job_id)
+        else:
+            job.state = job_state.JobState.SYSTEM_ERROR
+
         return _internal_job_to_rest_job(job)
