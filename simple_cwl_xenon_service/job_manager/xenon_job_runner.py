@@ -38,12 +38,8 @@ class XenonJobRunner:
             if JobState.is_remote(job.state):
                 active_jobs = self._x.jobs().getJobs(self._sched, [])
                 xenon_job = [x_job for x_job in active_jobs if x_job.getIdentifier() == job.remote_job_id]
-                print("Xenon job:")
-                print(xenon_job)
                 if len(xenon_job) == 1:
                     xenon_status = self._x.jobs().getJobStatus(xenon_job[0])
-                    print("Xenon status:")
-                    print(xenon_status)
                     if xenon_status.isRunning():
                         job.try_transition(JobState.WAITING, JobState.RUNNING)
                         job.try_transition(JobState.WAITING_CR, JobState.RUNNING_CR)
@@ -106,31 +102,3 @@ class XenonJobRunner:
                         job.try_transition(JobState.RUNNING, JobState.RUNNING_CR)
                     else:
                         job.state = JobState.CANCELLED
-
-def _xenon_status_to_job_state(xenon_status):
-    """Convert a xenon JobStatus to our JobState.
-
-    Args:
-        xenon_status (JobStatus): A xenon JobStatus object.
-
-    Returns:
-        JobState: A corresponding JobState object.
-    """
-    if xenon_status.isRunning():
-        return JobState.RUNNING
-
-    if xenon_status.isDone():
-        if xenon_status.hasException():
-            # TODO: fix, check that it is a JobCanceledException
-            print(xenon_status.getException())
-            return JobState.CANCELLED
-
-        exit_code = xenon_status.getExitCode().intValue()
-        if exit_code == 0:
-            return JobState.SUCCESS
-        if exit_code == 1:
-            return JobState.PERMANENT_FAILURE
-        if exit_code == 33:
-            return JobState.PERMANENT_FAILURE
-        return JobState.SYSTEM_ERROR
-
