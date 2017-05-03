@@ -1,4 +1,5 @@
 from .in_memory_job_store import InMemoryJobStore
+from .sqlite_job_store import SQLiteJobStore
 from .local_files import LocalFiles
 from .xenon_remote_files import XenonRemoteFiles
 from .xenon_job_runner import XenonJobRunner
@@ -20,7 +21,8 @@ with open(config_file_path) as config_file:
     config = yaml.safe_load(config_file)
 
 _xenon = xenon.Xenon()
-_job_store = InMemoryJobStore()
+# _job_store = InMemoryJobStore()
+_job_store = SQLiteJobStore('scxs.db')
 _local_files = LocalFiles(_job_store, config['local'])
 _remote_files = XenonRemoteFiles(_job_store, _xenon, config['compute-resource'])
 _job_runner = XenonJobRunner(_job_store, _xenon, config['compute-resource'])

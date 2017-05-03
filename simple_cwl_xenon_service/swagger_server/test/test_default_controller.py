@@ -90,6 +90,7 @@ class TestDefaultController(BaseTestCase):
 
         print(response.json)
         assert all(item in response.json for item in test_job)
+        assert response.json['state'] == 'Success'
         out_file_path = response.json['output']['output']['path']
         with open(out_file_path, 'r') as f:
             assert f.read() == 'Hello world!\n'

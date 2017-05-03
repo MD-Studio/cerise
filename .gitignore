@@ -3,3 +3,5 @@
 **/*.autosave
 **/*.swp
 **/.cache/**
+scxs.db
+.coverage

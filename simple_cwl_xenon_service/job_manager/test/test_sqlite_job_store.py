@@ -28,14 +28,15 @@ def inited_db(request, empty_db):
             local_input TEXT,
             state VARCHAR(17) DEFAULT 'Submitted',
             log TEXT,
-            output TEXT,
+            remote_output TEXT,
             workflow_content BLOB,
             remote_workdir_path VARCHAR(255),
             remote_workflow_path VARCHAR(255),
             remote_input_path VARCHAR(255),
             remote_stdout_path VARCHAR(255),
             remote_stderr_path VARCHAR(255),
-            remote_job_id VARCHAR(255)
+            remote_job_id VARCHAR(255),
+            local_output TEXT
             )
             """)
     empty_db['conn'].commit()
@@ -161,6 +162,10 @@ def test_set_get_remote_stdout_path(job):
 def test_set_get_remote_stderr_path(job):
     job.remote_stderr_path = '/test_set_get'
     assert job.remote_stderr_path == '/test_set_get'
+
+def test_set_get_local_output(job):
+    job.local_output = WcJob.local_output
+    assert job.local_output == WcJob.local_output
 
 def test_set_get_remote_job_id(job):
     job.remote_job_id = 'slurm.00042'

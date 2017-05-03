@@ -1,5 +1,7 @@
 from .cwl import get_files_from_binding
 
+from .job_state import JobState
+
 import json
 import os
 import shutil
@@ -108,7 +110,7 @@ class LocalFiles:
                     output[output_name]['path'] = self._to_abs_path('output/' + job_id + '/' + file_name)
 
                 job.local_output = json.dumps(output)
-                job.output_files_published = True
+                job.try_transition(JobState.DESTAGING, JobState.SUCCESS)
 
     def _get_content_from_url(self, url):
         """Return the content referenced by a URL.

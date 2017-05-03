@@ -70,7 +70,7 @@ def test_start_broken_job(fixture):
     fixture['xenon-job-runner'].update_job('test_start_broken_job')
     updated_job = fixture['store'].get_job('test_start_broken_job')
     assert updated_job.state == JobState.FINISHED
-    assert updated_job.output == ''
+    assert updated_job.remote_output == ''
 
 def test_update(fixture):
     fixture['store'].add_test_job('test_update', 'slow', 'staged')

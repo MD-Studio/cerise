@@ -34,7 +34,7 @@ class InMemoryJob:
         """JobState: Current state of the job."""
         self.log = ''
         """str: Log output as of last update."""
-        self.output = ''
+        self.remote_output = ''
         """str: cwl-runner output as of last update."""
 
         # Post-resolving data
@@ -56,7 +56,10 @@ class InMemoryJob:
         """str: The absolute remote path of the standard error dump."""
 
         # Post-destaging data
-        # Should there be the location of the destaged files here?
+        self.local_output = ''
+        """str: The serialised JSON output object describing the
+        destaged outputs.
+        """
 
         # Internal data
         self.remote_job_id = None

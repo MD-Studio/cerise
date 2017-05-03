@@ -161,6 +161,8 @@ class XenonRemoteFiles:
             log = self._read_remote_file(job_id, 'stderr.txt')
             if len(log) > 0:
                 job.log = log.decode()
+                print("Log:")
+                print(job.log)
                 if job.state == JobState.FINISHED:
                     if 'Final process status is permanentFail' in job.log:
                         job.state = JobState.PERMANENT_FAILURE

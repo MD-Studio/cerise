@@ -66,14 +66,14 @@ class SQLiteJob:
 
 
     @property
-    def output(self):
+    def remote_output(self):
         """str: cwl-runner output as of last update.
         """
-        return self._get_var('output')
+        return self._get_var('remote_output')
 
-    @output.setter
-    def output(self, value):
-        self._set_var('output', value)
+    @remote_output.setter
+    def remote_output(self, value):
+        self._set_var('remote_output', value)
 
 
     # Post-resolving data
@@ -146,7 +146,17 @@ class SQLiteJob:
 
 
     # Post-destaging data
-    # Should there be the location of the destaged files here?
+    @property
+    def local_output(self):
+        """str: The serialised JSON output object describing the
+                destaged outputs.
+        """
+        return self._get_var('local_output')
+
+    @local_output.setter
+    def local_output(self, value):
+        self._set_var('local_output', value)
+
 
     # Internal data
     @property

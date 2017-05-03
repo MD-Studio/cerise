@@ -46,16 +46,17 @@ class SQLiteJobStore(JobStore):
                 name VARCHAR(255),
                 workflow VARCHAR(255),
                 local_input TEXT,
-                state VARCHAR(17),
-                log TEXT,
-                output TEXT,
+                state VARCHAR(17) DEFAULT 'SUBMITTED',
+                log TEXT DEFAULT '',
+                remote_output TEXT DEFAULT '',
                 workflow_content BLOB,
-                remote_workdir_path VARCHAR(255),
-                remote_workflow_path VARCHAR(255),
-                remote_input_path VARCHAR(255),
-                remote_stdout_path VARCHAR(255),
-                remote_stderr_path VARCHAR(255),
-                remote_job_id VARCHAR(255)
+                remote_workdir_path VARCHAR(255) DEFAULT '',
+                remote_workflow_path VARCHAR(255) DEFAULT '',
+                remote_input_path VARCHAR(255) DEFAULT '',
+                remote_stdout_path VARCHAR(255) DEFAULT '',
+                remote_stderr_path VARCHAR(255) DEFAULT '',
+                remote_job_id VARCHAR(255),
+                local_output TEXT DEFAULT ''
                 )
                 """)
         conn.commit()
@@ -141,8 +142,12 @@ class SQLiteJobStore(JobStore):
                 or list_jobs().
 
         Returns:
-            SQLiteJob: The job object corresponding to the given id.
+            Union[SQLiteJob, NoneType]: The job object corresponding to the given id.
         """
+        res = self._thread_local_data.conn.execute("""
+                SELECT COUNT(*) FROM jobs WHERE job_id = ?""", (job_id,))
+        if res.fetchone()[0] == 0:
+            return None
         return SQLiteJob(self, job_id)
 
     def delete_job(self, job_id):
