@@ -131,7 +131,6 @@ class SQLiteJobStore(JobStore):
         res = self._thread_local_data.conn.execute("""
                 SELECT job_id FROM jobs;""")
         ret = [SQLiteJob(self, row[0]) for row in res.fetchall()]
-        print(ret[0].id)
         return ret
 
     def get_job(self, job_id):

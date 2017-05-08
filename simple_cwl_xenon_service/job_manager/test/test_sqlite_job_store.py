@@ -56,6 +56,10 @@ def onejob_db(request, inited_db):
     return inited_db
 
 @pytest.fixture
+def empty_store(request, empty_db):
+    return {'conn': empty_db['conn'], 'store': SQLiteJobStore(empty_db['file'])}
+
+@pytest.fixture
 def onejob_store(request, onejob_db):
     return {'conn': onejob_db['conn'], 'store': SQLiteJobStore(onejob_db['file'])}
 
@@ -83,6 +87,11 @@ def test_create_job(onejob_store):
         onejob_store['store'].create_job(desc)
     res = onejob_store['conn'].execute("""SELECT * FROM jobs WHERE name = 'test_create_job';""")
     assert len(res.fetchall()) == 1
+
+def test_list_jobs_empty(empty_store):
+    with empty_store['store']:
+        joblist = empty_store['store'].list_jobs()
+        assert len(joblist) == 0
 
 def test_list_jobs(onejob_store):
     with onejob_store['store']:
