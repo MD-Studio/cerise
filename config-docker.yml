@@ -12,6 +12,10 @@ compute-resource:
     credential:
     properties:
 
+local:
+  file-store-path: /tmp/simple_cwl_xenon_service_files
+  file-store-location: http://localhost:0/
+
 rest-service:
   hostname: 0.0.0.0           # Set to 0.0.0.0 to listen on external interfaces as well
   port: 29593

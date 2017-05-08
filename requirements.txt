@@ -1,4 +1,5 @@
 connexion == 1.0.129
+gunicorn >= 19.7.1
 python_dateutil == 2.6.0
 pyxenon >= 0.3
 requests

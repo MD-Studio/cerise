@@ -20,5 +20,8 @@ RUN cd /home/simple_cwl_xenon_service && pip3 install -r requirements.txt
 # Change user, set up and run
 USER simple_cwl_xenon_service
 RUN mkdir /tmp/simple_cwl_xenon_service
-CMD cd /home/simple_cwl_xenon_service && python3 -m simple_cwl_xenon_service
+RUN mkdir /tmp/simple_cwl_xenon_service_files
+WORKDIR /home/simple_cwl_xenon_service
+CMD ["gunicorn", "--bind", "0.0.0.0:29593", "-k", "gthread", "--workers", "2", "--threads", "4", "simple_cwl_xenon_service.__main__:application"]
+# CMD tail -f /home/simple_cwl_xenon_service/config.yml
 
