@@ -96,6 +96,11 @@ class SQLiteJobStore(JobStore):
             self._pool_lock.acquire()
 
             connection = self._thread_local_data.__dict__.pop('conn')
+
+            # Roll back any open transaction so we don't keep the DB
+            # locked forever if an error occurs.
+            connection.rollback()
+
             self._connection_pool.append(connection)
 
             self._pool_lock.release()

@@ -19,7 +19,7 @@ try:
 except ValueError:
     pass
 
-config_file_path = 'config.yml'
+config_file_path = 'conf/config.yml'
 with open(config_file_path) as config_file:
     config = yaml.safe_load(config_file)
 

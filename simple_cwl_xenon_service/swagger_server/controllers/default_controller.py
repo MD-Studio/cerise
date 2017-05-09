@@ -5,6 +5,7 @@ import flask
 import json
 
 import job_manager
+import job_manager.job_description
 from job_manager import job_state
 
 def _internal_job_to_rest_job(job):
@@ -16,7 +17,10 @@ def _internal_job_to_rest_job(job):
     job_input = json.loads(job.local_input)
 
     return Job(
-            id=job.id,
+#            id=flask.url_for('.swagger_server_controllers_default_controller_get_job_by_id',
+#                jobId=job.id,
+#                _external=True),
+            id = job.id,
             name=job.name,
             workflow=job.workflow,
             input=job_input,
@@ -85,7 +89,7 @@ def get_job_by_id(jobId):
         job_manager.job_runner().update_job(jobId)
         output_files = job_manager.remote_files().update_job(jobId)
         job_manager.local_files().publish_job_output(jobId, output_files)
-        return _internal_job_to_rest_job(job)
+        return _internal_job_to_rest_job(job), 200
 
 
 def get_job_log_by_id(jobId):
@@ -150,4 +154,4 @@ def post_job(body):
         else:
             job.state = job_state.JobState.SYSTEM_ERROR
 
-        return _internal_job_to_rest_job(job)
+        return _internal_job_to_rest_job(job), 201

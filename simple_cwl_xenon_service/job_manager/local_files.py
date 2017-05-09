@@ -4,6 +4,7 @@ from .job_state import JobState
 
 import json
 import os
+import requests
 import shutil
 import urllib
 

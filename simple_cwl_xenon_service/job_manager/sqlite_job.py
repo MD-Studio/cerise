@@ -187,6 +187,7 @@ class SQLiteJob:
         res = self._store._thread_local_data.conn.execute("""
             UPDATE jobs SET state = ? WHERE job_id = ? AND state = ?;""",
             (to_state.name, self.id, from_state.name))
+        self._store._thread_local_data.conn.commit()
         return res.rowcount == 1
 
     def _get_var(self, var):
