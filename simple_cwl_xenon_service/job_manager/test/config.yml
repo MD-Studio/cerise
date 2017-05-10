@@ -12,9 +12,9 @@ compute-resource:
     credential:
     properties:
 
-local:
-  file-store-path:
-  file-store-location:
+client-file-exchange:
+  store-location-service:
+  store-location-client:
 
 rest-service:
   hostname: 127.0.0.1           # Set to 0.0.0.0 to listen on external interfaces as well

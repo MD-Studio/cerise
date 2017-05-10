@@ -13,10 +13,11 @@ class LocalFiles:
         """Create a LocalFiles object.
         Sets up local directory structure as well.
 
-        Local configuration consists of the keys 'file-store-path' and
-        'file-store-location'. The former should contain a str with the
-        path of the local file store, the latter a str with a base URL
-        corresponding to this path.
+        Local configuration consists of the keys 'store-location-service'
+        and 'store-location-client'. The former should contain a str with
+        a file:// URL pointing to the path of the local file store, the
+        latter a str with a base URL (file or http) describing the way the
+        user sees this location.
 
         Args:
             local_config (Dict): A dict containing key-value pairs with
@@ -25,15 +26,15 @@ class LocalFiles:
         self._job_store = job_store
         """JobStore: The job store to get jobs from."""
 
-        self._basedir = local_config['file-store-path']
+        self._basedir = local_config['store-location-service']
         """str: The local path to the base directory where we store our stuff."""
 
-        self._baseurl = local_config['file-store-location']
+        self._baseurl = local_config['store-location-client']
         """str: The externally accessible base URL corresponding to the _basedir."""
 
         basedir = urllib.parse.urlparse(self._basedir)
         if basedir.scheme != 'file':
-            raise ValueError('Invalid scheme in file-store-path: ' + basedir.scheme)
+            raise ValueError('Invalid scheme in store-location-service: ' + basedir.scheme)
         self._basedir = basedir.path
 
         try:

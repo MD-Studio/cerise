@@ -20,8 +20,8 @@ def fixture(request, tmpdir):
         })
 
     result['local-files-config'] = {
-        'file-store-path': 'file://' + basedir,
-        'file-store-location': 'http://example.com'
+        'store-location-service': 'file://' + basedir,
+        'store-location-client': 'http://example.com'
         }
 
     result['local-files'] = LocalFiles(result['store'], result['local-files-config'])

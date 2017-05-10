@@ -45,7 +45,7 @@ signal.signal(signal.SIGINT, term_handler)
 
 # _job_store = InMemoryJobStore()
 _job_store = SQLiteJobStore('scxs.db')
-_local_files = LocalFiles(_job_store, config['local'])
+_local_files = LocalFiles(_job_store, config['client-file-exchange'])
 _remote_files = XenonRemoteFiles(_job_store, _xenon, config['compute-resource'])
 _job_runner = XenonJobRunner(_job_store, _xenon, config['compute-resource'])
 
