@@ -114,8 +114,10 @@ class XenonRemoteFiles:
         Returns:
             List[str, str, bytes]: A list of (name, path, content) tuples.
         """
+        print("Job id: " + job_id)
         with self._job_store:
             job = self._job_store.get_job(job_id)
+            print("Remote output" + job.remote_output)
             outputs = json.loads(job.remote_output)
             output_files = []
             for output_name, path in get_files_from_binding(outputs):
@@ -146,6 +148,7 @@ class XenonRemoteFiles:
         Args:
             job_id (str): ID of the job to get the status of.
         """
+        print("Updating " + job_id)
         output_files = None
         with self._job_store:
             job = self._job_store.get_job(job_id)

@@ -40,7 +40,8 @@ class WcJob:
                 '    type: File\n'
                 '    outputBinding: { glob: output.txt }\n', 'utf-8')
 
-    local_input = '{ "file": { "class": "File", "location": "input/hello_world.txt" } }'
+    def local_input(local_baseurl):
+        return '{ "file": { "class": "File", "location": "' + local_baseurl + '/input/hello_world.txt" } }'
 
     local_input_files = [('file', 'input/hello_world.txt', bytes(
                 'Hello, World!\n'
@@ -88,7 +89,8 @@ class MissingInputJob:
                 '    type: File\n'
                 '    outputBinding: { glob: output.txt }\n', 'utf-8')
 
-    local_input = '{ "file": { "class": "File", "location": "input/non_existing_file.txt" } }'
+    def local_input(local_baseurl):
+        return '{ "file": { "class": "File", "location": "' + local_baseurl + 'input/non_existing_file.txt" } }'
 
     input_files = []
 

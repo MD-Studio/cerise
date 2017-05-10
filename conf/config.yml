@@ -13,7 +13,7 @@ compute-resource:
     properties:
 
 local:
-  file-store-path: /tmp/simple_cwl_xenon_service_files
+  file-store-path: file:///tmp/simple_cwl_xenon_service_files
   file-store-location: file:///tmp/simple_cwl_xenon_service_files
 
 rest-service:

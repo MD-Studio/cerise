@@ -30,14 +30,14 @@ class TestDefaultController(BaseTestCase):
 
         body = JobDescription(
                 name=name,
-                workflow='input/test_workflow.cwl',
+                workflow='file:///tmp/simple_cwl_xenon_service_files/input/test_workflow.cwl',
                 input=input_data
             )
         response = self.client.open('/jobs',
                                     method='POST',
                                     data=json.dumps(body),
                                     content_type='application/json')
-        self.assert200(response, "Response body is : " + response.data.decode('utf-8'))
+        self.assertStatus(response, 201, "Response body is : " + response.data.decode('utf-8'))
         return response.json
 
     def test_cancel_job_by_id(self):

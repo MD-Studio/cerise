@@ -31,6 +31,11 @@ class LocalFiles:
         self._baseurl = local_config['file-store-location']
         """str: The externally accessible base URL corresponding to the _basedir."""
 
+        basedir = urllib.parse.urlparse(self._basedir)
+        if basedir.scheme != 'file':
+            raise ValueError('Invalid scheme in file-store-path: ' + basedir.scheme)
+        self._basedir = basedir.path
+
         try:
             os.mkdir(self._basedir)
         except FileExistsError:
@@ -51,15 +56,18 @@ class LocalFiles:
 
         This function will read the job from the database, add a
         .workflow_content attribute with the contents of the
-        referenced file, and add a .input_files attribute
-        containing the input data.
+        referenced file, and return an array of tuples containing
+        the input data.
 
-        Local file:// URLs, or URLs without a schema, will be
-        resolved relative to the local file-store-path/input.
-        This function will also load remote http:// URLs.
+        This function will accept local file:// URLs as well as
+        remote http:// URLs.
 
         Args:
             job_id (str): The id of the job whose input to resolve.
+
+        Returns:
+            [Tuple[str, str, bytes]]: One tuple per input file, with
+            fields name, location and contents in that order.
         """
         with self._job_store:
             job = self._job_store.get_job(job_id)
@@ -116,9 +124,8 @@ class LocalFiles:
     def _get_content_from_url(self, url):
         """Return the content referenced by a URL.
 
-        URLs with no schema, or a file:// schema, will be
-        resolved relative to the file-store-path/input directory,
-        remote URLs will be downloaded.
+        This function will accept local file:// URLs as well as
+        remote http:// URLs.
 
         Args:
             url (str): The URL to get the content of
@@ -126,23 +133,25 @@ class LocalFiles:
         Returns:
             bytes: The contents of the file
         """
-        parsed_url = urllib.parse.urlparse(url, scheme='file')
+        parsed_url = urllib.parse.urlparse(url)
 
         if parsed_url.scheme == 'file':
-            return self._read_from_file(parsed_url.path)
-        else:
+            return self._read_from_file(os.path.join('', parsed_url.path))
+        elif parsed_url.scheme == 'http':
             return requests.get(url).content
+        else:
+            raise ValueError('Invalid scheme in input URL: ' + url)
 
-    def _read_from_file(self, rel_path):
+    def _read_from_file(self, abs_path):
         """Read data from a local file.
 
         Args:
-            rel_path (str): A path relative to the local base directory
+            abs_path (str): An absolute local path
 
         Returns:
             bytes: The contents of the file.
         """
-        with open(self._to_abs_path(rel_path), 'rb') as f:
+        with open(abs_path, 'rb') as f:
             data = f.read()
         return data
 

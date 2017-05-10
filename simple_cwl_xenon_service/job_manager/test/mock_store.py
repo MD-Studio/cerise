@@ -25,6 +25,7 @@ class MockStore:
                 files are put for testing purposes.
         """
         self._local_base_path = test_config.get('local-base-path')
+        self._local_base_url = 'file://' + self._local_base_path
         self._remote_base_path = test_config.get('remote-base-path')
         self._jobs = []
 
@@ -84,11 +85,10 @@ class MockStore:
         pass
 
     def _create_pass_job(self, job_id, stage):
-        job = InMemoryJob(job_id, job_id, "input/pass_workflow.cwl", "{}")
+        pass_wf_path = os.path.join(self._local_base_path, 'input', 'pass_workflow.cwl')
+        job = InMemoryJob(job_id, job_id, 'file://' + pass_wf_path, "{}")
 
         if stage == 'submitted':
-            pass_wf_path = os.path.join(self._local_base_path, 'input', 'pass_workflow.cwl')
-
             with open(pass_wf_path, 'wb') as f:
                 f.write(PassJob.workflow)
 
@@ -142,11 +142,10 @@ class MockStore:
 
     def _create_wc_job(self, job_id, stage):
         # Create
-        job = InMemoryJob(job_id, job_id, "input/wc_workflow.cwl", WcJob.local_input)
+        wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
+        job = InMemoryJob(job_id, job_id, 'file://' + wc_wf_path, WcJob.local_input(self._local_base_url))
 
         if stage == 'submitted':
-            wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
-
             with open(wc_wf_path, 'wb') as f:
                 f.write(WcJob.workflow)
 
@@ -215,11 +214,10 @@ class MockStore:
 
     def _create_missing_input_job(self, job_id, stage):
         # Create
-        job = InMemoryJob(job_id, job_id, "input/wc_workflow.cwl", MissingInputJob.local_input)
+        wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
+        job = InMemoryJob(job_id, job_id, 'file://' + wc_wf_path, MissingInputJob.local_input(self._local_base_url))
 
         if stage == 'submitted':
-            wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
-
             with open(wc_wf_path, 'wb') as f:
                 f.write(WcJob.workflow)
 

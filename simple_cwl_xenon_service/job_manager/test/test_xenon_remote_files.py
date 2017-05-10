@@ -25,6 +25,7 @@ def fixture(request, tmpdir, x):
     result['remote-dir'] = str(tmpdir)
 
     result['store'] = MockStore({
+        'local-base-path': '',
         'remote-base-path': result['remote-dir']
         })
 

@@ -20,7 +20,7 @@ def fixture(request, tmpdir):
         })
 
     result['local-files-config'] = {
-        'file-store-path': basedir,
+        'file-store-path': 'file://' + basedir,
         'file-store-location': 'http://example.com'
         }
 
@@ -40,7 +40,8 @@ def test_resolve_input(fixture):
     fixture['store'].add_test_job('test_resolve_input', 'wc', 'submitted')
     input_files = fixture['local-files'].resolve_input('test_resolve_input')
     assert fixture['store'].get_job('test_resolve_input').workflow_content == WcJob.workflow
-    assert input_files == WcJob.local_input_files
+    assert input_files[0][0] == WcJob.local_input_files[0][0]
+    assert input_files[0][2] == WcJob.local_input_files[0][2]
 
 def test_resolve_missing_input(fixture):
     fixture['store'].add_test_job('test_missing_input', 'missing_input', 'submitted')

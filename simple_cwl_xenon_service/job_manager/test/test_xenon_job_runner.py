@@ -24,6 +24,7 @@ def fixture(request, tmpdir, x):
 
     result['remote-dir'] = str(tmpdir)
     result['store'] = MockStore({
+        'local-base-path': '',
         'remote-base-path': result['remote-dir']
         })
     result['xenon'] = x
@@ -65,7 +66,7 @@ def test_start_broken_job(fixture):
     fixture['store'].add_test_job('test_start_broken_job', 'broken', 'staged')
     fixture['xenon-job-runner'].start_job('test_start_broken_job')
 
-    time.sleep(0.5)
+    time.sleep(1)
 
     fixture['xenon-job-runner'].update_job('test_start_broken_job')
     updated_job = fixture['store'].get_job('test_start_broken_job')

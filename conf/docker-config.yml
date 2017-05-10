@@ -13,7 +13,7 @@ compute-resource:
     properties:
 
 local:
-  file-store-path: /home/webdav/files
+  file-store-path: file:///home/webdav/files
   file-store-location: http://localhost:29594/
 
 rest-service:
