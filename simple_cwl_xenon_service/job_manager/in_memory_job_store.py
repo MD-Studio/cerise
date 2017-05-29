@@ -33,11 +33,15 @@ class InMemoryJobStore(JobStore):
         self._lock.release()
 
 
-    def create_job(self, description):
+    def create_job(self, name, workflow, job_input):
         """Create a job.
 
         Args:
-            description (JobDescription): A JobDescription describing the job.
+            name (str): The user-assigned name of the job
+            workflow (str): A string containing a URL pointing to the
+                workflow
+            job_input (str): A string containing a json description of
+                the input object.
 
         Returns:
             str: A string containing the job id.
@@ -46,9 +50,9 @@ class InMemoryJobStore(JobStore):
 
         job = InMemoryJob(
                 job_id=job_id,
-                name=description.name,
-                workflow=description.workflow,
-                job_input=description.input)
+                name=name,
+                workflow=workflow,
+                job_input=job_input)
 
         self._jobs.append(job)
 

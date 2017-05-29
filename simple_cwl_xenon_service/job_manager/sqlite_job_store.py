@@ -107,10 +107,15 @@ class SQLiteJobStore(JobStore):
 
         self._thread_local_data.recursion_depth -= 1
 
-    def create_job(self, description):
+    def create_job(self, name, workflow, job_input):
         """Create a job.
 
         Args:
+            name (str): The user-assigned name of the job
+            workflow (str): A string containing a URL pointing to the
+                workflow
+            job_input (str): A string containing a json description of
+                a json string.
             description (JobDescription): A JobDescription describing the job.
 
         Returns:
@@ -121,8 +126,7 @@ class SQLiteJobStore(JobStore):
         self._thread_local_data.conn.execute("""
                 INSERT INTO jobs (job_id, name, workflow, local_input, state)
                 VALUES (?, ?, ?, ?, ?)""",
-                (job_id, description.name, description.workflow,
-                    description.input, JobState.SUBMITTED.name))
+                (job_id, name, workflow, job_input, JobState.SUBMITTED.name))
         self._thread_local_data.conn.commit()
 
         return job_id

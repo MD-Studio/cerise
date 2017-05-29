@@ -6,8 +6,6 @@ from swagger_server.models.job_description import JobDescription
 from . import BaseTestCase
 from flask import json
 
-import job_manager.job_description
-
 import os.path
 import shutil
 import time

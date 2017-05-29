@@ -4,9 +4,8 @@ from swagger_server.models.job_description import JobDescription
 import flask
 import json
 
-import job_manager
-import job_manager.job_description
 from job_manager import job_state
+from job_manager import job_manager
 
 def _internal_job_to_rest_job(job):
     print("ijtrj: " + job.local_output)
@@ -137,12 +136,7 @@ def post_job(body):
 
     with job_manager.job_store():
         job_id = job_manager.job_store().create_job(
-            job_manager.job_description.JobDescription(
-                name=body.name,
-                workflow=body.workflow,
-                job_input=body.input
-                )
-            )
+                body.name, body.workflow, json.dumps(body.input))
 
         job = job_manager.job_store().get_job(job_id)
 

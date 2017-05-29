@@ -1,6 +1,5 @@
 from simple_cwl_xenon_service.job_manager.sqlite_job_store import SQLiteJobStore
 
-from simple_cwl_xenon_service.job_manager.job_description import JobDescription
 from simple_cwl_xenon_service.job_manager.job_state import JobState
 
 from .fixture_jobs import PassJob
@@ -82,9 +81,8 @@ def test_open_existing_store_data(onejob_db):
         assert store.get_job('258685677b034756b55bbad161b2b89b').name == 'test_sqlite_job_store'
 
 def test_create_job(onejob_store):
-    desc = JobDescription('test_create_job', 'file:///', '{}')
     with onejob_store['store']:
-        onejob_store['store'].create_job(desc)
+        onejob_store['store'].create_job('test_create_job', 'file:///', '{}')
     res = onejob_store['conn'].execute("""SELECT * FROM jobs WHERE name = 'test_create_job';""")
     assert len(res.fetchall()) == 1
 

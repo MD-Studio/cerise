@@ -3,10 +3,16 @@ class JobStore:
     """
 
     # Operations
-    def create_job(self, description):
+    def create_job(self, name, workflow, job_input):
         """Create a job.
 
         Args:
+            name (str): The user-assigned name of the job
+            workflow (str): A string containing a URL pointing to the
+                workflow
+            job_input (str): A string containng a json description of
+                the input object, or an object, which will be converted
+                to a json string.
             description (JobDescription): A JobDescription describing the job.
 
         Returns:
