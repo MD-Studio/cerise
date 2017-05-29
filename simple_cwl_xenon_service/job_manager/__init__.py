@@ -41,10 +41,10 @@ def term_handler(signum, frame):
 signal.signal(signal.SIGINT, term_handler)
 
 # _job_store = InMemoryJobStore()
-_job_store = SQLiteJobStore(config('database')['file'])
-_local_files = LocalFiles(_job_store, config('client-file-exchange'))
-_remote_files = XenonRemoteFiles(_job_store, _xenon, config('compute-resource'))
-_job_runner = XenonJobRunner(_job_store, _xenon, config('compute-resource'))
+_job_store = SQLiteJobStore(config['database']['file'])
+_local_files = LocalFiles(_job_store, config['client-file-exchange'])
+_remote_files = XenonRemoteFiles(_job_store, _xenon, config['compute-resource'])
+_job_runner = XenonJobRunner(_job_store, _xenon, config['compute-resource'])
 
 def job_store():
     return _job_store
