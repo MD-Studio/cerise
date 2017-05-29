@@ -1,11 +1,3 @@
-from .in_memory_job_store import InMemoryJobStore
-from .sqlite_job_store import SQLiteJobStore
-from .local_files import LocalFiles
-from .xenon_remote_files import XenonRemoteFiles
-from .xenon_job_runner import XenonJobRunner
-
-from simple_cwl_xenon_service.config import config
-
 import atexit
 import signal
 import threading
@@ -40,20 +32,8 @@ def term_handler(signum, frame):
 
 signal.signal(signal.SIGINT, term_handler)
 
-# _job_store = InMemoryJobStore()
-_job_store = SQLiteJobStore(config['database']['file'])
-_local_files = LocalFiles(_job_store, config['client-file-exchange'])
-_remote_files = XenonRemoteFiles(_job_store, _xenon, config['compute-resource'])
-_job_runner = XenonJobRunner(_job_store, _xenon, config['compute-resource'])
+# The central job manager object
+from simple_cwl_xenon_service.config import config
+from .job_manager import JobManager
 
-def job_store():
-    return _job_store
-
-def local_files():
-    return _local_files
-
-def remote_files():
-    return _remote_files
-
-def job_runner():
-    return _job_runner
+job_manager = JobManager(config, _xenon)
