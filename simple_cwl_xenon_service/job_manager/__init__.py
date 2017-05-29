@@ -4,11 +4,12 @@ from .local_files import LocalFiles
 from .xenon_remote_files import XenonRemoteFiles
 from .xenon_job_runner import XenonJobRunner
 
+from simple_cwl_xenon_service.config import config
+
 import atexit
 import signal
 import threading
 import xenon
-import yaml
 
 # The try-except ignores an error from Xenon about double initialisation.
 # I'm not doing that as far as I can see, but it seems that PyTest does,
@@ -18,10 +19,6 @@ try:
     xenon.init()
 except ValueError:
     pass
-
-config_file_path = 'conf/config.yml'
-with open(config_file_path) as config_file:
-    config = yaml.safe_load(config_file)
 
 # This is a bit of a belt-and-suspenders approach, but it seems to work.
 _xenon_closing_lock = threading.Lock()
@@ -45,9 +42,9 @@ signal.signal(signal.SIGINT, term_handler)
 
 # _job_store = InMemoryJobStore()
 _job_store = SQLiteJobStore('scxs.db')
-_local_files = LocalFiles(_job_store, config['client-file-exchange'])
-_remote_files = XenonRemoteFiles(_job_store, _xenon, config['compute-resource'])
-_job_runner = XenonJobRunner(_job_store, _xenon, config['compute-resource'])
+_local_files = LocalFiles(_job_store, config('client-file-exchange'))
+_remote_files = XenonRemoteFiles(_job_store, _xenon, config('compute-resource'))
+_job_runner = XenonJobRunner(_job_store, _xenon, config('compute-resource'))
 
 def job_store():
     return _job_store
