@@ -159,6 +159,26 @@ def test_get_job_by_id(service, webdav_client, service_client):
     assert out_data.text == 'Hello world!\n'
 
 
+def test_get_job_log_by_id(service, webdav_client, service_client):
+    """
+    Test case for get_job_log_by_id
+
+    Log of a job
+    """
+    test_job = _create_test_job('test_get_job_log_by_id',
+            'test_workflow.cwl', 'test_input.json',
+            webdav_client, service_client)
+
+#   Disable the following for now, Bravado only supports JSON responses, and
+#   this is plain text :(
+
+#   time.sleep(1)
+#   (log, response) = service_client.jobs.get_job_log_by_id(jobId=test_job.id).result()
+#   assert response.status_code == 200
+
+
+
+
 '''
 webdav.mkdir('/input/testjob')
 webdav.upload_sync(local_path = 'test_workflow.cwl', remote_path = '/input/testjob/test_workflow.cwl')
