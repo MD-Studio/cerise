@@ -31,7 +31,7 @@ def docker_client(request):
     return docker.from_env()
 
 @pytest.fixture
-def dockers(request, tmpdir, docker_client, docker_image):
+def service(request, tmpdir, docker_client, docker_image):
     scxs_container = docker_client.containers.run(
             docker_image,
             name='simple-cwl-xenon-service-integration-test-container',
@@ -52,11 +52,11 @@ def dockers(request, tmpdir, docker_client, docker_image):
     scxs_container.remove()
 
 @pytest.fixture
-def webdav_client(request, dockers):
+def webdav_client(request, service):
     return wc.Client({'webdav_hostname': 'http://localhost:29594'})
 
 @pytest.fixture
-def service_client(request, dockers):
+def service_client(request, service):
     bravado_config = {
         'validate_responses': False,
         'also_return_response': True
@@ -99,7 +99,7 @@ def _create_test_job(name, cwlfile, inputfile, webdav, service):
     assert response.status_code == 201
     return job
 
-def test_cancel_job_by_id(dockers, webdav_client, service_client):
+def test_cancel_job_by_id(service, webdav_client, service_client):
     """
     Test case for cancel_job_by_id
 
@@ -117,7 +117,7 @@ def test_cancel_job_by_id(dockers, webdav_client, service_client):
     assert response.status_code == 200
     assert updated_job.state == 'Cancelled'
 
-def test_delete_job_by_id(dockers, webdav_client, service_client):
+def test_delete_job_by_id(service, webdav_client, service_client):
     """
     Test case for delete_job_by_id
 
@@ -133,9 +133,7 @@ def test_delete_job_by_id(dockers, webdav_client, service_client):
         (updated_job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
 
 
-
-
-def test_get_job_by_id(dockers, webdav_client, service_client):
+def test_get_job_by_id(service, webdav_client, service_client):
     """
     Test case for get_job_by_id
 
