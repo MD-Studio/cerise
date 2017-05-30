@@ -50,6 +50,7 @@ class XenonRemoteFiles:
         """str: The remote path to the base directory where we store our stuff."""
 
         # Create basedir if it doesn't exist
+        self._basedir = self._basedir.rstrip('/')
         basedir_rel_path = RelativePath(self._basedir)
         basedir_full_path = self._x.files().newPath(self._fs, basedir_rel_path)
         try:
@@ -124,7 +125,8 @@ class XenonRemoteFiles:
                 print('Destage path = ' + path + ' for output ' + output_name)
                 prefix = 'file://' + self._basedir + '/jobs/' + job_id + '/work/'
                 if not path.startswith(prefix):
-                    raise Exception("Unexpected output location in cwl-runner output: " + path)
+                    raise Exception("Unexpected output location in cwl-runner output: " + path
+                            + ", expected it to start with: " + prefix)
                 rel_path = path[len(prefix):]
                 content = self._read_remote_file(job_id, 'work/' + rel_path)
                 output_files.append((output_name, rel_path, content))
