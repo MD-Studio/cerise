@@ -33,7 +33,12 @@ RUN usermod -a -G www-data simple_cwl_xenon_service
 
 # Set up service run dirs
 RUN mkdir /home/simple_cwl_xenon_service/run
-RUN chown simple_cwl_xenon_service:simple_cwl_xenon_service /home/simple_cwl_xenon_service/run
+#   We make these in advance to avoid race conditions between the gunicorn
+#   worker processes; these may otherwise crash trying to make the same
+#   directory simultaneously
+RUN mkdir /home/simple_cwl_xenon_service/run/jobs
+RUN mkdir /home/simple_cwl_xenon_service/run/files
+RUN chown -R simple_cwl_xenon_service:simple_cwl_xenon_service /home/simple_cwl_xenon_service/run
 RUN mkdir /var/log/gunicorn
 RUN chown simple_cwl_xenon_service:root /var/log/gunicorn
 
@@ -41,6 +46,7 @@ RUN chown simple_cwl_xenon_service:root /var/log/gunicorn
 COPY . /home/simple_cwl_xenon_service/
 COPY conf/docker-config.yml /home/simple_cwl_xenon_service/conf/config.yml
 RUN chown -R simple_cwl_xenon_service:simple_cwl_xenon_service /home/simple_cwl_xenon_service
+RUN rm -f /home/simple_cwl_xenon_service/run/scxs.db
 
 # Copy WebDAV configuration
 COPY conf/docker-nginx.conf /etc/nginx/sites-available/default

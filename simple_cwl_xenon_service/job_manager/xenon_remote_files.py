@@ -172,7 +172,7 @@ class XenonRemoteFiles:
                     elif 'Final process status is temporaryFail' in job.log:
                         job.state = JobState.TEMPORARY_FAILURE
                     elif not 'Final process status is success' in job.log:
-                        job.state = JobState.CANCELLED
+                        job.state = JobState.SYSTEM_ERROR
 
             # get output files, if any
             if job.try_transition(JobState.FINISHED, JobState.DESTAGING):

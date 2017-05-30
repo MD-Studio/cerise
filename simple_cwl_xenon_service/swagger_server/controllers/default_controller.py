@@ -46,11 +46,8 @@ def cancel_job_by_id(jobId):
             flask.abort(404, "Job not found")
 
         job_manager.job_runner().cancel_job(jobId)
-        job_manager.job_runner().update_job(jobId)
 
-    return flask.url_for('.swagger_server_controllers_default_controller_get_job_by_id',
-            jobId=job.id,
-            _external=True)
+    return get_job_by_id(jobId)
 
 
 def delete_job_by_id(jobId):
