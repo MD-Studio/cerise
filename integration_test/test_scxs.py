@@ -177,46 +177,25 @@ def test_get_job_log_by_id(service, webdav_client, service_client):
 #   assert response.status_code == 200
 
 
+def test_get_jobs(service, service_client):
+    """
+    Test case for get_jobs
+
+    list of jobs
+    """
+    (jobs, response) = service_client.jobs.get_jobs().result()
+    assert jobs == []
+    assert response.status_code == 200
 
 
-'''
-webdav.mkdir('/input/testjob')
-webdav.upload_sync(local_path = 'test_workflow.cwl', remote_path = '/input/testjob/test_workflow.cwl')
-#webdav.upload_sync(local_path = 'hello_world.txt', remote_path = '/testjob/hello_world.txt')
+def test_post_job(service, webdav_client, service_client):
+    """
+    Test case for post_job
 
-bravado_config = {
-    'validate_responses': False
-    }
-jobrunner = SwaggerClient.from_url('http://localhost:29593/swagger.json', config=bravado_config)
+    submit a new job
+    """
+    test_job = _create_test_job('test_post_job',
+            'test_workflow.cwl', 'test_input.json',
+            webdav_client, service_client)
 
-JobDescription = jobrunner.get_model('job-description')
-
-job_desc = JobDescription(
-        name='integration_test_job',
-        workflow='http://localhost:29594/input/testjob/test_workflow.cwl',
-        input={'message': 'Hello, World!'})
-
-job = jobrunner.jobs.post_job(body=job_desc).result()
-
-print("\nJob:")
-print(job)
-
-job_list = jobrunner.jobs.get_jobs().result()
-
-# print("List of jobs")
-# print(job_list)
-
-time.sleep(1)
-
-job = jobrunner.jobs.get_job_by_id(jobId=job.id).result()
-print("\nUpdated job:")
-print(job)
-
-print("\nOutput:")
-print(job['output'].output)
-
-output_file = requests.get(job['output'].output['location']).text
-print("\n")
-print(output_file)
-'''
-
+    assert test_job.state == 'Waiting'
