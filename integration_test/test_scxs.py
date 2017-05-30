@@ -127,12 +127,39 @@ def test_delete_job_by_id(dockers, webdav_client, service_client):
             'test_workflow.cwl', 'test_input.json',
             webdav_client, service_client)
 
-    # Delete test job
     service_client.jobs.delete_job_by_id(jobId=test_job.id).result()
 
-    # Check that job has been deleted
     with pytest.raises(HTTPNotFound):
         (updated_job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
+
+
+
+
+def test_get_job_by_id(dockers, webdav_client, service_client):
+    """
+    Test case for get_job_by_id
+
+    Get a job
+    """
+    test_job = _create_test_job('test_get_job_by_id',
+            'test_workflow.cwl', 'test_input.json',
+            webdav_client, service_client)
+
+    time.sleep(0.5)
+    (job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
+
+    print(job)
+    assert job.name == test_job.name
+    assert job.workflow == test_job.workflow
+    assert job.input == test_job.input
+    assert job.state == 'Success'
+
+    out_file_location = job.output['output']['location']
+    print(out_file_location)
+    out_data = requests.get(out_file_location)
+    assert out_data.status_code == 200
+    assert out_data.text == 'Hello world!\n'
+
 
 '''
 webdav.mkdir('/input/testjob')
