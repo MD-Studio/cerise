@@ -1,19 +1,13 @@
 compute-resource:
   files:
     scheme: local
-    location:               # TODO: allow leaving these out completely
-    path: /home/simple_cwl_xenon_service/run/
-    credential:
-    properties:
+    path: /home/simple_cwl_xenon_service/run
 
   jobs:
     scheme: local
-    location:
-    credential:
-    properties:
 
 client-file-exchange:
-  store-location-service: file:///home/webdav/files
+  store-location-service: /home/simple_cwl_xenon_service/run/files
   store-location-client: http://localhost:29594/
 
 database:

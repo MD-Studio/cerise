@@ -8,7 +8,6 @@ from job_manager import job_state
 from job_manager import job_manager
 
 def _internal_job_to_rest_job(job):
-    print("ijtrj: " + job.local_output)
     if job.local_output == '':
         job_output = {}
     else:

@@ -1,0 +1,24 @@
+compute-resource:
+  files:
+    scheme: ssh
+    location: simple-cwl-xenon-service-integration-test-slurm:22
+    username: xenon
+    password: javagat
+    path: /tmp/simple_cwl_xenon_service
+
+  jobs:
+    scheme: ssh
+    location: simple-cwl-xenon-service-integration-test-slurm:22
+    username: xenon
+    password: javagat
+
+client-file-exchange:
+  store-location-service: file:///home/webdav/files
+  store-location-client: http://localhost:29594/
+
+database:
+  file: /home/simple_cwl_xenon_service/run/scxs.db
+
+rest-service:
+  hostname: 0.0.0.0           # Set to 0.0.0.0 to listen on external interfaces as well
+  port: 29593

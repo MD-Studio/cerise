@@ -1,3 +1,4 @@
+import jpype
 import xenon
 
 from .job_state import JobState
@@ -17,13 +18,32 @@ class XenonJobRunner:
         """The JobStore to obtain jobs from."""
         self._x = xenon
         """The Xenon instance to use."""
-        self._sched = self._x.jobs().newScheduler(
-                xenon_config['jobs'].get('scheme', 'local'),
-                xenon_config['jobs'].get('location'),
-                xenon_config['jobs'].get('credential'),
-                xenon_config['jobs'].get('properties')
-                )
+        self._remote_cwlrunner = None
+        """str: The remote path to the cwl runner executable."""
+        self._sched = None
         """The Xenon scheduler to start jobs through."""
+
+        self._remote_cwlrunner = xenon_config['jobs'].get('cwl-runner', 'cwl-runner')
+        self._make_scheduler(xenon_config)
+
+
+    def _make_scheduler(self, xenon_config):
+        scheme = xenon_config['jobs'].get('scheme', 'local')
+        location = xenon_config['jobs'].get('location', '')
+        if 'username' in xenon_config['jobs']:
+            username = xenon_config['jobs']['username']
+            password = xenon_config['jobs']['password']
+            jpassword = jpype.JArray(jpype.JChar)(len(password))
+            for i in range(len(password)):
+                jpassword[i] = password[i]
+            credential = self._x.credentials().newPasswordCredential(
+                    scheme, username, jpassword, None)
+            self._sched = self._x.jobs().newScheduler(
+                    scheme, location, credential, None)
+        else:
+            self._sched = self._x.jobs().newScheduler(
+                    scheme, location, None, None)
+
 
     def update_job(self, job_id):
         """Get status from Xenon and update store.
@@ -65,7 +85,7 @@ class XenonJobRunner:
             # submit job
             xenon_jobdesc = xenon.jobs.JobDescription()
             xenon_jobdesc.setWorkingDirectory(job.remote_workdir_path)
-            xenon_jobdesc.setExecutable('cwl-runner')
+            xenon_jobdesc.setExecutable(self._remote_cwlrunner)
             args = [
                     job.remote_workflow_path,
                     job.remote_input_path

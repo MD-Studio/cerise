@@ -10,8 +10,21 @@ import requests
 import time
 
 @pytest.fixture(scope="module")
-def docker_image(request):
+def slurm_docker_image(request):
     client = docker.from_env()
+    client.images.pull('nlesc/xenon-slurm')
+    image = client.images.build(
+            path='integration_test/',
+            dockerfile='test_slurm.Dockerfile',
+            rm=True,
+            tag='simple-cwl-xenon-service-integration-test-slurm-image')
+
+    return image.id
+
+@pytest.fixture(scope="module")
+def service_docker_image(request):
+    client = docker.from_env()
+    # Remove any stale containers so that we can rebuild the image
     try:
         old_container = client.containers.get('simple-cwl-xenon-service-integration-test-container')
         old_container.stop()
@@ -19,11 +32,25 @@ def docker_image(request):
     except docker.errors.NotFound:
         pass
 
-    image = client.images.build(
+    try:
+        old_container = client.containers.get('simple-cwl-xenon-service-integration-test-slurm')
+        old_container.stop()
+        old_container.remove()
+    except docker.errors.NotFound:
+        pass
+
+    base_image = client.images.build(
             path='.',
+            rm=True,
+            tag='simple-cwl-xenon-service')
+
+    image = client.images.build(
+            path='integration_test/',
+            dockerfile='test_service.Dockerfile',
             rm=True,
             tag='simple-cwl-xenon-service-integration-test-image')
 
+    image = client.images.get('simple-cwl-xenon-service-integration-test-image')
     return image.id
 
 @pytest.fixture()
@@ -31,17 +58,25 @@ def docker_client(request):
     return docker.from_env()
 
 @pytest.fixture
-def service(request, tmpdir, docker_client, docker_image):
-    scxs_container = docker_client.containers.run(
-            docker_image,
-            name='simple-cwl-xenon-service-integration-test-container',
-            ports={ '29593/tcp': '29593', '29594/tcp': '29594'},
+def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_image):
+    # Start SLURM docker
+    slurm_container = docker_client.containers.run(
+            slurm_docker_image,
+            name='simple-cwl-xenon-service-integration-test-slurm',
             detach=True)
     time.sleep(3)   # Give it some time to start up
-    yield True
 
-    # Tear down
-    scxs_container.stop()
+    # Start service docker
+    scxs_container = docker_client.containers.run(
+            service_docker_image,
+            name='simple-cwl-xenon-service-integration-test-container',
+            links={ 'simple-cwl-xenon-service-integration-test-slurm':
+                'simple-cwl-xenon-service-integration-test-slurm' },
+            ports={ '29593/tcp': ('127.0.0.1', 29593), '29594/tcp': ('127.0.0.1', 29594) },
+            detach=True)
+    time.sleep(5)   # Give it some time to start up
+
+    yield scxs_container
 
     # Collect logs for debugging
     archive_file = os.path.join(str(tmpdir), 'docker_logs.tar')
@@ -49,7 +84,24 @@ def service(request, tmpdir, docker_client, docker_image):
     with open(archive_file, 'wb') as f:
         f.write(stream.read())
 
+    # Collect run dir for debugging
+    archive_file = os.path.join(str(tmpdir), 'docker_run.tar')
+    stream, stat = scxs_container.get_archive('/home/simple_cwl_xenon_service/run')
+    with open(archive_file, 'wb') as f:
+        f.write(stream.read())
+
+    # Collect jobs dir for debugging
+    archive_file = os.path.join(str(tmpdir), 'docker_jobs.tar')
+    stream, stat = slurm_container.get_archive('/tmp/simple_cwl_xenon_service/jobs')
+    with open(archive_file, 'wb') as f:
+        f.write(stream.read())
+
+    # Tear down
+    scxs_container.stop()
     scxs_container.remove()
+
+    slurm_container.stop()
+    slurm_container.remove()
 
 @pytest.fixture
 def webdav_client(request, service):
@@ -62,10 +114,6 @@ def service_client(request, service):
         'also_return_response': True
         }
     return SwaggerClient.from_url('http://localhost:29593/swagger.json', config=bravado_config)
-
-def test_get_jobs(service_client):
-    print(service_client.jobs.get_jobs().result())
-    pass
 
 def _create_test_job(name, cwlfile, inputfile, webdav, service):
     """
@@ -99,7 +147,11 @@ def _create_test_job(name, cwlfile, inputfile, webdav, service):
     assert response.status_code == 201
     return job
 
-def test_cancel_job_by_id(service, webdav_client, service_client):
+def test_get_jobs(service_client):
+    print(service_client.jobs.get_jobs().result())
+    assert False
+
+def test_cancel_job_by_id(webdav_client, service_client):
     """
     Test case for cancel_job_by_id
 
@@ -199,3 +251,21 @@ def test_post_job(service, webdav_client, service_client):
             webdav_client, service_client)
 
     assert test_job.state == 'Waiting'
+
+def test_restart_service(service, webdav_client, service_client):
+    """Tests stopping and restarting the service with jobs running.
+    """
+    test_job = _create_test_job('test_restart_service',
+            'slow_job.cwl', 'null_input.json',
+            webdav_client, service_client)
+
+    time.sleep(2)
+    service.stop()
+    time.sleep(3)
+    service.start()
+
+    time.sleep(10)
+
+    (job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
+    assert response.status_code == 200
+    assert job.state == 'Success'

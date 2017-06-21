@@ -1,6 +1,7 @@
 import jpype
 import json
 import re
+import time
 import xenon
 
 from xenon.files import OpenOption
@@ -39,15 +40,12 @@ class XenonRemoteFiles:
         """JobStore: The job store to use."""
         self._x = x
         """Xenon: The Xenon instance to use."""
-        self._fs = self._x.files().newFileSystem(
-                xenon_config['files'].get('scheme', 'local'),
-                xenon_config['files'].get('location'),
-                xenon_config['files'].get('credential'),
-                xenon_config['files'].get('properties')
-                )
+        self._fs = None
         """FileSystem: The Xenon remote file system to stage to."""
         self._basedir = xenon_config['files']['path']
         """str: The remote path to the base directory where we store our stuff."""
+
+        self._create_fs(xenon_config)
 
         # Create basedir if it doesn't exist
         self._basedir = self._basedir.rstrip('/')
@@ -257,6 +255,30 @@ class XenonRemoteFiles:
         abs_path = self._abs_path(job_id, rel_path)
         xenon_path = xenon.files.RelativePath(abs_path)
         return self._x.files().newPath(self._fs, xenon_path)
+
+    def _create_fs(self, xenon_config):
+        """Create remote file system.
+        """
+        self._fs = None
+
+        scheme = xenon_config['files'].get('scheme', 'local')
+        location = xenon_config['files'].get('location', '')
+        if 'username' in xenon_config['files']:
+            username = xenon_config['files'].get('username')
+            password = xenon_config['files'].get('password')
+            jpassword = jpype.JArray(jpype.JChar)(len(password))
+            for i in range(len(password)):
+                jpassword[i] = password[i]
+            credential = self._x.credentials().newPasswordCredential(
+                    scheme, username, jpassword, None)
+            self._fs = self._x.files().newFileSystem(
+                    scheme, location, credential, None)
+        else:
+            self._fs = self._x.files().newFileSystem(
+                    scheme, location, None, None)
+
+        time.sleep(1)
+
 
 def _create_input_filename(unique_prefix, orig_path):
     """Return a string containing a remote filename that

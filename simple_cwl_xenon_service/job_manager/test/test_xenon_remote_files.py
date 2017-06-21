@@ -34,10 +34,7 @@ def fixture(request, tmpdir, x):
     result['xenon-remote-files-config'] = {
             'files': {
                 'scheme': 'local',
-                'location': None,
                 'path': result['remote-dir'],
-                'credential': None,
-                'properties': None
             }}
 
     result['xenon-remote-files'] = XenonRemoteFiles(

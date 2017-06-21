@@ -1,16 +1,10 @@
 compute-resource:
   files:
     scheme: local
-    location:               # TODO: allow leaving these out completely
     path: /tmp/simple_cwl_xenon_service
-    credential:
-    properties:
 
   jobs:
     scheme: local
-    location:
-    credential:
-    properties:
 
 client-file-exchange:
   store-location-service: file:///tmp/simple_cwl_xenon_service_files
