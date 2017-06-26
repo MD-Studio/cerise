@@ -7,7 +7,7 @@ compute-resource:
     path: /tmp/simple_cwl_xenon_service
 
   jobs:
-    scheme: ssh
+    scheme: slurm
     location: simple-cwl-xenon-service-integration-test-slurm:22
     username: xenon
     password: javagat
