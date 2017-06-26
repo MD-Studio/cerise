@@ -2,15 +2,14 @@ FROM ubuntu:16.04
 MAINTAINER Lourens Veen <l.veen@esciencecenter.nl>
 
 # Install requirements
-RUN apt-get update -y && apt-get -y dist-upgrade
-RUN apt-get install -y python3 python3-pip
-RUN apt-get install -y default-jdk
-
-RUN apt-get install -y nginx-core
-RUN apt-get install -y less
-
-RUN apt-get install -y python python-pip	# cwltool doesn't work on Python 3
-RUN pip install cwltool	cwlref-runner # temporarily, for testing running jobs within the container
+RUN apt-get update -y && apt-get -y dist-upgrade && \
+apt-get install -y python3 python3-pip && \
+apt-get install -y default-jdk && \
+apt-get install -y nginx-core && \
+apt-get install -y less && \
+apt-get install -y python python-pip && \
+pip install cwltool cwlref-runner && \
+apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Add service user
 RUN useradd simple_cwl_xenon_service
