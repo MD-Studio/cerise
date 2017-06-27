@@ -1,7 +1,7 @@
-from simple_cwl_xenon_service.job_manager.xenon_remote_files import XenonRemoteFiles
+from simple_cwl_xenon_service.back_end.xenon_remote_files import XenonRemoteFiles
 
 from .mock_store import MockStore
-from .fixture_jobs import WcJob
+from simple_cwl_xenon_service.test.fixture_jobs import WcJob
 
 import os
 import pytest

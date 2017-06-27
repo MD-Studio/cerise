@@ -48,11 +48,23 @@ class SQLiteJob:
         """JobState: Current state of the job.
         """
         state_str = self._get_var('state')
+        ret = JobState[state_str]
         return JobState[state_str]
 
     @state.setter
     def state(self, value):
         self._set_var('state', value.name)
+
+    @property
+    def please_delete(self):
+        """bool: Whether the job should be deleted.
+        """
+        return bool(self._get_var('please_delete'))
+
+    @please_delete.setter
+    def please_delete(self, value):
+        self._set_var('please_delete', value)
+
 
     @property
     def log(self):

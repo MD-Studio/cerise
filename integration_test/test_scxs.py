@@ -19,6 +19,7 @@ def slurm_docker_image(request):
             rm=True,
             tag='simple-cwl-xenon-service-integration-test-slurm-image')
 
+#    image = client.images.get('simple-cwl-xenon-service-integration-test-slurm-image')
     return image.id
 
 @pytest.fixture(scope="module")
@@ -161,6 +162,9 @@ def test_cancel_job_by_id(webdav_client, service_client):
             'slow_job.cwl', 'null_input.json',
             webdav_client, service_client)
 
+    # Wait for it to start
+    time.sleep(3)
+
     # Cancel test job
     (out, response) = service_client.jobs.cancel_job_by_id(jobId=test_job.id).result()
 
@@ -183,6 +187,8 @@ def test_delete_job_by_id(service, webdav_client, service_client):
 
     service_client.jobs.delete_job_by_id(jobId=test_job.id).result()
 
+    time.sleep(10.0)
+
     with pytest.raises(HTTPNotFound):
         (updated_job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
 
@@ -197,7 +203,7 @@ def test_get_job_by_id(service, webdav_client, service_client):
             'test_workflow.cwl', 'test_input.json',
             webdav_client, service_client)
 
-    time.sleep(0.5)
+    time.sleep(10.0)
     (job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
 
     print(job)
@@ -269,5 +275,6 @@ def test_restart_service(service, webdav_client, service_client):
     time.sleep(10)
 
     (job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
+
     assert response.status_code == 200
     assert job.state == 'Success'

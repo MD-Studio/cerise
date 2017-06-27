@@ -1,7 +1,7 @@
 # coding: utf-8
 
 from __future__ import absolute_import
-from swagger_server.models.workflow_binding import WorkflowBinding
+from front_end.models.workflow_binding import WorkflowBinding
 from .base_model_ import Model
 from datetime import date, datetime
 from typing import List, Dict

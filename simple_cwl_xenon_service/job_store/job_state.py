@@ -25,6 +25,23 @@ class JobState(Enum):
     PERMANENT_FAILURE = "PermanentFailure"
 
     @staticmethod
+    def is_final(state):
+        """Return whether the JobState is a final state.
+
+        Args:
+            state (JobState): The JobState member to analyse.
+
+        Returns:
+            bool: True if a job in this state will remain in this
+                  state indefinitely.
+        """
+        return state in [JobState.SUCCESS,
+                         JobState.CANCELLED,
+                         JobState.PERMANENT_FAILURE,
+                         JobState.TEMPORARY_FAILURE,
+                         JobState.SYSTEM_ERROR]
+
+    @staticmethod
     def cancellation_active(state):
         """Return whether the JobState indicates that the job has been
         marked for cancellation, but is not cancelled yet.

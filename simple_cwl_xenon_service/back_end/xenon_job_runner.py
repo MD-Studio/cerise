@@ -1,7 +1,7 @@
 import jpype
 import xenon
 
-from .job_state import JobState
+from simple_cwl_xenon_service.job_store.job_state import JobState
 
 from time import sleep
 
@@ -53,7 +53,6 @@ class XenonJobRunner:
         """
         with self._job_store:
             job = self._job_store.get_job(job_id)
-
             # get state
             if JobState.is_remote(job.state):
                 active_jobs = self._x.jobs().getJobs(self._sched, [])
@@ -95,7 +94,8 @@ class XenonJobRunner:
             xenon_jobdesc.setStderr(job.remote_stderr_path)
             xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
             job.remote_job_id = xenon_job.getIdentifier()
-            if not job.try_transition(JobState.STAGING, JobState.WAITING):
+            if not (job.try_transition(JobState.STAGING, JobState.WAITING) or
+                    job.try_transition(JobState.STAGING_CR, JobState.WAITING_CR)):
                 job.state = JobState.SYSTEM_ERROR
 
         sleep(1)    # work-around for Xenon local running bug

@@ -56,7 +56,8 @@ class SQLiteJobStore(JobStore):
                 remote_stdout_path VARCHAR(255) DEFAULT '',
                 remote_stderr_path VARCHAR(255) DEFAULT '',
                 remote_job_id VARCHAR(255),
-                local_output TEXT DEFAULT ''
+                local_output TEXT DEFAULT '',
+                please_delete INTEGER DEFAULT 0
                 )
                 """)
         conn.commit()

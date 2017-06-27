@@ -1,8 +1,10 @@
-from simple_cwl_xenon_service.job_manager.local_files import LocalFiles
+import sys
+
+from simple_cwl_xenon_service.back_end.local_files import LocalFiles
 from .mock_store import MockStore
 
-from .fixture_jobs import PassJob
-from .fixture_jobs import WcJob
+from simple_cwl_xenon_service.test.fixture_jobs import PassJob
+from simple_cwl_xenon_service.test.fixture_jobs import WcJob
 
 import os
 import pytest
@@ -70,12 +72,9 @@ def test_publish_output(fixture):
     fixture['store'].add_test_job('test_publish_output', 'wc', 'destaged')
     output_files = fixture['store'].get_output_files('wc')
 
-    output_dir = os.path.join(fixture['output-dir'], 'test_publish_output')
-    os.mkdir(output_dir)
-
     fixture['local-files'].publish_job_output('test_publish_output', output_files)
 
-    output_path = os.path.join(output_dir, 'output.txt')
+    output_path = os.path.join(fixture['output-dir'], 'test_publish_output', 'output.txt')
     assert os.path.exists(output_path)
     with open(output_path, 'rb') as f:
         contents = f.read()

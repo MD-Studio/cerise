@@ -32,6 +32,8 @@ class InMemoryJob:
         # Current status
         self.state = JobState.SUBMITTED
         """JobState: Current state of the job."""
+        self.please_delete = False
+        """bool: Whether deletion of the job has been requested."""
         self.log = ''
         """str: Log output as of last update."""
         self.remote_output = ''

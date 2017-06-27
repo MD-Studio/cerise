@@ -1,5 +1,5 @@
-from simple_cwl_xenon_service.job_manager.xenon_job_runner import XenonJobRunner
-from simple_cwl_xenon_service.job_manager.job_state import JobState
+from simple_cwl_xenon_service.back_end.xenon_job_runner import XenonJobRunner
+from simple_cwl_xenon_service.job_store.job_state import JobState
 
 from .mock_store import MockStore
 

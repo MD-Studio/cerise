@@ -15,7 +15,7 @@ except ValueError:
 # This is a bit of a belt-and-suspenders approach, but it seems to work.
 _xenon_closing_lock = threading.Lock()
 with _xenon_closing_lock:
-    _xenon = xenon.Xenon()
+    x = xenon.Xenon()
     _xenon_needs_closing = True
 
 @atexit.register
@@ -24,7 +24,7 @@ def close_xenon():
     global _xenon_needs_closing
     with _xenon_closing_lock:
         if _xenon_needs_closing:
-            _xenon.close()
+            x.close()
             _xenon_needs_closing = False
 
 def term_handler(signum, frame):
@@ -32,8 +32,4 @@ def term_handler(signum, frame):
 
 signal.signal(signal.SIGINT, term_handler)
 
-# The central job manager object
-from simple_cwl_xenon_service.config import config
-from .job_manager import JobManager
 
-job_manager = JobManager(config, _xenon)

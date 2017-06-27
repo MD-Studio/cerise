@@ -7,7 +7,7 @@ import xenon
 from xenon.files import OpenOption
 from xenon.files import RelativePath
 
-from .job_state import JobState
+from simple_cwl_xenon_service.job_store.job_state import JobState
 from .cwl import get_files_from_binding
 
 class XenonRemoteFiles:
@@ -185,8 +185,11 @@ class XenonRemoteFiles:
         self._x.files().createDirectories(xenonpath)
 
     def _rm_remote_dir(self, job_id, rel_path):
-        x_remote_path = self._x_abs_path(job_id, rel_path)
-        self._x_recursive_delete(x_remote_path)
+        try:
+            x_remote_path = self._x_abs_path(job_id, rel_path)
+            self._x_recursive_delete(x_remote_path)
+        except jpype.JException(xenon.nl.esciencecenter.xenon.files.NoSuchPathException):
+            pass
 
     def _x_recursive_delete(self, x_remote_path):
         x_dir = self._x.files().newAttributesDirectoryStream(x_remote_path)
@@ -239,7 +242,10 @@ class XenonRemoteFiles:
             job_id (str): A job from whose dir a file is read
             rel_path (str): A a path relative to the job's directory
         """
-        return self._basedir + '/jobs/' + job_id + '/' + rel_path
+        ret = self._basedir + '/jobs/' + job_id
+        if rel_path != '':
+            ret += '/' + rel_path
+        return ret
 
     def _x_abs_path(self, job_id, rel_path):
         """Return a Xenon Path object containing an absolute path

@@ -1,6 +1,6 @@
 from .cwl import get_files_from_binding
 
-from .job_state import JobState
+from simple_cwl_xenon_service.job_store.job_state import JobState
 
 import json
 import os
@@ -98,7 +98,9 @@ class LocalFiles:
         Args:
             job_id (str): The id of the job whose output directory to delete.
         """
-        shutil.rmtree(self._to_abs_path('output/' + job_id))
+        job_dir = self._to_abs_path('output/' + job_id)
+        if os.path.isdir(job_dir):
+            shutil.rmtree(job_dir)
 
     def publish_job_output(self, job_id, output_files):
         """Write output files to the local output dir for this job.
@@ -114,13 +116,13 @@ class LocalFiles:
             job = self._job_store.get_job(job_id)
             if output_files is not None:
                 output = json.loads(job.remote_output)
+                self.create_output_dir(job_id)
                 for output_name, file_name, content in output_files:
                     output_loc = self._write_to_output_file(job_id, file_name, content)
                     output[output_name]['location'] = output_loc
                     output[output_name]['path'] = self._to_abs_path('output/' + job_id + '/' + file_name)
 
                 job.local_output = json.dumps(output)
-                job.try_transition(JobState.DESTAGING, JobState.SUCCESS)
 
     def _get_content_from_url(self, url):
         """Return the content referenced by a URL.

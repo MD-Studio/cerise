@@ -1,6 +1,6 @@
 from connexion.decorators import produces
 from six import iteritems
-from swagger_server.models.base_model_ import Model
+from front_end.models.base_model_ import Model
 
 
 class JSONEncoder(produces.JSONEncoder):

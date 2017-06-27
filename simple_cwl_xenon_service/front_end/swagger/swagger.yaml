@@ -41,7 +41,7 @@ paths:
                   size: 9
               state: "Success"
               workflow: "https://github.com/common-workflow-language/common-workflow-language/raw/master/v1.0/v1.0/wc-tool.cwl"
-      x-swagger-router-controller: "swagger_server.controllers.default_controller"
+      x-swagger-router-controller: "front_end.controllers.default_controller"
     post:
       summary: "submit a new job"
       description: "Submit a new job from a workflow definition."
@@ -79,7 +79,7 @@ paths:
               type: "string"
               format: "uri"
               description: "uri of the created job"
-      x-swagger-router-controller: "swagger_server.controllers.default_controller"
+      x-swagger-router-controller: "front_end.controllers.default_controller"
   /jobs/{jobId}:
     get:
       summary: "Get a job"
@@ -118,7 +118,7 @@ paths:
               workflow: "https://github.com/common-workflow-language/common-workflow-language/raw/master/v1.0/v1.0/wc-tool.cwl"
         404:
           description: "Job not found"
-      x-swagger-router-controller: "swagger_server.controllers.default_controller"
+      x-swagger-router-controller: "front_end.controllers.default_controller"
     delete:
       summary: "Deleta a job"
       description: "Delete a job, if job is in waiting or running state then job will\
@@ -135,7 +135,7 @@ paths:
           description: "Job deleted"
         404:
           description: "Job not found"
-      x-swagger-router-controller: "swagger_server.controllers.default_controller"
+      x-swagger-router-controller: "front_end.controllers.default_controller"
   /jobs/{jobId}/cancel:
     post:
       summary: "Cancel a job"
@@ -177,7 +177,7 @@ paths:
               description: "uri of the cancelled job"
         404:
           description: "Job not found"
-      x-swagger-router-controller: "swagger_server.controllers.default_controller"
+      x-swagger-router-controller: "front_end.controllers.default_controller"
   /jobs/{jobId}/log:
     get:
       summary: "Log of a job"
@@ -209,7 +209,7 @@ paths:
               description: "uri of the log of the job"
         404:
           description: "Job not found"
-      x-swagger-router-controller: "swagger_server.controllers.default_controller"
+      x-swagger-router-controller: "front_end.controllers.default_controller"
 definitions:
   workflow-binding:
     type: "object"
