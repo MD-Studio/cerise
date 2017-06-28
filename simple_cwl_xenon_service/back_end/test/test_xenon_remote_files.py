@@ -2,18 +2,14 @@ from simple_cwl_xenon_service.back_end.xenon_remote_files import XenonRemoteFile
 
 from .mock_store import MockStore
 from simple_cwl_xenon_service.test.fixture_jobs import WcJob
+from simple_cwl_xenon_service.test.xenon import xenon_init
 
 import os
 import pytest
 import xenon
 
-@pytest.fixture(scope="module")
-def xenon_init(request):
-    xenon.init()
-    return None
-
 @pytest.fixture
-def x(request):
+def x(request, xenon_init):
     ret = xenon.Xenon()
     yield ret
     ret.close()

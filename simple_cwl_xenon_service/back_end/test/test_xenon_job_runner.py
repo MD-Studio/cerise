@@ -1,5 +1,6 @@
 from simple_cwl_xenon_service.back_end.xenon_job_runner import XenonJobRunner
 from simple_cwl_xenon_service.job_store.job_state import JobState
+from simple_cwl_xenon_service.test.xenon import xenon_init
 
 from .mock_store import MockStore
 
@@ -7,13 +8,8 @@ import pytest
 import time
 import xenon
 
-@pytest.fixture(scope="module")
-def xenon_init(request):
-    xenon.init()
-    return None
-
 @pytest.fixture
-def x(request):
+def x(request, xenon_init):
     ret = xenon.Xenon()
     yield ret
     ret.close()
