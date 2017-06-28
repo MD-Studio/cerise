@@ -92,10 +92,13 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
         f.write(stream.read())
 
     # Collect jobs dir for debugging
-    archive_file = os.path.join(str(tmpdir), 'docker_jobs.tar')
-    stream, stat = slurm_container.get_archive('/tmp/simple_cwl_xenon_service/jobs')
-    with open(archive_file, 'wb') as f:
-        f.write(stream.read())
+    try:
+        archive_file = os.path.join(str(tmpdir), 'docker_jobs.tar')
+        stream, stat = slurm_container.get_archive('/tmp/simple_cwl_xenon_service/jobs')
+        with open(archive_file, 'wb') as f:
+            f.write(stream.read())
+    except docker.errors.NotFound:
+        pass
 
     # Tear down
     scxs_container.stop()
