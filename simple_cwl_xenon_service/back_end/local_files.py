@@ -82,6 +82,7 @@ class LocalFiles:
             inputs = json.loads(job.local_input)
             input_files = []
             for name, location in get_files_from_binding(inputs):
+                self._logger.debug("Resolving file " + name + " from " + location)
                 content = self._get_content_from_url(location)
                 input_files.append((name, location, content))
 

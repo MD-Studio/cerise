@@ -170,19 +170,6 @@ class XenonRemoteFiles:
                 job.log = log.decode()
                 self._logger.debug("Log:")
                 self._logger.debug(job.log)
-                if job.state == JobState.FINISHED:
-                    if 'Final process status is permanentFail' in job.log:
-                        job.state = JobState.PERMANENT_FAILURE
-                    elif 'Final process status is temporaryFail' in job.log:
-                        job.state = JobState.TEMPORARY_FAILURE
-                    elif not 'Final process status is success' in job.log:
-                        job.state = JobState.SYSTEM_ERROR
-
-            # get output files, if any
-            if job.try_transition(JobState.FINISHED, JobState.DESTAGING):
-                output_files = self.destage_job_output(job_id)
-
-            return output_files
 
     def _make_remote_dir(self, job_id, rel_path):
         xenonpath = self._x_abs_path(job_id, rel_path)

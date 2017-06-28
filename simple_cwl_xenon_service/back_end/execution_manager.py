@@ -1,5 +1,6 @@
 from simple_cwl_xenon_service.job_store.sqlite_job_store import SQLiteJobStore
 from simple_cwl_xenon_service.job_store.job_state import JobState
+from .cwl import get_cwltool_result
 from .local_files import LocalFiles
 from .xenon_remote_files import XenonRemoteFiles
 from .xenon_job_runner import XenonJobRunner
@@ -37,43 +38,79 @@ class ExecutionManager:
         self._logger.debug('Shutdown requested')
         self._shutting_down = True
 
+    def _delete_job(self, job_id):
+        self._logger.debug('Deleting job ' + job_id)
+        self._remote_files.delete_job(job_id)
+        job = self._job_store.get_job(job_id)
+        if job.state == JobState.SUCCESS:
+            self._local_files.delete_output_dir(job_id)
+        self._job_store.delete_job(job_id)
+
+    def _cancel_job(self, job_id):
+        job = self._job_store.get_job(job_id)
+        if self._job_runner.cancel_job(job_id):
+            job.state = JobState.RUNNING_CR
+        else:
+            job.state = JobState.CANCELLED
+
+    def _stage_and_start_job(self, job_id):
+        input_files = self._local_files.resolve_input(job_id)
+        job = self._job_store.get_job(job_id)
+        if job.try_transition(JobState.STAGING_CR, JobState.CANCELLED):
+            self._logger.debug('Job was cancelled while resolving input')
+            return
+        self._remote_files.stage_job(job_id, input_files)
+        self._job_runner.start_job(job_id)
+        if not (job.try_transition(JobState.STAGING, JobState.WAITING) or
+                job.try_transition(JobState.STAGING_CR, JobState.WAITING_CR)):
+            job.state = JobState.SYSTEM_ERROR
+
+    def _destage_job(self, job_id):
+        self._remote_files.update_job(job_id)
+        job = self._job_store.get_job(job_id)
+        result = get_cwltool_result(job.log)
+
+        if result == JobState.SUCCESS:
+            if job.try_transition(JobState.FINISHED, JobState.DESTAGING):
+                output_files = self._remote_files.destage_job_output(job_id)
+                if output_files is not None:
+                    self._local_files.publish_job_output(job_id, output_files)
+                    job.try_transition(JobState.DESTAGING, JobState.SUCCESS)
+                    job.try_transition(JobState.DESTAGING_CR, JobState.CANCELLED)
+        else:
+            job.state = result
+
     def execute_jobs(self):
+        """Run the main backend execution loop.
+        """
         with self._job_store:
             while not self._shutting_down:
                 jobs = self._job_store.list_jobs()
                 for job_id in [job.id for job in jobs]:
                     if self._shutting_down:
                         break
-                    self._job_runner.update_job(job_id)
+
                     job = self._job_store.get_job(job_id)
                     self._logger.debug('Processing job ' + job_id + ' with current state ' + job.state.value)
 
+                    if JobState.is_remote(job.state):
+                        self._job_runner.update_job(job_id)
+                        self._remote_files.update_job(job_id)
+                        job = self._job_store.get_job(job_id)
+
                     if job.state == JobState.FINISHED:
-                        output_files = self._remote_files.update_job(job_id)
-                        if output_files is not None:
-                            self._local_files.publish_job_output(job_id, output_files)
-                            job.try_transition(JobState.DESTAGING, JobState.SUCCESS)
-                            job.try_transition(JobState.DESTAGING_CR, JobState.CANCELLED)
-                            # TODO: enable cancellation during destage
+                        self._destage_job(job_id)
 
                     if job.try_transition(JobState.SUBMITTED, JobState.STAGING):
-                        input_files = self._local_files.resolve_input(job_id)
-                        if job.try_transition(JobState.STAGING_CR, JobState.CANCELLED):
-                            continue
-                        self._remote_files.stage_job(job_id, input_files)
-                        self._job_runner.start_job(job_id)
+                        self._stage_and_start_job(job_id)
 
                     if JobState.cancellation_active(job.state):
-                        self._job_runner.cancel_job(job_id)
+                        self._cancel_job(job_id)
 
                     self._logger.debug('State is now ' + job.state.value)
 
                     if job.please_delete and JobState.is_final(job.state):
-                        self._logger.debug('Deleting job ' + job_id)
-                        self._remote_files.delete_job(job_id)
-                        if job.state == JobState.SUCCESS:
-                            self._local_files.delete_output_dir(job_id)
-                        self._job_store.delete_job(job_id)
+                        self._delete_job(job_id)
                 self._logger.debug('Sleeping for 2 seconds')
                 try:
                     # Handler in run_back_end throws KeyboardInterrupt in order to

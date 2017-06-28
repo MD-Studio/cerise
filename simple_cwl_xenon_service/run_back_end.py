@@ -2,7 +2,7 @@ import atexit
 import logging
 import signal
 import sys
-import threading
+import traceback
 import os
 import xenon
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -38,8 +38,11 @@ if 'logging' in config:
 
 # Run
 logging.info('Starting up')
-manager = ExecutionManager(config, _xenon)
-manager.execute_jobs()
+try:
+    manager = ExecutionManager(config, _xenon)
+    manager.execute_jobs()
+except:
+    logging.critical(traceback.format_exc())
 
 # Shut down
 logging.info('Shutting down')

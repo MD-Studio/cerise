@@ -1,3 +1,5 @@
+from simple_cwl_xenon_service.job_store.job_state import JobState
+
 def get_files_from_binding(cwl_binding):
     """Parses a CWL input or output binding an returns a list
     containing name: path pairs. Any non-File objects are
@@ -22,3 +24,24 @@ def get_files_from_binding(cwl_binding):
             result.append((name, value['location']))
 
     return result
+
+def get_cwltool_result(cwltool_log):
+    """Parses cwltool log output and returns a JobState object
+    describing the outcome of the cwl execution.
+
+    Args:
+        cwltool_log (str): The standard error output of cwltool
+
+    Returns:
+        JobState: Any of JobState.PERMANENT_FAILURE,
+        JobState.TEMPORARY_FAILURE or JobState.SUCCESS, or
+        JobState.SYSTEM_ERROR if the output could not be interpreted.
+    """
+    if 'Final process status is permanentFail' in cwltool_log:
+        return JobState.PERMANENT_FAILURE
+    elif 'Final process status is temporaryFail' in cwltool_log:
+        return JobState.TEMPORARY_FAILURE
+    elif 'Final process status is success' in cwltool_log:
+        return JobState.SUCCESS
+
+    return JobState.SYSTEM_ERROR

@@ -41,37 +41,44 @@ def test_init(fixture):
 def test_start_job(fixture):
     fixture['store'].add_test_job('test_start_job', 'pass', 'staged')
     fixture['xenon-job-runner'].start_job('test_start_job')
+    fixture['store'].get_job('test_start_job').state = JobState.WAITING
 
     time.sleep(1)
 
     fixture['xenon-job-runner'].update_job('test_start_job')
     updated_job = fixture['store'].get_job('test_start_job')
+    assert updated_job.remote_job_id == 'local-0'
     assert updated_job.state == JobState.FINISHED
 
 def test_start_staging_job(fixture):
     fixture['store'].add_test_job('test_start_staging_job', 'wc', 'staged')
     fixture['xenon-job-runner'].start_job('test_start_staging_job')
+    fixture['store'].get_job('test_start_staging_job').state = JobState.WAITING
 
     time.sleep(2)
 
     fixture['xenon-job-runner'].update_job('test_start_staging_job')
     updated_job = fixture['store'].get_job('test_start_staging_job')
+    assert updated_job.remote_job_id == 'local-0'
     assert updated_job.state == JobState.FINISHED
 
 def test_start_broken_job(fixture):
     fixture['store'].add_test_job('test_start_broken_job', 'broken', 'staged')
     fixture['xenon-job-runner'].start_job('test_start_broken_job')
+    fixture['store'].get_job('test_start_broken_job').state = JobState.WAITING
 
     time.sleep(1)
 
     fixture['xenon-job-runner'].update_job('test_start_broken_job')
     updated_job = fixture['store'].get_job('test_start_broken_job')
+    assert updated_job.remote_job_id == 'local-0'
     assert updated_job.state == JobState.FINISHED
     assert updated_job.remote_output == ''
 
 def test_update(fixture):
     fixture['store'].add_test_job('test_update', 'slow', 'staged')
     fixture['xenon-job-runner'].start_job('test_update')
+    fixture['store'].get_job('test_update').state = JobState.WAITING
 
     time.sleep(2)
 
@@ -88,16 +95,11 @@ def test_update(fixture):
 def test_cancel(fixture):
     fixture['store'].add_test_job('test_cancel', 'slow', 'staged')
     fixture['xenon-job-runner'].start_job('test_cancel')
+    fixture['store'].get_job('test_cancel').state = JobState.WAITING
 
     time.sleep(2)
-    fixture['xenon-job-runner'].cancel_job('test_cancel')
+    is_running = fixture['xenon-job-runner'].cancel_job('test_cancel')
+    assert is_running == False
 
-    fixture['xenon-job-runner'].update_job('test_cancel')
-    updated_job = fixture['store'].get_job('test_cancel')
-    assert updated_job.state == JobState.CANCELLED
-
-    fixture['xenon-job-runner'].cancel_job('test_cancel')
-    assert updated_job.state == JobState.CANCELLED
-
-    fixture['xenon-job-runner'].update_job('test_cancel')
-    assert updated_job.state == JobState.CANCELLED
+    is_running = fixture['xenon-job-runner'].cancel_job('test_cancel')
+    assert is_running == False

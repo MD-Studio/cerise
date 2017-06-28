@@ -57,25 +57,20 @@ class XenonJobRunner:
         self._logger.debug("Updating job " + job_id + " from remote job")
         with self._job_store:
             job = self._job_store.get_job(job_id)
-            # get state
-            if JobState.is_remote(job.state):
-                active_jobs = self._x.jobs().getJobs(self._sched, [])
-                xenon_job = [x_job for x_job in active_jobs if x_job.getIdentifier() == job.remote_job_id]
-                if len(xenon_job) == 1:
-                    xenon_status = self._x.jobs().getJobStatus(xenon_job[0])
-                    if xenon_status.isRunning():
-                        job.try_transition(JobState.WAITING, JobState.RUNNING)
-                        job.try_transition(JobState.WAITING_CR, JobState.RUNNING_CR)
-                    elif xenon_status.isDone():
-                        job.try_transition(JobState.WAITING, JobState.FINISHED)
-                        job.try_transition(JobState.RUNNING, JobState.FINISHED)
-                        job.try_transition(JobState.WAITING_CR, JobState.CANCELLED)
-                        job.try_transition(JobState.RUNNING_CR, JobState.CANCELLED)
-                else:
-                    if JobState.cancellation_active(job.state):
-                        job.state = JobState.CANCELLED
-                    else:
-                        job.state = JobState.FINISHED
+            active_jobs = self._x.jobs().getJobs(self._sched, [])
+            xenon_job = [x_job for x_job in active_jobs if x_job.getIdentifier() == job.remote_job_id]
+            if len(xenon_job) == 1:
+                xenon_status = self._x.jobs().getJobStatus(xenon_job[0])
+                if xenon_status.isRunning():
+                    job.try_transition(JobState.WAITING, JobState.RUNNING)
+                    job.try_transition(JobState.WAITING_CR, JobState.RUNNING_CR)
+                    return
+
+            # Not running, so it's finished unless we cancelled it
+            job.try_transition(JobState.WAITING, JobState.FINISHED)
+            job.try_transition(JobState.RUNNING, JobState.FINISHED)
+            job.try_transition(JobState.WAITING_CR, JobState.CANCELLED)
+            job.try_transition(JobState.RUNNING_CR, JobState.CANCELLED)
 
     def start_job(self, job_id):
         """Get a job from the job store and start it on the compute resource.
@@ -99,9 +94,6 @@ class XenonJobRunner:
             xenon_jobdesc.setStderr(job.remote_stderr_path)
             xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
             job.remote_job_id = xenon_job.getIdentifier()
-            if not (job.try_transition(JobState.STAGING, JobState.WAITING) or
-                    job.try_transition(JobState.STAGING_CR, JobState.WAITING_CR)):
-                job.state = JobState.SYSTEM_ERROR
 
         sleep(1)    # work-around for Xenon local running bug
 
@@ -123,8 +115,5 @@ class XenonJobRunner:
                 xenon_job = [x_job for x_job in active_jobs if x_job.getIdentifier() == job.remote_job_id]
                 if len(xenon_job) == 1:
                     new_state = self._x.jobs().cancelJob(xenon_job[0])
-                    if new_state.isRunning():
-                        job.try_transition(JobState.WAITING, JobState.WAITING_CR)
-                        job.try_transition(JobState.RUNNING, JobState.RUNNING_CR)
-                    else:
-                        job.state = JobState.CANCELLED
+                    return bool(new_state.isRunning())
+        return False
