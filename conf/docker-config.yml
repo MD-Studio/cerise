@@ -13,6 +13,8 @@ client-file-exchange:
 database:
   file: /home/simple_cwl_xenon_service/run/scxs.db
 
+pidfile: /home/simple_cwl_xenon_service/run/scxs_backend.pid
+
 rest-service:
   hostname: 0.0.0.0           # Set to 0.0.0.0 to listen on external interfaces as well
   port: 29593

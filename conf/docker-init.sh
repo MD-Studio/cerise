@@ -1,18 +1,20 @@
 #!/bin/bash
 
+backend_pid_file='/home/simple_cwl_xenon_service/run/scxs_backend.pid'
 gunicorn_pid_file='/home/simple_cwl_xenon_service/run/gunicorn.pid'
 
 function stop_container {
-	echo 'Shutting down simple-cwl-xenon-service'
-	service nginx stop
+    service nginx stop
 
-	echo 'Should shut down back end here'
+    backend_pid=$(cat $backend_pid_file)
+    kill -TERM ${backend_pid}
 
-	gunicorn_pid=$(cat $gunicorn_pid_file)
-	kill -TERM ${gunicorn_pid}
+    gunicorn_pid=$(cat $gunicorn_pid_file)
+    kill -TERM ${gunicorn_pid}
 }
 
 trap stop_container SIGTERM
+
 
 service nginx start
 
@@ -25,4 +27,5 @@ su -c "gunicorn --pid ${gunicorn_pid_file} --access-logfile /var/log/gunicorn/ac
 wait
 
 rm $gunicorn_pid_file
+rm $backend_pid_file
 

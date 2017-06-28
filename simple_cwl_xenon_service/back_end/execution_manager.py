@@ -34,7 +34,6 @@ class ExecutionManager:
     def execute_jobs(self):
         with self._job_store:
             while not self._shutting_down:
-                time.sleep(2)
                 jobs = self._job_store.list_jobs()
                 for job_id in [job.id for job in jobs]:
                     if self._shutting_down:
@@ -65,3 +64,9 @@ class ExecutionManager:
                         if job.state == JobState.SUCCESS:
                             self._local_files.delete_output_dir(job_id)
                         self._job_store.delete_job(job_id)
+                try:
+                    # Handler in run_back_end throws KeyboardInterrupt in order to
+                    # break the sleep call; catch it to exit gracefully
+                    time.sleep(2)
+                except KeyboardInterrupt:
+                    pass

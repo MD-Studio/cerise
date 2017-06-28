@@ -13,6 +13,8 @@ client-file-exchange:
 database:
   file: run/scxs.db
 
+pidfile: run/scxs_backend.pid
+
 rest-service:
   hostname: 127.0.0.1           # Set to 0.0.0.0 to listen on external interfaces as well
   port: 29593
