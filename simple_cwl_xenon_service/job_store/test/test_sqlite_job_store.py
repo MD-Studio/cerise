@@ -34,7 +34,8 @@ def inited_db(request, empty_db):
             remote_stdout_path VARCHAR(255),
             remote_stderr_path VARCHAR(255),
             remote_job_id VARCHAR(255),
-            local_output TEXT
+            local_output TEXT,
+            please_delete INTEGER DEFAULT 0
             )
             """)
     empty_db['conn'].commit()
@@ -125,6 +126,13 @@ def test_reading_state(job):
 def test_setting_state(job):
     job.state = JobState.CANCELLED
     assert job.state == JobState.CANCELLED
+
+def test_reading_please_delete(job):
+    assert job.please_delete == False
+
+def test_setting_please_delete(job):
+    job.please_delete = True
+    assert job.please_delete == True
 
 def test_state_transitions(job):
     assert not job.try_transition(JobState.STAGING, JobState.STAGING_CR)
