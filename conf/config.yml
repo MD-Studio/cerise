@@ -13,6 +13,10 @@ client-file-exchange:
 database:
   file: run/scxs.db
 
+logging:
+  file: /var/log/scxs/scxs_backend.log
+  level: INFO
+
 pidfile: run/scxs_backend.pid
 
 rest-service:

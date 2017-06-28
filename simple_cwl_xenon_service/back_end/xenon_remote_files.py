@@ -1,5 +1,6 @@
 import jpype
 import json
+import logging
 import re
 import time
 import xenon
@@ -36,6 +37,8 @@ class XenonRemoteFiles:
             xenon_config (Dict): A dict containing key-value pairs with
                 Xenon configuration.
         """
+        self._logger = logging.getLogger(__name__)
+        """Logger: The logger for this class."""
         self._job_store = job_store
         """JobStore: The job store to use."""
         self._x = x
@@ -71,6 +74,7 @@ class XenonRemoteFiles:
         Args:
             job_id (str): The id of the job to stage
         """
+        self._logger.debug('Staging job ' + job_id)
         with self._job_store:
             job = self._job_store.get_job(job_id)
 
@@ -113,14 +117,14 @@ class XenonRemoteFiles:
         Returns:
             List[str, str, bytes]: A list of (name, path, content) tuples.
         """
-        print("Job id: " + job_id)
+        self._logger.debug('Destaging job ' + job_id)
         with self._job_store:
             job = self._job_store.get_job(job_id)
-            print("Remote output" + job.remote_output)
+            self._logger.debug("Remote output" + job.remote_output)
             outputs = json.loads(job.remote_output)
             output_files = []
             for output_name, path in get_files_from_binding(outputs):
-                print('Destage path = ' + path + ' for output ' + output_name)
+                self._logger.debug('Destage path = ' + path + ' for output ' + output_name)
                 prefix = 'file://' + self._basedir + '/jobs/' + job_id + '/work/'
                 if not path.startswith(prefix):
                     raise Exception("Unexpected output location in cwl-runner output: " + path
@@ -148,7 +152,7 @@ class XenonRemoteFiles:
         Args:
             job_id (str): ID of the job to get the status of.
         """
-        print("Updating " + job_id)
+        self._logger.debug("Updating " + job_id + " from remote files")
         output_files = None
         with self._job_store:
             job = self._job_store.get_job(job_id)
@@ -156,16 +160,16 @@ class XenonRemoteFiles:
             # get output
             output = self._read_remote_file(job_id, 'stdout.txt')
             if len(output) > 0:
-                print("Output:")
-                print(output)
+                self._logger.debug("Output:")
+                self._logger.debug(output)
                 job.remote_output = output.decode()
 
             # get log
             log = self._read_remote_file(job_id, 'stderr.txt')
             if len(log) > 0:
                 job.log = log.decode()
-                print("Log:")
-                print(job.log)
+                self._logger.debug("Log:")
+                self._logger.debug(job.log)
                 if job.state == JobState.FINISHED:
                     if 'Final process status is permanentFail' in job.log:
                         job.state = JobState.PERMANENT_FAILURE

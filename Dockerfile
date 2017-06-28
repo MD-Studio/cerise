@@ -38,8 +38,8 @@ RUN mkdir /home/simple_cwl_xenon_service/run
 RUN mkdir /home/simple_cwl_xenon_service/run/jobs
 RUN mkdir /home/simple_cwl_xenon_service/run/files
 RUN chown -R simple_cwl_xenon_service:simple_cwl_xenon_service /home/simple_cwl_xenon_service/run
-RUN mkdir /var/log/gunicorn
-RUN chown simple_cwl_xenon_service:root /var/log/gunicorn
+RUN mkdir /var/log/scxs && mkdir /var/log/gunicorn
+RUN chown simple_cwl_xenon_service:root /var/log/scxs /var/log/gunicorn
 
 # Copy software into container
 COPY . /home/simple_cwl_xenon_service/

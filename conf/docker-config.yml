@@ -13,6 +13,10 @@ client-file-exchange:
 database:
   file: /home/simple_cwl_xenon_service/run/scxs.db
 
+logging:
+  file: /var/log/scxs/scxs_backend.log
+  level: INFO
+
 pidfile: /home/simple_cwl_xenon_service/run/scxs_backend.pid
 
 rest-service:

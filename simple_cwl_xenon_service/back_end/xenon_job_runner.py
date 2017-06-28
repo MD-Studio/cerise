@@ -1,4 +1,5 @@
 import jpype
+import logging
 import xenon
 
 from simple_cwl_xenon_service.job_store.job_state import JobState
@@ -14,6 +15,8 @@ class XenonJobRunner:
             xenon_config (Dict): A dict containing key-value pairs with Xenon
                 configuration.
         """
+        self._logger = logging.getLogger(__name__)
+        """Logger: The logger for this class."""
         self._job_store = job_store
         """The JobStore to obtain jobs from."""
         self._x = xenon
@@ -51,6 +54,7 @@ class XenonJobRunner:
         Args:
             job_id (str): ID of the job to get the status of.
         """
+        self._logger.debug("Updating job " + job_id + " from remote job")
         with self._job_store:
             job = self._job_store.get_job(job_id)
             # get state
@@ -79,6 +83,7 @@ class XenonJobRunner:
         Args:
             job_id (str): The id of the job to start.
         """
+        self._logger.debug('Starting job ' + job_id)
         with self._job_store:
             job = self._job_store.get_job(job_id)
             # submit job
@@ -110,6 +115,7 @@ class XenonJobRunner:
         Args:
             job_id (str): The id of the job to cancel.
         """
+        self._logger.debug('Cancelling job ' + job_id)
         with self._job_store:
             job = self._job_store.get_job(job_id)
             if JobState.is_remote(job.state):

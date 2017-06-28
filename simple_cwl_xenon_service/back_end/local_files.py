@@ -3,6 +3,7 @@ from .cwl import get_files_from_binding
 from simple_cwl_xenon_service.job_store.job_state import JobState
 
 import json
+import logging
 import os
 import requests
 import shutil
@@ -23,6 +24,8 @@ class LocalFiles:
             local_config (Dict): A dict containing key-value pairs with
                 local configuration.
         """
+        self._logger = logging.getLogger(__name__)
+        """Logger: The logger for this class."""
         self._job_store = job_store
         """JobStore: The job store to get jobs from."""
 
@@ -70,6 +73,7 @@ class LocalFiles:
             [Tuple[str, str, bytes]]: One tuple per input file, with
             fields name, location and contents in that order.
         """
+        self._logger.debug("Resolving input for job " + job_id)
         with self._job_store:
             job = self._job_store.get_job(job_id)
 
@@ -112,6 +116,7 @@ class LocalFiles:
         Args:
             job_id (str): The id of the job whose output to publish.
         """
+        self._logger.debug("Publishing output for job " + job_id)
         with self._job_store:
             job = self._job_store.get_job(job_id)
             if output_files is not None:
