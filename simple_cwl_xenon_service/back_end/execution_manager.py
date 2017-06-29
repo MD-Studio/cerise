@@ -38,24 +38,21 @@ class ExecutionManager:
         self._logger.debug('Shutdown requested')
         self._shutting_down = True
 
-    def _delete_job(self, job_id):
+    def _delete_job(self, job_id, job):
         self._logger.debug('Deleting job ' + job_id)
         self._remote_files.delete_job(job_id)
-        job = self._job_store.get_job(job_id)
         if job.state == JobState.SUCCESS:
             self._local_files.delete_output_dir(job_id)
         self._job_store.delete_job(job_id)
 
-    def _cancel_job(self, job_id):
-        job = self._job_store.get_job(job_id)
+    def _cancel_job(self, job_id, job):
         if self._job_runner.cancel_job(job_id):
             job.state = JobState.RUNNING_CR
         else:
             job.state = JobState.CANCELLED
 
-    def _stage_and_start_job(self, job_id):
+    def _stage_and_start_job(self, job_id, job):
         input_files = self._local_files.resolve_input(job_id)
-        job = self._job_store.get_job(job_id)
         if job.try_transition(JobState.STAGING_CR, JobState.CANCELLED):
             self._logger.debug('Job was cancelled while resolving input')
             return
@@ -65,9 +62,7 @@ class ExecutionManager:
                 job.try_transition(JobState.STAGING_CR, JobState.WAITING_CR)):
             job.state = JobState.SYSTEM_ERROR
 
-    def _destage_job(self, job_id):
-        self._remote_files.update_job(job_id)
-        job = self._job_store.get_job(job_id)
+    def _destage_job(self, job_id, job):
         result = get_cwltool_result(job.log)
 
         if result == JobState.SUCCESS:
@@ -99,18 +94,18 @@ class ExecutionManager:
                         job = self._job_store.get_job(job_id)
 
                     if job.state == JobState.FINISHED:
-                        self._destage_job(job_id)
+                        self._destage_job(job_id, job)
 
                     if job.try_transition(JobState.SUBMITTED, JobState.STAGING):
-                        self._stage_and_start_job(job_id)
+                        self._stage_and_start_job(job_id, job)
 
                     if JobState.cancellation_active(job.state):
-                        self._cancel_job(job_id)
+                        self._cancel_job(job_id, job)
 
                     self._logger.debug('State is now ' + job.state.value)
 
                     if job.please_delete and JobState.is_final(job.state):
-                        self._delete_job(job_id)
+                        self._delete_job(job_id, job)
                 self._logger.debug('Sleeping for 2 seconds')
                 try:
                     # Handler in run_back_end throws KeyboardInterrupt in order to
