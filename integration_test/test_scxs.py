@@ -163,6 +163,27 @@ def _create_test_job(name, cwlfile, inputfile, files, webdav, service):
     assert response.status_code == 201
     return job
 
+def _wait_for_finish(job_id, timeout, service):
+    """
+    Polls the service for the job's status, returning when
+    it's done or until a timeout.
+
+    Args:
+        job_id (str): The id of the job to wait for
+        timeout (int): Number of seconds to time out after
+        service (SwaggerClient): REST client fixture
+    """
+    test_job, _ = service.jobs.get_job_by_id(jobId=job_id).result()
+    count = 0
+    while (test_job.state == 'Waiting' or test_job.state == 'Running') and count < timeout:
+        time.sleep(0.5)
+        test_job, _ = service.jobs.get_job_by_id(jobId=job_id).result()
+        count += 0.5
+    if count >= timeout:
+        return None
+    else:
+        return test_job
+
 def test_get_jobs(service_client):
     print(service_client.jobs.get_jobs().result())
     assert False
@@ -284,18 +305,24 @@ def test_post_staging_job(service, webdav_client, service_client):
             [('file', 'hello_world.txt')],
             webdav_client, service_client)
 
-    count = 0
-    while (test_job.state == 'Waiting' or test_job.state == 'Running') and count < 20:
-        time.sleep(1)
-        (test_job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
-        count += 1
-
+    test_job = _wait_for_finish(test_job.id, 20, service_client)
     assert test_job.state == 'Success'
 
     out_data = requests.get(test_job.output['output']['location'])
     assert out_data.status_code == 200
     assert out_data.text.startswith(' 4 11 58 ')
     assert out_data.text.endswith('hello_world.txt\n')
+
+def test_post_broken_job(service, webdav_client, service_client):
+    """
+    Tests running a job that runs a non-existing command.
+    """
+    test_job = _create_test_job('test_post_broken_job',
+            'broken_workflow.cwl', 'null_input.json', [],
+            webdav_client, service_client)
+
+    test_job = _wait_for_finish(test_job.id, 20, service_client)
+    assert test_job.state == 'PermanentFailure'
 
 def test_restart_service(service, webdav_client, service_client):
     """
