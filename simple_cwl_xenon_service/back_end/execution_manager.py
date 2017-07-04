@@ -52,7 +52,12 @@ class ExecutionManager:
             job.state = JobState.CANCELLED
 
     def _stage_and_start_job(self, job_id, job):
-        input_files = self._local_files.resolve_input(job_id)
+        try:
+            input_files = self._local_files.resolve_input(job_id)
+        except FileNotFoundError:
+            job.state = JobState.PERMANENT_FAILURE
+            return
+
         if job.try_transition(JobState.STAGING_CR, JobState.CANCELLED):
             self._logger.debug('Job was cancelled while resolving input')
             return

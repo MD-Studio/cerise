@@ -1,4 +1,5 @@
 import webdav.client as wc
+from webdav.exceptions import LocalResourceNotFound
 from bravado.client import SwaggerClient
 from bravado.exception import HTTPNotFound
 
@@ -119,7 +120,7 @@ def service_client(request, service):
         }
     return SwaggerClient.from_url('http://localhost:29593/swagger.json', config=bravado_config)
 
-def _create_test_job(name, cwlfile, inputfile, files, webdav, service):
+def _create_test_job(name, cwlfile, inputfile, files, webdav_client, service):
     """
     Creates a job for the test cases to work with.
 
@@ -127,16 +128,16 @@ def _create_test_job(name, cwlfile, inputfile, files, webdav, service):
         name (str): Name of the test job
         cwlfile (str): Name of the CWL file to use (in current dir)
         inputfile (str): Name of input file to use
-        webdav (wc.Client): WebDAV client fixture
+        webdav_client (wc.Client): WebDAV client fixture
         service (SwaggerClient): REST client fixture
     """
     input_dir = '/input/' + name
-    webdav.mkdir(input_dir)
+    webdav_client.mkdir(input_dir)
 
     cur_dir = os.path.dirname(__file__)
     test_workflow = os.path.join(cur_dir, cwlfile)
     remote_workflow_path = input_dir + '/' + cwlfile
-    webdav.upload_sync(local_path = test_workflow, remote_path = remote_workflow_path)
+    webdav_client.upload_sync(local_path = test_workflow, remote_path = remote_workflow_path)
 
     test_input = os.path.join(cur_dir, inputfile)
     with open(test_input, 'r') as f:
@@ -145,7 +146,12 @@ def _create_test_job(name, cwlfile, inputfile, files, webdav, service):
     for name, filename in files:
         input_file = os.path.join(cur_dir, filename)
         remote_path = input_dir + '/' + filename
-        webdav.upload_sync(local_path = input_file, remote_path = remote_path)
+        try:
+            webdav_client.upload_sync(local_path = input_file, remote_path = remote_path)
+        except LocalResourceNotFound:
+            # May be missing as part of the test, so log, but continue
+            print("Local file missing in _create_test_job")
+            pass
         input_data[name] = {
                 "class": "File",
                 "basename": filename,
@@ -319,6 +325,19 @@ def test_post_broken_job(service, webdav_client, service_client):
     """
     test_job = _create_test_job('test_post_broken_job',
             'broken_workflow.cwl', 'null_input.json', [],
+            webdav_client, service_client)
+
+    test_job = _wait_for_finish(test_job.id, 20, service_client)
+    assert test_job.state == 'PermanentFailure'
+
+def test_post_missing_input(service, webdav_client, service_client):
+    """
+    Tests posting a job with an input object referencing a file that
+    does not exist.
+    """
+    test_job = _create_test_job('test_post_missing_input',
+            'staging_workflow.cwl', 'null_input.json',
+            [('file', 'does_not_exist.txt')],
             webdav_client, service_client)
 
     test_job = _wait_for_finish(test_job.id, 20, service_client)

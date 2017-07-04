@@ -147,7 +147,10 @@ class LocalFiles:
         if parsed_url.scheme == 'file':
             return self._read_from_file(os.path.join('', parsed_url.path))
         elif parsed_url.scheme == 'http':
-            return requests.get(url).content
+            response = requests.get(url)
+            if response.status_code != 200:
+                raise FileNotFoundError
+            return response.content
         else:
             raise ValueError('Invalid scheme in input URL: ' + url)
 
