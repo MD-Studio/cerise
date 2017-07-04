@@ -119,7 +119,7 @@ def service_client(request, service):
         }
     return SwaggerClient.from_url('http://localhost:29593/swagger.json', config=bravado_config)
 
-def _create_test_job(name, cwlfile, inputfile, webdav, service):
+def _create_test_job(name, cwlfile, inputfile, files, webdav, service):
     """
     Creates a job for the test cases to work with.
 
@@ -130,15 +130,27 @@ def _create_test_job(name, cwlfile, inputfile, webdav, service):
         webdav (wc.Client): WebDAV client fixture
         service (SwaggerClient): REST client fixture
     """
+    input_dir = '/input/' + name
+    webdav.mkdir(input_dir)
+
     cur_dir = os.path.dirname(__file__)
     test_workflow = os.path.join(cur_dir, cwlfile)
-    webdav.mkdir('/input/' + name)
-    remote_workflow_path = '/input/' + name + '/' + cwlfile
+    remote_workflow_path = input_dir + '/' + cwlfile
     webdav.upload_sync(local_path = test_workflow, remote_path = remote_workflow_path)
 
     test_input = os.path.join(cur_dir, inputfile)
     with open(test_input, 'r') as f:
         input_data = json.load(f)
+
+    for name, filename in files:
+        input_file = os.path.join(cur_dir, filename)
+        remote_path = input_dir + '/' + filename
+        webdav.upload_sync(local_path = input_file, remote_path = remote_path)
+        input_data[name] = {
+                "class": "File",
+                "basename": filename,
+                "location": 'http://localhost:29594' + remote_path
+                }
 
     JobDescription = service.get_model('job-description')
     job_desc = JobDescription(
@@ -162,7 +174,7 @@ def test_cancel_job_by_id(webdav_client, service_client):
     Cancel a job
     """
     test_job = _create_test_job('test_cancel_job_by_id',
-            'slow_job.cwl', 'null_input.json',
+            'slow_job.cwl', 'null_input.json', [],
             webdav_client, service_client)
 
     # Wait for it to start
@@ -185,7 +197,7 @@ def test_delete_job_by_id(service, webdav_client, service_client):
     Delete a job.
     """
     test_job = _create_test_job('test_delete_job_by_id',
-            'test_workflow.cwl', 'test_input.json',
+            'test_workflow.cwl', 'test_input.json', [],
             webdav_client, service_client)
 
     service_client.jobs.delete_job_by_id(jobId=test_job.id).result()
@@ -203,7 +215,7 @@ def test_get_job_by_id(service, webdav_client, service_client):
     Get a job
     """
     test_job = _create_test_job('test_get_job_by_id',
-            'test_workflow.cwl', 'test_input.json',
+            'test_workflow.cwl', 'test_input.json', [],
             webdav_client, service_client)
 
     time.sleep(10.0)
@@ -229,7 +241,7 @@ def test_get_job_log_by_id(service, webdav_client, service_client):
     Log of a job
     """
     test_job = _create_test_job('test_get_job_log_by_id',
-            'test_workflow.cwl', 'test_input.json',
+            'test_workflow.cwl', 'test_input.json', [],
             webdav_client, service_client)
 
 #   Disable the following for now, Bravado only supports JSON responses, and
@@ -258,16 +270,39 @@ def test_post_job(service, webdav_client, service_client):
     submit a new job
     """
     test_job = _create_test_job('test_post_job',
-            'test_workflow.cwl', 'test_input.json',
+            'test_workflow.cwl', 'test_input.json', [],
             webdav_client, service_client)
 
     assert test_job.state == 'Waiting'
 
+def test_post_staging_job(service, webdav_client, service_client):
+    """
+    Tests running a job that requires (de)staging input and output.
+    """
+    test_job = _create_test_job('test_post_staging_job',
+            'staging_workflow.cwl', 'null_input.json',
+            [('file', 'hello_world.txt')],
+            webdav_client, service_client)
+
+    count = 0
+    while (test_job.state == 'Waiting' or test_job.state == 'Running') and count < 20:
+        time.sleep(1)
+        (test_job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
+        count += 1
+
+    assert test_job.state == 'Success'
+
+    out_data = requests.get(test_job.output['output']['location'])
+    assert out_data.status_code == 200
+    assert out_data.text.startswith(' 4 11 58 ')
+    assert out_data.text.endswith('hello_world.txt\n')
+
 def test_restart_service(service, webdav_client, service_client):
-    """Tests stopping and restarting the service with jobs running.
+    """
+    Tests stopping and restarting the service with jobs running.
     """
     test_job = _create_test_job('test_restart_service',
-            'slow_job.cwl', 'null_input.json',
+            'slow_job.cwl', 'null_input.json', [],
             webdav_client, service_client)
 
     time.sleep(2)
