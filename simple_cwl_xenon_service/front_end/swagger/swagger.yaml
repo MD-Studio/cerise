@@ -249,7 +249,6 @@ definitions:
     properties:
       id:
         type: "string"
-        format: "uri"
         example: "afcd1554-9604-11e6-bd3f-080027e8b32a"
       name:
         type: "string"

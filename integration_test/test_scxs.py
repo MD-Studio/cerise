@@ -115,7 +115,6 @@ def webdav_client(request, service):
 @pytest.fixture
 def service_client(request, service):
     bravado_config = {
-        'validate_responses': False,
         'also_return_response': True
         }
     return SwaggerClient.from_url('http://localhost:29593/swagger.json', config=bravado_config)
