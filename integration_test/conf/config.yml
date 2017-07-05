@@ -1,17 +1,3 @@
-compute-resource:
-  files:
-    scheme: ssh
-    location: simple-cwl-xenon-service-integration-test-slurm:22
-    username: xenon
-    password: javagat
-    path: /tmp/simple_cwl_xenon_service
-
-  jobs:
-    scheme: slurm
-    location: simple-cwl-xenon-service-integration-test-slurm:22
-    username: xenon
-    password: javagat
-
 client-file-exchange:
   store-location-service: file:///home/webdav/files
   store-location-client: http://localhost:29594/

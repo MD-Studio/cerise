@@ -1,0 +1,7 @@
+compute-resource:
+  files:
+    scheme: local
+    path: /tmp/simple_cwl_xenon_service
+
+  jobs:
+    scheme: local

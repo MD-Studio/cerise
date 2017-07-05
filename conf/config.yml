@@ -1,11 +1,3 @@
-compute-resource:
-  files:
-    scheme: local
-    path: /tmp/simple_cwl_xenon_service
-
-  jobs:
-    scheme: local
-
 client-file-exchange:
   store-location-service: file:///tmp/simple_cwl_xenon_service_files
   store-location-client: file:///tmp/simple_cwl_xenon_service_files

@@ -8,6 +8,7 @@ import xenon
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from simple_cwl_xenon_service.config import config
+from simple_cwl_xenon_service.config import api_config
 from back_end.execution_manager import ExecutionManager
 
 # Set up Xenon
@@ -39,7 +40,7 @@ if 'logging' in config:
 # Run
 logging.info('Starting up')
 try:
-    manager = ExecutionManager(config, _xenon)
+    manager = ExecutionManager(config, api_config, _xenon)
     manager.execute_jobs()
 except:
     logging.critical(traceback.format_exc())

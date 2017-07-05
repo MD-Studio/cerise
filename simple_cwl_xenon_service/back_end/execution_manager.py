@@ -9,7 +9,7 @@ import logging
 import time
 
 class ExecutionManager:
-    def __init__(self, config, xenon):
+    def __init__(self, config, api_config, xenon):
         self._logger = logging.getLogger(__name__)
 
         self._shutting_down = False
@@ -17,8 +17,8 @@ class ExecutionManager:
         # _job_store = InMemoryJobStore()
         self._job_store = SQLiteJobStore(config['database']['file'])
         self._local_files = LocalFiles(self._job_store, config['client-file-exchange'])
-        self._remote_files = XenonRemoteFiles(self._job_store, xenon, config['compute-resource'])
-        self._job_runner = XenonJobRunner(self._job_store, xenon, config['compute-resource'])
+        self._remote_files = XenonRemoteFiles(self._job_store, xenon, api_config['compute-resource'])
+        self._job_runner = XenonJobRunner(self._job_store, xenon, api_config['compute-resource'])
 
         self._logger.info('Started back-end')
 

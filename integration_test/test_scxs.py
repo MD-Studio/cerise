@@ -66,17 +66,20 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
             slurm_docker_image,
             name='simple-cwl-xenon-service-integration-test-slurm',
             detach=True)
-    time.sleep(3)   # Give it some time to start up
+    time.sleep(1)   # Give it some time to start up
 
     # Start service docker
+    cur_dir = os.path.dirname(__file__)
+    api_dir = os.path.join(cur_dir, 'api')
     scxs_container = docker_client.containers.run(
             service_docker_image,
             name='simple-cwl-xenon-service-integration-test-container',
+            volumes={api_dir: {'bind': '/home/simple_cwl_xenon_service/api', 'mode': 'ro'}},
             links={ 'simple-cwl-xenon-service-integration-test-slurm':
                 'simple-cwl-xenon-service-integration-test-slurm' },
             ports={ '29593/tcp': ('127.0.0.1', 29593), '29594/tcp': ('127.0.0.1', 29594) },
             detach=True)
-    time.sleep(5)   # Give it some time to start up
+    time.sleep(2)   # Give it some time to start up
 
     yield scxs_container
 
