@@ -86,20 +86,15 @@ class XenonRemoteFiles:
             local_api_dir (str): The absolute local path of the api/
                 directory to copy from
         """
-        self._stepsdir = self._basedir + '/steps'
-        x_stepsdir = self._x.files().newPath(self._fs, RelativePath(self._stepsdir))
-        local_stepsdir = RelativePath(os.path.join(local_api_dir, 'steps'))
-        local_stepsdir_path = self._x.files().newPath(self._local_fs, local_stepsdir)
-        self._logger.debug('Staging API to ' + self._stepsdir + ' from ' + local_api_dir + '/steps')
+        remote_api_dir = self._basedir + '/api'
+        x_remote_api_dir = self._x.files().newPath(self._fs, RelativePath(remote_api_dir))
         try:
-            # self._x.files().createDirectories(x_stepsdir)
-            Utils.recursiveCopy(
-                    self._x.files(), local_stepsdir_path,
-                    x_stepsdir, None)
-            self._logger.debug('Staged API')
-
+            self._x.files().createDirectories(x_remote_api_dir)
         except jpype.JException(PathAlreadyExistsException):
             pass
+
+        self._stepsdir = self._stage_api_part(local_api_dir, remote_api_dir, 'steps')
+        self._api_filesdir = self._stage_api_part(local_api_dir, remote_api_dir, 'files')
 
     def stage_job(self, job_id, input_files):
         """Stage a job. Copies any necessary files to
@@ -215,6 +210,17 @@ class XenonRemoteFiles:
             step['run'] = self._stepsdir + '/' + step['run']
         return bytes(yaml.safe_dump(workflow), 'utf-8')
 
+
+    def _stage_api_part(self, local_api_dir, remote_api_dir, dirname):
+        remote_dir = remote_api_dir + '/' + dirname 
+        local_dir = os.path.join(local_api_dir, dirname)
+        self._logger.debug('Staging API part to ' + remote_dir + ' from ' + local_dir)
+        try:
+            self._copy_dir(local_dir, remote_dir)
+        except jpype.JException(PathAlreadyExistsException):
+            pass
+        return remote_dir
+
     def _make_remote_dir(self, job_id, rel_path):
         xenonpath = self._x_abs_path(job_id, rel_path)
         self._x.files().createDirectories(xenonpath)
@@ -225,6 +231,23 @@ class XenonRemoteFiles:
             self._x_recursive_delete(x_remote_path)
         except jpype.JException(NoSuchPathException):
             pass
+
+    def _copy_dir(self, local_dir, remote_dir):
+        """Copy a directory and all its contents from the local filesystem
+        to the remote filesystem.
+
+        Args:
+            local_dir (str): The absolute local path of the directory
+            to copy from.
+            remote_dir (str): The absolute remote path of the directory
+            to copy to.
+        """
+        x_remote_dir = self._x.files().newPath(self._fs, RelativePath(remote_dir))
+        rel_local_dir = RelativePath(local_dir)
+        x_local_dir = self._x.files().newPath(self._local_fs, rel_local_dir)
+        Utils.recursiveCopy(
+                self._x.files(), x_local_dir,
+                x_remote_dir, None)
 
     def _x_recursive_delete(self, x_remote_path):
         x_dir = self._x.files().newAttributesDirectoryStream(x_remote_path)
