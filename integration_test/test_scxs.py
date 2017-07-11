@@ -330,6 +330,20 @@ def test_post_staging_job(service, webdav_client, service_client):
     assert out_data.text.startswith(' 4 11 58 ')
     assert out_data.text.endswith('hello_world.txt\n')
 
+def test_post_missing_job(service, service_client):
+    """
+    Tests submitting a job referencing a non-existant CWL file.
+    """
+    JobDescription = service_client.get_model('job-description')
+    job_desc = JobDescription(
+        name='test_post_missing_job',
+        workflow='http://localhost:29594/does_not_exist/no_really.cwl',
+        input={}
+    )
+    (job, response) = service_client.jobs.post_job(body=job_desc).result()
+    job = _wait_for_finish(job.id, 20, service_client)
+    assert job.state == 'PermanentFailure'
+
 def test_post_broken_job(service, webdav_client, service_client):
     """
     Tests running a job that runs a non-existing command.
