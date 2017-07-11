@@ -13,7 +13,14 @@ import time
 @pytest.fixture(scope="module")
 def slurm_docker_image(request):
     client = docker.from_env()
-#    client.images.pull('nlesc/xenon-slurm')
+    image = client.images.build(
+            path='integration_test/xenon_slurm_docker/xenon-phusion-base',
+            tag='xenon-phusion-base')
+
+    image = client.images.build(
+            path='integration_test/xenon_slurm_docker/xenon-slurm/',
+            tag='xenon-slurm')
+
     image = client.images.build(
             path='integration_test/',
             dockerfile='test_slurm.Dockerfile',

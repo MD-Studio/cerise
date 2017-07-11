@@ -1,4 +1,4 @@
-FROM nlesc/xenon-slurm
+FROM xenon-slurm
 MAINTAINER Lourens Veen <l.veen@esciencecenter.nl>
 
 RUN apt-get update && \
