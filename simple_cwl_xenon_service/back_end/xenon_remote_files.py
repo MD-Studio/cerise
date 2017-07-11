@@ -1,15 +1,22 @@
 import jpype
 import json
 import logging
+import os
 import re
 import time
 import xenon
+import yaml
 
 from xenon.files import OpenOption
 from xenon.files import RelativePath
 
 from simple_cwl_xenon_service.job_store.job_state import JobState
 from .cwl import get_files_from_binding
+
+Utils = xenon.nl.esciencecenter.xenon.util.Utils
+PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
+NoSuchPathException = xenon.nl.esciencecenter.xenon.files.NoSuchPathException
+CopyOption = xenon.nl.esciencecenter.xenon.files.CopyOption
 
 class XenonRemoteFiles:
     """Manages a remote directory structure.
@@ -47,8 +54,12 @@ class XenonRemoteFiles:
         """FileSystem: The Xenon remote file system to stage to."""
         self._basedir = xenon_config['files']['path']
         """str: The remote path to the base directory where we store our stuff."""
+        self._stepsdir = None
+        """str: The remote path to the directory where the API steps are."""
+        self._local_fs = None
+        """FileSystem: Xenon object for the local file system."""
 
-        self._create_fs(xenon_config)
+        self._create_fss(xenon_config)
 
         # Create basedir if it doesn't exist
         self._basedir = self._basedir.rstrip('/')
@@ -56,7 +67,7 @@ class XenonRemoteFiles:
         basedir_full_path = self._x.files().newPath(self._fs, basedir_rel_path)
         try:
             self._x.files().createDirectories(basedir_full_path)
-        except jpype.JException(xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException):
+        except jpype.JException(PathAlreadyExistsException):
             pass
 
         # Create a subdirectory for jobs
@@ -64,7 +75,30 @@ class XenonRemoteFiles:
         jobsdir_full_path = self._x.files().newPath(self._fs, jobsdir_rel_path)
         try:
             self._x.files().createDirectories(jobsdir_full_path)
-        except jpype.JException(xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException):
+        except jpype.JException(PathAlreadyExistsException):
+            pass
+
+    def stage_api(self, local_api_dir):
+        """Stage the API to the compute resource. Copies subdirectory
+        steps/ of the given local api dir to the compute resource.
+
+        Args:
+            local_api_dir (str): The absolute local path of the api/
+                directory to copy from
+        """
+        self._stepsdir = self._basedir + '/steps'
+        x_stepsdir = self._x.files().newPath(self._fs, RelativePath(self._stepsdir))
+        local_stepsdir = RelativePath(os.path.join(local_api_dir, 'steps'))
+        local_stepsdir_path = self._x.files().newPath(self._local_fs, local_stepsdir)
+        self._logger.debug('Staging API to ' + self._stepsdir + ' from ' + local_api_dir + '/steps')
+        try:
+            # self._x.files().createDirectories(x_stepsdir)
+            Utils.recursiveCopy(
+                    self._x.files(), local_stepsdir_path,
+                    x_stepsdir, None)
+            self._logger.debug('Staged API')
+
+        except jpype.JException(PathAlreadyExistsException):
             pass
 
     def stage_job(self, job_id, input_files):
@@ -87,7 +121,8 @@ class XenonRemoteFiles:
             self._write_remote_file(job_id, 'name.txt', job.name.encode('utf-8'))
 
             # stage workflow
-            self._write_remote_file(job_id, 'workflow.cwl', job.workflow_content)
+            remote_workflow_content = self._translate_steps(job.workflow_content)
+            self._write_remote_file(job_id, 'workflow.cwl', remote_workflow_content)
             job.remote_workflow_path = self._abs_path(job_id, 'workflow.cwl')
 
             # stage input files
@@ -171,6 +206,15 @@ class XenonRemoteFiles:
                 self._logger.debug("Log:")
                 self._logger.debug(job.log)
 
+    def _translate_steps(self, workflow_content):
+        workflow = yaml.safe_load(str(workflow_content, 'utf-8'))
+        for _, step in workflow['steps'].items():
+            if not isinstance(step['run'], str):
+                raise RuntimeError('Invalid step in workflow')
+            # check against known steps?
+            step['run'] = self._stepsdir + '/' + step['run']
+        return bytes(yaml.safe_dump(workflow), 'utf-8')
+
     def _make_remote_dir(self, job_id, rel_path):
         xenonpath = self._x_abs_path(job_id, rel_path)
         self._x.files().createDirectories(xenonpath)
@@ -179,7 +223,7 @@ class XenonRemoteFiles:
         try:
             x_remote_path = self._x_abs_path(job_id, rel_path)
             self._x_recursive_delete(x_remote_path)
-        except jpype.JException(xenon.nl.esciencecenter.xenon.files.NoSuchPathException):
+        except jpype.JException(NoSuchPathException):
             pass
 
     def _x_recursive_delete(self, x_remote_path):
@@ -253,10 +297,11 @@ class XenonRemoteFiles:
         xenon_path = xenon.files.RelativePath(abs_path)
         return self._x.files().newPath(self._fs, xenon_path)
 
-    def _create_fs(self, xenon_config):
-        """Create remote file system.
+    def _create_fss(self, xenon_config):
+        """Create local and remote file systems.
         """
-        self._fs = None
+        self._local_fs = self._x.files().newFileSystem(
+                'local', None, None, None)
 
         scheme = xenon_config['files'].get('scheme', 'local')
         location = xenon_config['files'].get('location', '')
@@ -273,9 +318,6 @@ class XenonRemoteFiles:
         else:
             self._fs = self._x.files().newFileSystem(
                     scheme, location, None, None)
-
-        time.sleep(1)
-
 
 def _create_input_filename(unique_prefix, orig_path):
     """Return a string containing a remote filename that

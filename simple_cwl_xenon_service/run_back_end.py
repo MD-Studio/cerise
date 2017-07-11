@@ -2,6 +2,7 @@ import atexit
 import logging
 import signal
 import sys
+import time
 import traceback
 import os
 import xenon
@@ -9,7 +10,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from simple_cwl_xenon_service.config import config
 from simple_cwl_xenon_service.config import api_config
-from back_end.execution_manager import ExecutionManager
 
 # Set up Xenon
 xenon.init()
@@ -19,6 +19,7 @@ _xenon = xenon.Xenon()
 def term_handler(signum, frame):
     logging.info('Back-end shut down requested')
     manager.shutdown()
+    time.sleep(1)
     raise KeyboardInterrupt
 
 signal.signal(signal.SIGTERM, term_handler)
@@ -38,9 +39,13 @@ if 'logging' in config:
             datefmt='%Y-%m-%d %H:%M:%S')
 
 # Run
+# Note: needs to be imported after Xenon is inited
+from back_end.execution_manager import ExecutionManager
+
 logging.info('Starting up')
 try:
-    manager = ExecutionManager(config, api_config, _xenon)
+    apidir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'api')
+    manager = ExecutionManager(config, api_config, apidir, _xenon)
     manager.execute_jobs()
 except:
     logging.critical(traceback.format_exc())

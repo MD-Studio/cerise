@@ -1,16 +1,21 @@
 #!/usr/bin/env cwl-runner
 
 cwlVersion: v1.0
-class: CommandLineTool
-baseCommand: wc
-stdout: output.txt
+
+class: Workflow
+
 inputs:
-  file:
-    type: File
-    inputBinding:
-      position: 1
+  file: File
 
 outputs:
   output:
     type: File
-    outputBinding: { glob: output.txt }
+    outputSource: wc/output
+
+steps:
+  wc:
+    run: test/wc.cwl
+    in:
+      file: file
+    out:
+      - output

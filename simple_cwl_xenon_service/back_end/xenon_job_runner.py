@@ -94,8 +94,12 @@ class XenonJobRunner:
             xenon_jobdesc.setStderr(job.remote_stderr_path)
             xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
             job.remote_job_id = xenon_job.getIdentifier()
+            self._logger.debug('Job submitted')
 
-        sleep(1)    # work-around for Xenon local running bug
+        try:
+            sleep(1)    # work-around for Xenon local running bug
+        except KeyboardInterrupt:
+            pass        # exit gracefully
 
     def cancel_job(self, job_id):
         """Cancel a running job.

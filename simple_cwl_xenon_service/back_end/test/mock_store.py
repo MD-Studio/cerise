@@ -162,6 +162,7 @@ class MockStore:
             return job
 
         if stage == 'staged':
+            job.workflow_content = WcJob.workflow
             wc_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
             wc_workdir = os.path.join(wc_jobdir, 'work')
             job.remote_workdir_path = wc_workdir

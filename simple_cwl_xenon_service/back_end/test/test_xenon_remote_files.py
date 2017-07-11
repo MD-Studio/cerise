@@ -1,8 +1,7 @@
-from simple_cwl_xenon_service.back_end.xenon_remote_files import XenonRemoteFiles
+from simple_cwl_xenon_service.test.xenon import xenon_init
 
 from .mock_store import MockStore
 from simple_cwl_xenon_service.test.fixture_jobs import WcJob
-from simple_cwl_xenon_service.test.xenon import xenon_init
 
 import os
 import pytest
@@ -16,6 +15,8 @@ def x(request, xenon_init):
 
 @pytest.fixture
 def fixture(request, tmpdir, x):
+    from simple_cwl_xenon_service.back_end.xenon_remote_files import XenonRemoteFiles
+
     result = {}
 
     result['remote-dir'] = str(tmpdir)
@@ -35,6 +36,9 @@ def fixture(request, tmpdir, x):
 
     result['xenon-remote-files'] = XenonRemoteFiles(
             result['store'], x, result['xenon-remote-files-config'])
+
+    local_api_dir = os.path.join(os.path.dirname(__file__), 'api')
+    result['xenon-remote-files'].stage_api(local_api_dir)
 
     return result
 

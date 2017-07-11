@@ -1,8 +1,14 @@
 #!/usr/bin/env cwl-runner
 
 cwlVersion: v1.0
-class: CommandLineTool
-baseCommand: this_comamnd_does_not_exist
+class: Workflow
+
 inputs: []
 outputs: []
 
+steps:
+  break:
+    run: test/nonexisentt_step.cwl
+    in:
+      message: This is going to break
+    out: []

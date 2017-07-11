@@ -1,4 +1,21 @@
+import yaml
 from simple_cwl_xenon_service.job_store.job_state import JobState
+
+def is_workflow(workflow_content):
+    """Takes CWL file contents and checks whether it is a CWL Workflow
+    (and not an ExpressionTool or CommandLineTool).
+
+    Args:
+        workflow_content (bytes): a dict structure parsed from a CWL
+                file.
+
+    Returns:
+        bool: True iff the top-level Process in this CWL file is an
+                instance of Workflow.
+    """
+    workflow = yaml.safe_load(workflow_content)
+    process_class = workflow.get('class')
+    return process_class == 'Workflow'
 
 def get_files_from_binding(cwl_binding):
     """Parses a CWL input or output binding an returns a list
@@ -37,6 +54,8 @@ def get_cwltool_result(cwltool_log):
         JobState.TEMPORARY_FAILURE or JobState.SUCCESS, or
         JobState.SYSTEM_ERROR if the output could not be interpreted.
     """
+    if 'Tool definition failed validation:' in cwltool_log:
+        return JobState.PERMANENT_FAILURE
     if 'Final process status is permanentFail' in cwltool_log:
         return JobState.PERMANENT_FAILURE
     elif 'Final process status is temporaryFail' in cwltool_log:

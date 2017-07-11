@@ -1,16 +1,15 @@
 #!/usr/bin/env cwl-runner
 
 cwlVersion: v1.0
-class: CommandLineTool
-baseCommand: bash
-arguments:
-  - '-c'
-  - 'sleep 4'
+class: Workflow
 
 inputs: []
+outputs: []
 
-stdout: output.txt
-outputs:
-  output:
-    type: File
-    outputBinding: { glob: output.txt }
+steps:
+  sleep:
+    run: test/sleep.cwl
+    in:
+      delay:
+        default: 4
+    out: []

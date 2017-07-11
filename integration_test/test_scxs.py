@@ -13,7 +13,7 @@ import time
 @pytest.fixture(scope="module")
 def slurm_docker_image(request):
     client = docker.from_env()
-    client.images.pull('nlesc/xenon-slurm')
+#    client.images.pull('nlesc/xenon-slurm')
     image = client.images.build(
             path='integration_test/',
             dockerfile='test_slurm.Dockerfile',
@@ -99,6 +99,15 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
     try:
         archive_file = os.path.join(str(tmpdir), 'docker_jobs.tar')
         stream, stat = slurm_container.get_archive('/tmp/simple_cwl_xenon_service/jobs')
+        with open(archive_file, 'wb') as f:
+            f.write(stream.read())
+    except docker.errors.NotFound:
+        pass
+
+    # Collect API steps dir for debugging
+    try:
+        archive_file = os.path.join(str(tmpdir), 'docker_steps.tar')
+        stream, stat = scxs_container.get_archive('/tmp/simple_cwl_xenon_service/steps')
         with open(archive_file, 'wb') as f:
             f.write(stream.read())
     except docker.errors.NotFound:
@@ -345,6 +354,17 @@ def test_post_missing_input(service, webdav_client, service_client):
     test_job = _wait_for_finish(test_job.id, 20, service_client)
     assert test_job.state == 'PermanentFailure'
 
+def test_post_commandline_tool(service, webdav_client, service_client):
+    """
+    Tests posting a job with a CWL CommandLineTool process, which is
+    not allowed and should fail.
+    """
+    test_job = _create_test_job('test_post_commandline_tool',
+            'sleep.cwl', 'null_input.json',
+            [], webdav_client, service_client)
+    test_job = _wait_for_finish(test_job.id, 20, service_client)
+    assert test_job.state == 'PermanentFailure'
+
 def test_restart_service(service, webdav_client, service_client):
     """
     Tests stopping and restarting the service with jobs running.
@@ -357,10 +377,6 @@ def test_restart_service(service, webdav_client, service_client):
     service.stop()
     time.sleep(3)
     service.start()
-
-    time.sleep(10)
-
-    (job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
-
-    assert response.status_code == 200
-    assert job.state == 'Success'
+    time.sleep(1)       # Trying to connect immediately crashes test, why?
+    test_job = _wait_for_finish(test_job.id, 20, service_client)
+    assert test_job.state == 'Success'

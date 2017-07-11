@@ -2,16 +2,20 @@
 
 cwlVersion: v1.0
 
-class: CommandLineTool
-baseCommand: echo
-stdout: output.txt
+class: Workflow
+
 inputs:
-  message:
-    type: string
-    inputBinding:
-      position: 1
+  message: string
 
 outputs:
   output:
     type: File
-    outputBinding: { glob: output.txt }
+    outputSource: echo/output
+
+steps:
+  echo:
+    run: test/echo.cwl
+    in:
+        message: message
+    out:
+      - output
