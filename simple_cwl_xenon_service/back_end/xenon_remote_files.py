@@ -17,6 +17,7 @@ Utils = xenon.nl.esciencecenter.xenon.util.Utils
 PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
 NoSuchPathException = xenon.nl.esciencecenter.xenon.files.NoSuchPathException
 CopyOption = xenon.nl.esciencecenter.xenon.files.CopyOption
+PosixFilePermission = xenon.nl.esciencecenter.xenon.files.PosixFilePermission
 
 class XenonRemoteFiles:
     """Manages a remote directory structure.
@@ -54,7 +55,9 @@ class XenonRemoteFiles:
         """FileSystem: The Xenon remote file system to stage to."""
         self._basedir = xenon_config['files']['path']
         """str: The remote path to the base directory where we store our stuff."""
-        self._stepsdir = None
+        self._api_files_dir = None
+        """str: The remote path to the directory where the API files are."""
+        self._api_steps_dir = None
         """str: The remote path to the directory where the API steps are."""
         self._local_fs = None
         """FileSystem: Xenon object for the local file system."""
@@ -93,8 +96,8 @@ class XenonRemoteFiles:
         except jpype.JException(PathAlreadyExistsException):
             pass
 
-        self._stepsdir = self._stage_api_part(local_api_dir, remote_api_dir, 'steps')
-        self._api_filesdir = self._stage_api_part(local_api_dir, remote_api_dir, 'files')
+        self._stage_api_files(local_api_dir, remote_api_dir)
+        self._stage_api_steps(local_api_dir, remote_api_dir)
 
     def stage_job(self, job_id, input_files):
         """Stage a job. Copies any necessary files to
@@ -207,19 +210,60 @@ class XenonRemoteFiles:
             if not isinstance(step['run'], str):
                 raise RuntimeError('Invalid step in workflow')
             # check against known steps?
-            step['run'] = self._stepsdir + '/' + step['run']
+            step['run'] = self._api_steps_dir + '/' + step['run']
         return bytes(yaml.safe_dump(workflow), 'utf-8')
 
-
-    def _stage_api_part(self, local_api_dir, remote_api_dir, dirname):
-        remote_dir = remote_api_dir + '/' + dirname 
-        local_dir = os.path.join(local_api_dir, dirname)
-        self._logger.debug('Staging API part to ' + remote_dir + ' from ' + local_dir)
+    def _stage_api_steps(self, local_api_dir, remote_api_dir):
+        """Copy the CWL steps forming the API to the remote compute
+        resource, replacing $SCXS_API_FILES at the start of a
+        baseCommand with the remote path to the files.
+        """
         try:
-            self._copy_dir(local_dir, remote_dir)
+            self._api_steps_dir = remote_api_dir + '/steps'
+            x_remote_steps_dir = self._x.files().newPath(self._fs, RelativePath(self._api_steps_dir))
+            self._x.files().createDirectories(x_remote_steps_dir)
+
+            local_steps_dir = os.path.join(local_api_dir, 'steps')
+            for this_dir, _, files in os.walk(local_steps_dir):
+                for filename in files:
+                    if filename.endswith('.cwl'):
+                        cwlfile = yaml.safe_load(open(os.path.join(this_dir, filename), 'r'))
+                        # do SCXS_API_FILES macro substitution
+                        if cwlfile.get('class') == 'CommandLineTool':
+                            if 'baseCommand' in cwlfile:
+                                if cwlfile['baseCommand'].lstrip().startswith('$SCXS_API_FILES'):
+                                    cwlfile['baseCommand'] = cwlfile['baseCommand'].replace(
+                                            '$SCXS_API_FILES', self._api_files_dir, 1)
+
+                        # make parent directory
+                        rel_this_dir = os.path.relpath(this_dir, start=local_steps_dir)
+                        remote_this_dir = remote_api_dir + '/steps/' + rel_this_dir
+                        try:
+                            x_this_dir = self._x.files().newPath(self._fs, RelativePath(remote_this_dir))
+                            self._x.files().createDirectories(x_this_dir)
+                        except jpype.JException(PathAlreadyExistsException):
+                            pass
+
+                        # write it to remote
+                        rem_file = remote_this_dir + '/' + filename
+                        x_rel_file = self._x.files().newPath(self._fs, RelativePath(rem_file))
+                        data = bytes(yaml.safe_dump(cwlfile), 'utf-8')
+                        stream = self._x.files().newOutputStream(x_rel_file,
+                                [OpenOption.CREATE, OpenOption.TRUNCATE])
+                        stream.write(data)
+                        stream.close()
+
         except jpype.JException(PathAlreadyExistsException):
             pass
-        return remote_dir
+
+    def _stage_api_files(self, local_api_dir, remote_api_dir):
+        self._api_files_dir = remote_api_dir + '/files'
+        local_dir = os.path.join(local_api_dir, 'files')
+        self._logger.debug('Staging API part to ' + self._api_files_dir + ' from ' + local_dir)
+        try:
+            self._copy_dir(local_dir, self._api_files_dir)
+        except jpype.JException(PathAlreadyExistsException):
+            pass
 
     def _make_remote_dir(self, job_id, rel_path):
         xenonpath = self._x_abs_path(job_id, rel_path)
@@ -238,9 +282,8 @@ class XenonRemoteFiles:
 
         Args:
             local_dir (str): The absolute local path of the directory
-            to copy from.
-            remote_dir (str): The absolute remote path of the directory
-            to copy to.
+            to copy.
+            remote_dir (str): The absolute remote path to copy it to
         """
         x_remote_dir = self._x.files().newPath(self._fs, RelativePath(remote_dir))
         rel_local_dir = RelativePath(local_dir)
@@ -248,6 +291,20 @@ class XenonRemoteFiles:
         Utils.recursiveCopy(
                 self._x.files(), x_local_dir,
                 x_remote_dir, None)
+
+        # patch up execute permissions
+        for this_dir, _, files in os.walk(local_dir):
+            for filename in files:
+                if os.access(os.path.join(this_dir, filename), os.X_OK):
+                    rel_this_dir = os.path.relpath(this_dir, start=local_dir)
+                    remote_this_dir = remote_dir + '/' + rel_this_dir
+                    rem_file = remote_this_dir + '/' + filename
+                    x_rel_file = self._x.files().newPath(self._fs, RelativePath(rem_file))
+                    owner_read_execute = jpype.java.util.HashSet()
+                    owner_read_execute.add(PosixFilePermission.OWNER_READ)
+                    owner_read_execute.add(PosixFilePermission.OWNER_EXECUTE)
+                    self._x.files().setPosixFilePermissions(x_rel_file,
+                            owner_read_execute)
 
     def _x_recursive_delete(self, x_remote_path):
         x_dir = self._x.files().newAttributesDirectoryStream(x_remote_path)

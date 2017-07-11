@@ -337,6 +337,21 @@ def test_post_staging_job(service, webdav_client, service_client):
     assert out_data.text.startswith(' 4 11 58 ')
     assert out_data.text.endswith('hello_world.txt\n')
 
+def test_post_api_job(service, webdav_client, service_client):
+    """
+    Tests running a job that uses the files/ part of the API.
+    """
+    test_job = _create_test_job('test_post_api_job',
+            'test_api.cwl', 'null_input.json', [],
+            webdav_client, service_client)
+
+    test_job = _wait_for_finish(test_job.id, 20, service_client)
+
+    assert test_job.state == 'Success'
+    out_data = requests.get(test_job.output['output']['location'])
+    assert out_data.status_code == 200
+    assert out_data.text.startswith('Running on host:')
+
 def test_post_missing_job(service, service_client):
     """
     Tests submitting a job referencing a non-existant CWL file.
