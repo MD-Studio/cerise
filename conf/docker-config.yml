@@ -1,5 +1,5 @@
 client-file-exchange:
-  store-location-service: /home/simple_cwl_xenon_service/run/files
+  store-location-service: file:///home/simple_cwl_xenon_service/run/files
   store-location-client: http://localhost:29594/
 
 database:
