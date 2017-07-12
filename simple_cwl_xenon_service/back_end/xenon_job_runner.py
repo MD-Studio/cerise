@@ -1,5 +1,6 @@
 import jpype
 import logging
+import os
 import xenon
 
 from simple_cwl_xenon_service.job_store.job_state import JobState
@@ -33,9 +34,20 @@ class XenonJobRunner:
     def _make_scheduler(self, xenon_config):
         scheme = xenon_config['jobs'].get('scheme', 'local')
         location = xenon_config['jobs'].get('location', '')
+
+        username = None
+        password = None
         if 'username' in xenon_config['jobs']:
             username = xenon_config['jobs']['username']
             password = xenon_config['jobs']['password']
+        if 'SCXS_USERNAME' in os.environ:
+            username = os.environ['SCXS_USERNAME']
+            password = os.environ.get('SCXS_PASSWORD', '')
+        if 'SCXS_FILES_USERNAME' in os.environ:
+            username = os.environ['SCXS_FILES_USERNAME']
+            password = os.environ.get('SCXS_FILES_PASSWORD', '')
+
+        if username is not None:
             jpassword = jpype.JArray(jpype.JChar)(len(password))
             for i in range(len(password)):
                 jpassword[i] = password[i]

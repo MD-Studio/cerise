@@ -385,9 +385,20 @@ class XenonRemoteFiles:
 
         scheme = xenon_config['files'].get('scheme', 'local')
         location = xenon_config['files'].get('location', '')
+
+        username = None
+        password = None
         if 'username' in xenon_config['files']:
             username = xenon_config['files'].get('username')
             password = xenon_config['files'].get('password')
+        if 'SCXS_USERNAME' in os.environ:
+            username = os.environ['SCXS_USERNAME']
+            password = os.environ.get('SCXS_PASSWORD', '')
+        if 'SCXS_JOBS_USERNAME' in os.environ:
+            username = os.environ['SCXS_JOBS_USERNAME']
+            password = os.environ.get('SCXS_JOBS_PASSWORD', '')
+
+        if username is not None:
             jpassword = jpype.JArray(jpype.JChar)(len(password))
             for i in range(len(password)):
                 jpassword[i] = password[i]
