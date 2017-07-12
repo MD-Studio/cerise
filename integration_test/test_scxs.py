@@ -30,37 +30,36 @@ def slurm_docker_image(request):
 #    image = client.images.get('simple-cwl-xenon-service-integration-test-slurm-image')
     return image.id
 
-@pytest.fixture(scope="module")
-def service_docker_image(request):
+def clear_old_container(name):
     client = docker.from_env()
     # Remove any stale containers so that we can rebuild the image
     try:
-        old_container = client.containers.get('simple-cwl-xenon-service-integration-test-container')
+        old_container = client.containers.get(name)
         old_container.stop()
         old_container.remove()
     except docker.errors.NotFound:
         pass
 
-    try:
-        old_container = client.containers.get('simple-cwl-xenon-service-integration-test-slurm')
-        old_container.stop()
-        old_container.remove()
-    except docker.errors.NotFound:
-        pass
+def clear_old_containers():
+    clear_old_container('simple-cwl-xenon-service-integration-test-container')
+    clear_old_container('simple-cwl-xenon-service-integration-test-slurm')
 
-    base_image = client.images.build(
-            path='.',
-            rm=True,
-            tag='simple-cwl-xenon-service')
-
+def make_docker_image(tag, path, dockerfile):
+    client = docker.from_env()
     image = client.images.build(
-            path='integration_test/',
-            dockerfile='test_service.Dockerfile',
+            path=path,
+            dockerfile=dockerfile,
             rm=True,
-            tag='simple-cwl-xenon-service-integration-test-image')
+            tag=tag)
 
-    image = client.images.get('simple-cwl-xenon-service-integration-test-image')
     return image.id
+
+@pytest.fixture(scope="module")
+def service_docker_image(request):
+    clear_old_containers()
+    make_docker_image('simple-cwl-xenon-service', '.', 'Dockerfile')
+    return make_docker_image('simple-cwl-xenon-service-integration-test-image',
+            'integration_test/', 'test_service.Dockerfile')
 
 @pytest.fixture()
 def docker_client(request):
