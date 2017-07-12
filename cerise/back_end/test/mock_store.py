@@ -1,11 +1,11 @@
-from simple_cwl_xenon_service.test.fixture_jobs import PassJob
-from simple_cwl_xenon_service.test.fixture_jobs import WcJob
-from simple_cwl_xenon_service.test.fixture_jobs import MissingInputJob
-from simple_cwl_xenon_service.test.fixture_jobs import SlowJob
-from simple_cwl_xenon_service.test.fixture_jobs import BrokenJob
+from cerise.test.fixture_jobs import PassJob
+from cerise.test.fixture_jobs import WcJob
+from cerise.test.fixture_jobs import MissingInputJob
+from cerise.test.fixture_jobs import SlowJob
+from cerise.test.fixture_jobs import BrokenJob
 
-from simple_cwl_xenon_service.job_store.in_memory_job import InMemoryJob
-from simple_cwl_xenon_service.job_store.job_state import JobState
+from cerise.job_store.in_memory_job import InMemoryJob
+from cerise.job_store.job_state import JobState
 
 import os
 

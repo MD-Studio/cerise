@@ -1,5 +1,5 @@
 import yaml
-from simple_cwl_xenon_service.job_store.job_state import JobState
+from cerise.job_store.job_state import JobState
 
 def is_workflow(workflow_content):
     """Takes CWL file contents and checks whether it is a CWL Workflow

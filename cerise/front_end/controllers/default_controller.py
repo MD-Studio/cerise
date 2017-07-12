@@ -4,9 +4,9 @@ from front_end.models.job_description import JobDescription
 import flask
 import json
 
-from simple_cwl_xenon_service.job_store import job_state
-from simple_cwl_xenon_service.job_store.sqlite_job_store import SQLiteJobStore
-from simple_cwl_xenon_service.config import config
+from cerise.job_store import job_state
+from cerise.job_store.sqlite_job_store import SQLiteJobStore
+from cerise.config import config
 
 _job_store = SQLiteJobStore(config['database']['file'])
 

@@ -3,7 +3,7 @@ import logging
 import os
 import xenon
 
-from simple_cwl_xenon_service.job_store.job_state import JobState
+from cerise.job_store.job_state import JobState
 
 from time import sleep
 
@@ -40,12 +40,12 @@ class XenonJobRunner:
         if 'username' in xenon_config['jobs']:
             username = xenon_config['jobs']['username']
             password = xenon_config['jobs']['password']
-        if 'SCXS_USERNAME' in os.environ:
-            username = os.environ['SCXS_USERNAME']
-            password = os.environ.get('SCXS_PASSWORD', '')
-        if 'SCXS_FILES_USERNAME' in os.environ:
-            username = os.environ['SCXS_FILES_USERNAME']
-            password = os.environ.get('SCXS_FILES_PASSWORD', '')
+        if 'CERISE_USERNAME' in os.environ:
+            username = os.environ['CERISE_USERNAME']
+            password = os.environ.get('CERISE_PASSWORD', '')
+        if 'CERISE_FILES_USERNAME' in os.environ:
+            username = os.environ['CERISE_FILES_USERNAME']
+            password = os.environ.get('CERISE_FILES_PASSWORD', '')
 
         if username is not None:
             jpassword = jpype.JArray(jpype.JChar)(len(password))

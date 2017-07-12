@@ -3,7 +3,7 @@
 cwlVersion: v1.0
 
 class: CommandLineTool
-baseCommand: $SCXS_API_FILES/test/hostname.sh
+baseCommand: $CERISE_API_FILES/test/hostname.sh
 
 inputs: []
 

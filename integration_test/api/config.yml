@@ -1,13 +1,13 @@
 compute-resource:
   files:
     scheme: ssh
-    location: simple-cwl-xenon-service-integration-test-slurm:22
+    location: cerise-integration-test-slurm:22
     username: xenon
     password: javagat
-    path: /tmp/simple_cwl_xenon_service
+    path: /tmp/cerise
 
   jobs:
     scheme: slurm
-    location: simple-cwl-xenon-service-integration-test-slurm:22
+    location: cerise-integration-test-slurm:22
     username: xenon
     password: javagat

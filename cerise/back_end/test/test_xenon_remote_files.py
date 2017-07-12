@@ -1,7 +1,7 @@
-from simple_cwl_xenon_service.test.xenon import xenon_init
+from cerise.test.xenon import xenon_init
 
 from .mock_store import MockStore
-from simple_cwl_xenon_service.test.fixture_jobs import WcJob
+from cerise.test.fixture_jobs import WcJob
 
 import os
 import pytest
@@ -15,7 +15,7 @@ def x(request, xenon_init):
 
 @pytest.fixture
 def fixture(request, tmpdir, x):
-    from simple_cwl_xenon_service.back_end.xenon_remote_files import XenonRemoteFiles
+    from cerise.back_end.xenon_remote_files import XenonRemoteFiles
 
     result = {}
 

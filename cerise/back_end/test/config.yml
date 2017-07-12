@@ -2,7 +2,7 @@ compute-resource:
   files:
     scheme: local
     location:               # TODO: allow leaving these out completely
-    path: /tmp/simple_cwl_xenon_service
+    path: /tmp/cerise
     credential:
     properties:
 

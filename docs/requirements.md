@@ -2,21 +2,20 @@
 
 ## Introduction
 
-This document describes the requirements placed on the simple-cwl-xenon-service.
-The aim of this project is to implement all these features, but in a minimal
-fashion, and with the intent of eventually replacing this implementation with a
-more robust service, probably written in Java. For the time being however, it
-does need to work well enough that we can test the rest of our system with it.
+This document describes the requirements placed on Cerise.  The aim of this
+project is to implement all these features, but in a minimal fashion, and with
+the intent of eventually replacing this implementation with a more robust
+service, probably written in Java. For the time being however, it does need to
+work well enough that we can test the rest of our system with it.
 
 ## Overview
 
-The simple-cwl-xenon-service provides a REST interface through which CWL
-workflows can be submitted for execution on a compute resource. The particulars
-of the compute resource are configurable, with support for local execution as
-well as SSH-accessed remote machines, and compute clusters using SLURM or
-TORQUE as their resource manager. There will not be complete support for all
-possible CWL workflows; in particular the number of input and output types
-will be limited.
+Cerise provides a REST interface through which CWL workflows can be submitted
+for execution on a compute resource. The particulars of the compute resource are
+configurable, with support for local execution as well as SSH-accessed remote
+machines, and compute clusters using SLURM or TORQUE as their resource manager.
+There will not be complete support for all possible CWL workflows; in particular
+the number of input and output types will be limited.
 
 The requirements below are categorised using the MoSCoW system: as either a
 Must have, Should have, Could have or Won't have requirement.

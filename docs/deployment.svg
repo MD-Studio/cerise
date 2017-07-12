@@ -89,10 +89,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.98994949"
-     inkscape:cx="516.78485"
-     inkscape:cy="364.90211"
+     inkscape:cx="455.16554"
+     inkscape:cy="385.10516"
      inkscape:document-units="px"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g4269"
      showgrid="false"
      inkscape:object-paths="true"
      inkscape:snap-intersection-paths="true"
@@ -102,7 +102,7 @@
      inkscape:snap-smooth-nodes="true"
      inkscape:window-width="1920"
      inkscape:window-height="1050"
-     inkscape:window-x="1920"
+     inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1">
     <inkscape:grid
@@ -117,7 +117,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
         <cc:license
            rdf:resource="http://creativecommons.org/licenses/by/3.0/" />
       </cc:Work>
@@ -268,20 +268,15 @@
       <text
          sodipodi:linespacing="125%"
          id="text4142"
-         y="432.36221"
-         x="141.81152"
+         y="442.36221"
+         x="155"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:20px;line-height:125%;font-family:Arial;-inkscape-font-specification:'Arial, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
          xml:space="preserve"><tspan
            style="text-align:center;text-anchor:middle"
-           y="432.36221"
-           x="141.81152"
-           id="tspan4144"
-           sodipodi:role="line">simple-cwl-</tspan><tspan
-           style="text-align:center;text-anchor:middle"
            id="tspan4146"
-           y="457.36221"
-           x="141.81152"
-           sodipodi:role="line">xenon-service</tspan></text>
+           y="442.36221"
+           x="155"
+           sodipodi:role="line">Cerise</tspan></text>
       <g
          transform="translate(-50,64.999989)"
          id="g4248">

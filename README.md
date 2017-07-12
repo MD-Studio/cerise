@@ -1,6 +1,6 @@
 Simple CWL Xenon Service
 ========================
-[![Build Status](https://api.travis-ci.org/LourensVeen/simple-cwl-xenon-service.svg?branch=master)](https://travis-ci.org/LourensVeen/simple-cwl-xenon-service) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/simple-cwl-xenon-service)
+[![Build Status](https://api.travis-ci.org/LourensVeen/cerise.svg?branch=master)](https://travis-ci.org/LourensVeen/cerise) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise)
 
 This is a simple REST service that can run (some) CWL jobs on some remote
 compute resource. It uses the GA4GH REST API as its interface and PyXenon
@@ -22,9 +22,9 @@ class diagram.
 Installation
 ------------
 clone the repository
-    `git clone git@github.com:LourensVeen/simple-cwl-xenon-service.git`
+    `git clone git@github.com:LourensVeen/cerise.git`
 change into the top-level directory
-    `cd simple-cwl-xenon-service`
+    `cd cerise`
 install using
     `pip3 install .`
 
@@ -36,7 +36,7 @@ Example usage
 -------------
 To start the service, simply run
 
-    `python3 -m simple_cwl_xenon_service`
+    `python3 -m cerise`
 
 and open your browser to here:
 
@@ -54,10 +54,10 @@ Docker
 ------
 
 To build a Docker image, use
-    `cd simple-cwl-xenon-service`
-    `docker build -t simple-cwl-xenon-service .`
+    `cd cerise`
+    `docker build -t cerise .`
 then run it using
-    `docker run --name=simple-cwl-xenon-service -p 29593 simple-cwl-xenon-service`
+    `docker run --name=cerise -p 29593 cerise`
 and point your browser to
 
 ```
@@ -68,7 +68,7 @@ Note that the Dockerfile uses config-docker.yml for configuration.
 
 Contribution guide
 ------------------
-The simple-cwl-xenon-service project follows the Google Python style guide, with Sphinxdoc docstrings for module public functions. If you want to
+Cerise follows the Google Python style guide, with Sphinxdoc docstrings for module public functions. If you want to
 contribute to the project please fork it, create a branch including your addition, and create a pull request.
 
 The tests use relative imports and can be run directly after making

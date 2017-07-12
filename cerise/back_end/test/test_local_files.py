@@ -1,10 +1,10 @@
 import sys
 
-from simple_cwl_xenon_service.back_end.local_files import LocalFiles
+from cerise.back_end.local_files import LocalFiles
 from .mock_store import MockStore
 
-from simple_cwl_xenon_service.test.fixture_jobs import PassJob
-from simple_cwl_xenon_service.test.fixture_jobs import WcJob
+from cerise.test.fixture_jobs import PassJob
+from cerise.test.fixture_jobs import WcJob
 
 import os
 import pytest

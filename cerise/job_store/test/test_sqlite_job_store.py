@@ -1,8 +1,8 @@
-from simple_cwl_xenon_service.job_store.sqlite_job_store import SQLiteJobStore
-from simple_cwl_xenon_service.job_store.job_state import JobState
+from cerise.job_store.sqlite_job_store import SQLiteJobStore
+from cerise.job_store.job_state import JobState
 
-from simple_cwl_xenon_service.test.fixture_jobs import PassJob
-from simple_cwl_xenon_service.test.fixture_jobs import WcJob
+from cerise.test.fixture_jobs import PassJob
+from cerise.test.fixture_jobs import WcJob
 
 import os
 import pytest

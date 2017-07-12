@@ -8,8 +8,8 @@ import os
 import xenon
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from simple_cwl_xenon_service.config import config
-from simple_cwl_xenon_service.config import api_config
+from cerise.config import config
+from cerise.config import api_config
 
 # Set up Xenon
 xenon.init()
@@ -31,7 +31,7 @@ if 'pidfile' in config:
 
 # Set up logging
 if 'logging' in config:
-    logfile = config['logging'].get('file', '/var/log/scxs/scxs_backend.log')
+    logfile = config['logging'].get('file', '/var/log/cerise/cerise_backend.log')
     loglevel_str = config['logging'].get('level', 'INFO')
     loglevel = getattr(logging, loglevel_str.upper(), None)
     logging.basicConfig(filename=logfile, level=loglevel,

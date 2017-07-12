@@ -1,5 +1,5 @@
-from simple_cwl_xenon_service.job_store.sqlite_job_store import SQLiteJobStore
-from simple_cwl_xenon_service.job_store.job_state import JobState
+from cerise.job_store.sqlite_job_store import SQLiteJobStore
+from cerise.job_store.job_state import JobState
 from .cwl import get_cwltool_result
 from .cwl import is_workflow
 from .local_files import LocalFiles

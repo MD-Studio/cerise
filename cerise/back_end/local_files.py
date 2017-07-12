@@ -1,6 +1,6 @@
 from .cwl import get_files_from_binding
 
-from simple_cwl_xenon_service.job_store.job_state import JobState
+from cerise.job_store.job_state import JobState
 
 import json
 import logging

@@ -5,6 +5,6 @@ docs-clean:
 
 .PHONY: docs
 docs:
-	sphinx-apidoc -o docs/source -f simple_cwl_xenon_service
+	sphinx-apidoc -o docs/source -f cerise
 	sphinx-build -a docs/source docs/build
 

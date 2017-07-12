@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# simple-cwl-xenon-service documentation build configuration file, created by
+# cerise documentation build configuration file, created by
 # sphinx-quickstart on Wed Apr 19 10:25:17 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -19,8 +19,8 @@
 #
 import os
 import sys
-sys.path.insert(0, '/data/home/lourens/NLeSC/projects/cwl/software/simple-cwl-xenon-service/')
-sys.path.insert(0, '/data/home/lourens/NLeSC/projects/cwl/software/simple-cwl-xenon-service/simple_cwl_xenon_service')
+sys.path.insert(0, '/data/home/lourens/NLeSC/projects/cwl/software/cerise/')
+sys.path.insert(0, '/data/home/lourens/NLeSC/projects/cwl/software/cerise/cerise')
 
 
 # -- General configuration ------------------------------------------------
@@ -50,7 +50,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'simple-cwl-xenon-service'
+project = 'cerise'
 copyright = '2017 Netherlands eScience Center'
 author = 'Lourens Veen'
 
@@ -107,7 +107,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'simple-cwl-xenon-servicedoc'
+htmlhelp_basename = 'cerisedoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -134,7 +134,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'simple-cwl-xenon-service.tex', 'simple-cwl-xenon-service Documentation',
+    (master_doc, 'cerise.tex', 'Cerise Documentation',
      'Lourens Veen', 'manual'),
 ]
 
@@ -144,7 +144,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'simple-cwl-xenon-service', 'simple-cwl-xenon-service Documentation',
+    (master_doc, 'cerise', 'Cerise Documentation',
      [author], 1)
 ]
 
@@ -155,8 +155,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'simple-cwl-xenon-service', 'simple-cwl-xenon-service Documentation',
-     author, 'simple-cwl-xenon-service', 'One line description of project.',
+    (master_doc, 'cerise', 'Cerise Documentation',
+     author, 'cerise', 'One line description of project.',
      'Miscellaneous'),
 ]
 

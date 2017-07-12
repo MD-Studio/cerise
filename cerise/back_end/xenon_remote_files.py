@@ -10,7 +10,7 @@ import yaml
 from xenon.files import OpenOption
 from xenon.files import RelativePath
 
-from simple_cwl_xenon_service.job_store.job_state import JobState
+from cerise.job_store.job_state import JobState
 from .cwl import get_files_from_binding
 
 Utils = xenon.nl.esciencecenter.xenon.util.Utils
@@ -68,7 +68,7 @@ class XenonRemoteFiles:
 
         # Create basedir if it doesn't exist
         if self._username is not None:
-            self._basedir = self._basedir.replace('$SCXS_USERNAME', self._username)
+            self._basedir = self._basedir.replace('$CERISE_USERNAME', self._username)
         self._basedir = self._basedir.rstrip('/')
         basedir_rel_path = RelativePath(self._basedir)
         basedir_full_path = self._x.files().newPath(self._fs, basedir_rel_path)
@@ -219,7 +219,7 @@ class XenonRemoteFiles:
 
     def _stage_api_steps(self, local_api_dir, remote_api_dir):
         """Copy the CWL steps forming the API to the remote compute
-        resource, replacing $SCXS_API_FILES at the start of a
+        resource, replacing $CERISE_API_FILES at the start of a
         baseCommand with the remote path to the files.
         """
         try:
@@ -232,12 +232,12 @@ class XenonRemoteFiles:
                 for filename in files:
                     if filename.endswith('.cwl'):
                         cwlfile = yaml.safe_load(open(os.path.join(this_dir, filename), 'r'))
-                        # do SCXS_API_FILES macro substitution
+                        # do CERISE_API_FILES macro substitution
                         if cwlfile.get('class') == 'CommandLineTool':
                             if 'baseCommand' in cwlfile:
-                                if cwlfile['baseCommand'].lstrip().startswith('$SCXS_API_FILES'):
+                                if cwlfile['baseCommand'].lstrip().startswith('$CERISE_API_FILES'):
                                     cwlfile['baseCommand'] = cwlfile['baseCommand'].replace(
-                                            '$SCXS_API_FILES', self._api_files_dir, 1)
+                                            '$CERISE_API_FILES', self._api_files_dir, 1)
 
                         # make parent directory
                         rel_this_dir = os.path.relpath(this_dir, start=local_steps_dir)
@@ -398,12 +398,12 @@ class XenonRemoteFiles:
         if 'username' in xenon_config['files']:
             username = xenon_config['files'].get('username')
             password = xenon_config['files'].get('password')
-        if 'SCXS_USERNAME' in os.environ:
-            username = os.environ['SCXS_USERNAME']
-            password = os.environ.get('SCXS_PASSWORD', '')
-        if 'SCXS_JOBS_USERNAME' in os.environ:
-            username = os.environ['SCXS_JOBS_USERNAME']
-            password = os.environ.get('SCXS_JOBS_PASSWORD', '')
+        if 'CERISE_USERNAME' in os.environ:
+            username = os.environ['CERISE_USERNAME']
+            password = os.environ.get('CERISE_PASSWORD', '')
+        if 'CERISE_JOBS_USERNAME' in os.environ:
+            username = os.environ['CERISE_JOBS_USERNAME']
+            password = os.environ.get('CERISE_JOBS_PASSWORD', '')
 
         if username is not None:
             self._username = username

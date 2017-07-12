@@ -25,9 +25,9 @@ def slurm_docker_image(request):
             path='integration_test/',
             dockerfile='test_slurm.Dockerfile',
             rm=True,
-            tag='simple-cwl-xenon-service-integration-test-slurm-image')
+            tag='cerise-integration-test-slurm-image')
 
-#    image = client.images.get('simple-cwl-xenon-service-integration-test-slurm-image')
+#    image = client.images.get('cerise-integration-test-slurm-image')
     return image.id
 
 def clear_old_container(name):
@@ -41,8 +41,8 @@ def clear_old_container(name):
         pass
 
 def clear_old_containers():
-    clear_old_container('simple-cwl-xenon-service-integration-test-container')
-    clear_old_container('simple-cwl-xenon-service-integration-test-slurm')
+    clear_old_container('cerise-integration-test-container')
+    clear_old_container('cerise-integration-test-slurm')
 
 def make_docker_image(tag, path, dockerfile):
     client = docker.from_env()
@@ -57,8 +57,8 @@ def make_docker_image(tag, path, dockerfile):
 @pytest.fixture(scope="module")
 def service_docker_image(request):
     clear_old_containers()
-    make_docker_image('simple-cwl-xenon-service', '.', 'Dockerfile')
-    return make_docker_image('simple-cwl-xenon-service-integration-test-image',
+    make_docker_image('cerise', '.', 'Dockerfile')
+    return make_docker_image('cerise-integration-test-image',
             'integration_test/', 'test_service.Dockerfile')
 
 @pytest.fixture()
@@ -70,41 +70,41 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
     # Start SLURM docker
     slurm_container = docker_client.containers.run(
             slurm_docker_image,
-            name='simple-cwl-xenon-service-integration-test-slurm',
+            name='cerise-integration-test-slurm',
             detach=True)
     time.sleep(1)   # Give it some time to start up
 
     # Start service docker
     cur_dir = os.path.dirname(__file__)
     api_dir = os.path.join(cur_dir, 'api')
-    scxs_container = docker_client.containers.run(
+    cerise_container = docker_client.containers.run(
             service_docker_image,
-            name='simple-cwl-xenon-service-integration-test-container',
-            volumes={api_dir: {'bind': '/home/simple_cwl_xenon_service/api', 'mode': 'ro'}},
-            links={ 'simple-cwl-xenon-service-integration-test-slurm':
-                'simple-cwl-xenon-service-integration-test-slurm' },
+            name='cerise-integration-test-container',
+            volumes={api_dir: {'bind': '/home/cerise/api', 'mode': 'ro'}},
+            links={ 'cerise-integration-test-slurm':
+                'cerise-integration-test-slurm' },
             ports={ '29593/tcp': ('127.0.0.1', 29593), '29594/tcp': ('127.0.0.1', 29594) },
             detach=True)
     time.sleep(2)   # Give it some time to start up
 
-    yield scxs_container
+    yield cerise_container
 
     # Collect logs for debugging
     archive_file = os.path.join(str(tmpdir), 'docker_logs.tar')
-    stream, stat = scxs_container.get_archive('/var/log')
+    stream, stat = cerise_container.get_archive('/var/log')
     with open(archive_file, 'wb') as f:
         f.write(stream.read())
 
     # Collect run dir for debugging
     archive_file = os.path.join(str(tmpdir), 'docker_run.tar')
-    stream, stat = scxs_container.get_archive('/home/simple_cwl_xenon_service/run')
+    stream, stat = cerise_container.get_archive('/home/cerise/run')
     with open(archive_file, 'wb') as f:
         f.write(stream.read())
 
     # Collect jobs dir for debugging
     try:
         archive_file = os.path.join(str(tmpdir), 'docker_jobs.tar')
-        stream, stat = slurm_container.get_archive('/tmp/simple_cwl_xenon_service/jobs')
+        stream, stat = slurm_container.get_archive('/tmp/cerise/jobs')
         with open(archive_file, 'wb') as f:
             f.write(stream.read())
     except docker.errors.NotFound:
@@ -113,15 +113,15 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
     # Collect API steps dir for debugging
     try:
         archive_file = os.path.join(str(tmpdir), 'docker_steps.tar')
-        stream, stat = scxs_container.get_archive('/tmp/simple_cwl_xenon_service/steps')
+        stream, stat = cerise_container.get_archive('/tmp/cerise/steps')
         with open(archive_file, 'wb') as f:
             f.write(stream.read())
     except docker.errors.NotFound:
         pass
 
     # Tear down
-    scxs_container.stop()
-    scxs_container.remove()
+    cerise_container.stop()
+    cerise_container.remove()
 
     slurm_container.stop()
     slurm_container.remove()

@@ -8,12 +8,12 @@ import yaml
 
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 
-from simple_cwl_xenon_service.config import config
-from simple_cwl_xenon_service.front_end.encoder import JSONEncoder
+from cerise.config import config
+from cerise.front_end.encoder import JSONEncoder
 
 app = connexion.App(__name__, specification_dir='front_end/swagger/')
 app.app.json_encoder = JSONEncoder
-app.add_api('swagger.yaml', base_path='/', arguments={'title': 'Simple CWL Xenon Service'})
+app.add_api('swagger.yaml', base_path='/', arguments={'title': 'Cerise'})
 
 application = app.app
 
