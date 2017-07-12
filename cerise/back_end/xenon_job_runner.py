@@ -22,13 +22,18 @@ class XenonJobRunner:
         """The JobStore to obtain jobs from."""
         self._x = xenon
         """The Xenon instance to use."""
+        self._username = None
+        """The remote user to connect as."""
         self._remote_cwlrunner = None
         """str: The remote path to the cwl runner executable."""
         self._sched = None
         """The Xenon scheduler to start jobs through."""
 
-        self._remote_cwlrunner = xenon_config['jobs'].get('cwl-runner', 'cwl-runner')
         self._make_scheduler(xenon_config)
+
+        self._remote_cwlrunner = xenon_config['jobs'].get('cwl-runner', 'cwl-runner')
+        if self._username is not None:
+            self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_USERNAME', self._username)
 
 
     def _make_scheduler(self, xenon_config):
@@ -48,6 +53,7 @@ class XenonJobRunner:
             password = os.environ.get('CERISE_FILES_PASSWORD', '')
 
         if username is not None:
+            self._username = username
             jpassword = jpype.JArray(jpype.JChar)(len(password))
             for i in range(len(password)):
                 jpassword[i] = password[i]
