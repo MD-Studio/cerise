@@ -53,6 +53,8 @@ class XenonRemoteFiles:
         """Xenon: The Xenon instance to use."""
         self._fs = None
         """FileSystem: The Xenon remote file system to stage to."""
+        self._username = None
+        """str: The remote user name to use, if any."""
         self._basedir = xenon_config['files']['path']
         """str: The remote path to the base directory where we store our stuff."""
         self._api_files_dir = None
@@ -65,6 +67,8 @@ class XenonRemoteFiles:
         self._create_fss(xenon_config)
 
         # Create basedir if it doesn't exist
+        if self._username is not None:
+            self._basedir = self._basedir.replace('$SCXS_USERNAME', self._username)
         self._basedir = self._basedir.rstrip('/')
         basedir_rel_path = RelativePath(self._basedir)
         basedir_full_path = self._x.files().newPath(self._fs, basedir_rel_path)
@@ -402,6 +406,7 @@ class XenonRemoteFiles:
             password = os.environ.get('SCXS_JOBS_PASSWORD', '')
 
         if username is not None:
+            self._username = username
             jpassword = jpype.JArray(jpype.JChar)(len(password))
             for i in range(len(password)):
                 jpassword[i] = password[i]
