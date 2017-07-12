@@ -59,8 +59,10 @@ class XenonJobRunner:
                 jpassword[i] = password[i]
             credential = self._x.credentials().newPasswordCredential(
                     scheme, username, jpassword, None)
+            properties = jpype.java.util.HashMap()
+            properties.put('xenon.adaptors.slurm.ignore.version', 'true')
             self._sched = self._x.jobs().newScheduler(
-                    scheme, location, credential, None)
+                    scheme, location, credential, properties)
         else:
             self._sched = self._x.jobs().newScheduler(
                     scheme, location, None, None)
