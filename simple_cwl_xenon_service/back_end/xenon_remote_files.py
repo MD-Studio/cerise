@@ -259,6 +259,9 @@ class XenonRemoteFiles:
     def _stage_api_files(self, local_api_dir, remote_api_dir):
         self._api_files_dir = remote_api_dir + '/files'
         local_dir = os.path.join(local_api_dir, 'files')
+        if not os.path.isdir(local_dir):
+            self._logger.debug('API files not found, not staging')
+            return
         self._logger.debug('Staging API part to ' + self._api_files_dir + ' from ' + local_dir)
         try:
             self._copy_dir(local_dir, self._api_files_dir)
