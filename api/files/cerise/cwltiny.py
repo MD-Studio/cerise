@@ -254,7 +254,7 @@ def execute_clt(workdir_path, in_out, base_command, command_line):
         stderr_file = open(stderr_path, 'wb')
 
     log("Command line: " + str(command_line))
-    result = subprocess.run(command_line,
+    result = subprocess.call(command_line,
             cwd=workdir_path,
             stdin=stdin_file,
             stdout=stdout_file,
