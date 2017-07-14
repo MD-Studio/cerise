@@ -37,16 +37,35 @@ def exit_success(message):
     log('Final process status is success')
     sys.exit(1)
 
+# CWL process type detection
+def process_type(process_dict):
+    """Return the type of process described by the given CWL process
+    dict.
+
+    Args:
+        process_dict (dict): A CWL process dict
+
+    Returns:
+        str: 'Workflow', 'CommandLineTool', or whatever else is in the
+                class field.
+    """
+    if 'class' not in process_dict:
+        exit_perm_fail("No class attribute in process")
+    return process_dict['class']
+
 
 # CWL normalisation
 
-def normalise_dict_list(dict_of_dicts):
-    """Convert a dict of dicts to a list of dicts, with the keys
-    of the original outer dict inserted into the corresponding
-    inner dict as the value of the 'id' member.
+def normalise_parameter(dict_of_dicts):
+    """Convert a dict of dicts representing CWL Parameters to a list
+    of dicts, with the keys of the original outer dict inserted into
+    the corresponding inner dict as the value of the 'id' key.
 
-    Note that input and output share inner dicts, so the argument
-    also gets 'id' members.
+    If the input is a string, converts to a list of dicts with the
+    key in the 'id' key and the value in the 'type' key.
+
+    Note that input and output share inner dicts where they exist, so
+    the argument also gets 'id' members.
 
     Args:
         dict_of_dicts (dict): A dictionary of dictionaries
@@ -56,32 +75,34 @@ def normalise_dict_list(dict_of_dicts):
     """
     new_inputs = []
     for key, inner_dict in dict_of_dicts.items():
+        if not isinstance(inner_dict, dict):
+            inner_dict = { 'type': inner_dict }
         inner_dict['id'] = key
         new_inputs.append(inner_dict)
     return new_inputs
 
-def normalise_command_line_tool(clt_desc):
+def normalise_process(process_desc):
     """CWL allows syntactic sugar in inputs and outputs; convert any
     dict that uses this to a canonical one that doesn't, so that we
     have predictible input for the rest of the processing.
 
     Args:
-        clt_desc (dict): The CWL CommandLineTool dict/list structure
+        clt_desc (dict): The CWL Process dict/list structure
 
     Returns:
-        dict: A CWL CommandLineTool dict/list structure
+        dict: A CWL Process dict/list structure
     """
-    if not 'inputs' in clt_desc:
-        exit_validation("Error: no inputs defined for CommandLineTool")
+    if not 'inputs' in process_desc:
+        exit_validation("Error: no inputs defined for Process")
 
-    if isinstance(clt_desc['inputs'], dict):
-        clt_desc['inputs'] = normalise_dict_list(clt_desc['inputs'])
+    if isinstance(process_desc['inputs'], dict):
+        process_desc['inputs'] = normalise_parameter(process_desc['inputs'])
 
-    if not 'outputs' in clt_desc:
-        exit_validation("Error: no outputs defined for CommandLineTool")
+    if not 'outputs' in process_desc:
+        exit_validation("Error: no outputs defined for Process")
 
-    if isinstance(clt_desc['outputs'], dict):
-        clt_desc['outputs'] = normalise_dict_list(clt_desc['outputs'])
+    if isinstance(process_desc['outputs'], dict):
+        process_desc['outputs'] = normalise_parameter(process_desc['outputs'])
 
 
 # Command line tool execution
@@ -122,12 +143,13 @@ def stage_input(workdir_path, input_dict):
                 exit_system_error('Sorry: I don''t know how to deal with directories yet')
             if input_value['class'] == 'File':
                 location = urlparse(input_value['location'])
-                if 'basename' in input_value:
-                    dest_path = os.path.join(workdir_path, input_value['basename'])
-                else:
-                    dest_path = os.path.join(workdir_path, os.path.basename(location.path))
-                shutil.copy(location.path, dest_path)
-                input_value['path'] = dest_path
+#                if 'basename' in input_value:
+#                    dest_path = os.path.join(workdir_path, input_value['basename'])
+#                else:
+#                    dest_path = os.path.join(workdir_path, os.path.basename(location.path))
+#                shutil.copy(location.path, dest_path)
+#                input_value['path'] = dest_path
+                input_value['path'] = location.path
 
 def create_argument(parameter, input_dict):
     """Create a command line argument from the given parameter of the
@@ -146,6 +168,8 @@ def create_argument(parameter, input_dict):
     value = parameter.get('default')
     if 'id' not in parameter:
         exit_perm_fail("Error: input parameter given without an id")
+    if parameter['id'] not in input_dict:
+        exit_perm_fail("Error: no input provided for parameter " + str(parameter['id']))
     if 'type' in parameter:
         if parameter['type'] == 'File':
             if input_dict[parameter['id']]['class'] != 'File':
@@ -301,7 +325,8 @@ def run_command_line_tool(workdir_path, clt_dict, input_dict):
                 to run.
         input_dict (dict): A dictionary describing inputs
     """
-    normalise_command_line_tool(clt_dict)
+    log("Running command line tool " + str(clt_dict) + " with input " + str(input_dict))
+    normalise_process(clt_dict)
     stage_input(workdir_path, input_dict)
     command_line = create_command_line(clt_dict, input_dict)
     base_command = clt_dict.get('baseCommand')
@@ -315,6 +340,187 @@ def run_command_line_tool(workdir_path, clt_dict, input_dict):
     return output_dict
 
 
+# Workflow execution
+
+def normalise_workflow(workflow_dict):
+    """Normalise away syntactic sugar for a workflow's inputs, outputs,
+    and steps.
+
+    Args:
+        workflow_dict (dict): A dict representing a CWL Workflow
+                document.
+    """
+    normalise_process(workflow_dict)
+    if not 'steps' in workflow_dict:
+        exit_perm_fail("No steps in Workflow")
+
+    if isinstance(workflow_dict['steps'], dict):
+        new_steps = []
+        for step_id, step in workflow_dict['steps'].items():
+            step['id'] = step_id
+            new_steps.append(step)
+        workflow_dict['steps'] = new_steps
+
+    for step in workflow_dict['steps']:
+        if 'in' in step:
+            if isinstance(step['in'], dict):
+                new_in = []
+                for key, value in step['in'].items():
+                    new_in.append({'id': key, 'source': value})
+                step['in'] = new_in
+
+        if 'out' in step:
+            if not isinstance(step['out'], list):
+                exit_perm_fail("The out attribute of a workflow step must be an array")
+            for i, output in enumerate(step['out']):
+                if isinstance(output, str):
+                    step['out'][i] = {'id': output}
+
+def has_unexecuted_steps(workflow_dict):
+    """Returns whether the workflow has unexecuted steps. Uses the
+    cwltiny_output_available tag on the step to test.
+
+    Args:
+        workflow_dict (dict): A dict representing a CWL workflow
+                document being executed.
+
+    Returns:
+        bool: True iff there are unexecuted steps in the workflow.
+    """
+    for step in workflow_dict['steps']:
+        if not 'cwltiny_output_available' in step:
+            log("Found unexecuted step " + step['id'])
+            return True
+    return False
+
+def resolve_output_reference(reference, workflow_dict, input_dict):
+    """Get the output value (if any) corresponding to the reference
+    given. References may be a string with no /, referring to a value
+    in the input, or one with a /, referring to the output of a step.
+
+    Args:
+        reference (str): An output reference
+        workflow_dict (dict): A CWL Workflow document
+        input_dict (dict): An input document
+
+    Returns:
+        Union[dict, None]: A value, or None if not available
+    """
+    log("Resolving reference " + reference + " from " + str(workflow_dict))
+    source = reference.split(sep='/')
+    if len(source) == 1:
+        if reference not in input_dict:
+            exit_perm_fail("Could not resolve input " + reference)
+        return input_dict[reference]
+
+    if len(source) != 2:
+        exit_perm_fail("Source reference with more than one /")
+
+    step_id = source[0]
+    output_id = source[1]
+    for step in workflow_dict['steps']:
+        if 'id' in step and step['id'] == step_id:
+            if 'cwltiny_output_available' not in step:
+                return None
+            for output in step['out']:
+                if output['id'] == output_id:
+                    return output['cwltiny_value']
+
+def resolve_step_inputs(step, workflow_dict, input_dict):
+    """Get input values for steps where available, and put them into
+    a dict under cwltiny_input_values on the step.
+
+    Args:
+        step (dict): A WorkflowStep in workflow_dict
+        workflow_dict (dict): A dict representing a CWL workflow
+                document being executed.
+        input_dict (dict): The input data to use
+
+    Returns:
+        bool: True iff all inputs for this step are bound
+    """
+    all_bound = True
+    if 'cwltiny_input_values' not in step:
+        step['cwltiny_input_values'] = {}
+
+    for step_input in step['in']:
+        value = None
+        if 'default' in step_input:
+            value = step_input['default']
+        if 'source' in step_input:
+            value = resolve_output_reference(step_input['source'], workflow_dict, input_dict)
+
+        log("Resolved step " + step['id'] + " input " + step_input['id'] + " to " + str(value))
+
+        step['cwltiny_input_values'][step_input['id']] = value
+        if value is None:
+            all_bound = False
+
+    return all_bound
+
+def execute_workflow_step(step):
+    """Execute a CWL workflow step.
+
+    Args:
+        step (dict): A WorkflowStep to execute
+    """
+    if 'run' in step:
+        run_dict = json.load(open(step['run'], 'r'))
+        workdir_path = make_workdir()
+        input_dict = step['cwltiny_input_values']
+        if process_type(run_dict) == 'Workflow':
+            output_dict = run_workflow(workdir_path, run_dict, input_dict)
+        elif process_type(run_dict) == 'CommandLineTool':
+            output_dict = run_command_line_tool(workdir_path, run_dict, input_dict)
+
+        log("Step: " + str(step))
+        log("Step output: " + str(output_dict))
+
+        if 'out' in step:
+            for output in step['out']:
+                output['cwltiny_value'] = output_dict[output['id']]
+
+    step['cwltiny_output_available'] = True
+
+
+def get_workflow_outputs(workflow_dict, input_dict):
+    """Get the outputs as described by the workflow from the values
+    stored on the steps.
+
+    Args:
+        workflow_dict (dict): The workflow to get outputs of
+        input_dict (dict): The input data for the workflow
+
+    Returns:
+        dict: A dict with output ids for keys, and the corresponding
+                values as values
+    """
+    output_dict = {}
+    for output_parameter in workflow_dict['outputs']:
+        if 'outputSource' in output_parameter:
+            output_dict[output_parameter['id']] = resolve_output_reference(
+                    output_parameter['outputSource'], workflow_dict, input_dict)
+    return output_dict
+
+def run_workflow(workdir_path, workflow_dict, input_dict):
+    """Run a CWL workflow.
+
+    Args:
+        workdir_path (str): Path to a temp dir to work in
+        workflow_dict (dict): The workflow to execute
+        input_dict (dict): The input data to use
+    """
+    normalise_workflow(workflow_dict)
+    log("Normalised workflow: " + str(workflow_dict))
+    while has_unexecuted_steps(workflow_dict):
+        for step in workflow_dict['steps']:
+            all_bound = resolve_step_inputs(step, workflow_dict, input_dict)
+            if all_bound:
+                execute_workflow_step(step)
+
+    return get_workflow_outputs(workflow_dict, input_dict)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process a CWL workflow')
     parser.add_argument('cwlfile', type=str, help='A CWL file in JSON format')
@@ -323,12 +529,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     input_dict = json.load(open(args.inputfile, 'r'))
-    clt_dict = json.load(open(args.cwlfile, 'r'))
+    cwl_dict = json.load(open(args.cwlfile, 'r'))
     workdir_path = make_workdir()
 
-    output_dict = run_command_line_tool(workdir_path, clt_dict, input_dict)
-    output_dict = destage_output(output_dict)
+    proc_type = process_type(cwl_dict)
 
+    if proc_type == 'CommandLineTool':
+        output_dict = run_command_line_tool(workdir_path, cwl_dict, input_dict)
+    elif proc_type == 'Workflow':
+        output_dict = run_workflow(workdir_path, cwl_dict, input_dict)
+
+    output_dict = destage_output(output_dict)
     print(json.dumps(output_dict))
 
     remove_workdirs()
