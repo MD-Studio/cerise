@@ -2,6 +2,7 @@ import webdav.client as wc
 from webdav.exceptions import LocalResourceNotFound
 from bravado.client import SwaggerClient
 from bravado.exception import HTTPNotFound
+from bravado_core.formatter import SwaggerFormat
 
 import docker
 import json
@@ -132,9 +133,21 @@ def webdav_client(request, service):
 
 @pytest.fixture
 def service_client(request, service):
+    # Disable Bravado warning about uri format not being registered
+    # It's all done by frameworks, so we're not testing that here
+    uri_format = SwaggerFormat(
+            description='A Uniform Resource Identifier',
+            format='uri',
+            to_wire=lambda uri: uri,
+            to_python=lambda uri: uri,
+            validate=lambda uri_string: True
+    )
+
     bravado_config = {
-        'also_return_response': True
+        'also_return_response': True,
+        'formats': [uri_format]
         }
+
     return SwaggerClient.from_url('http://localhost:29593/swagger.json', config=bravado_config)
 
 def _create_test_job(name, cwlfile, inputfile, files, webdav_client, service):
