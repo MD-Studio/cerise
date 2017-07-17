@@ -1,70 +1,88 @@
-Simple CWL Xenon Service
-========================
+Cerise
+======
 [![Build Status](https://api.travis-ci.org/LourensVeen/cerise.svg?branch=master)](https://travis-ci.org/LourensVeen/cerise) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise)
 
 This is a simple REST service that can run (some) CWL jobs on some remote
-compute resource. It uses the GA4GH REST API as its interface and PyXenon
+compute resource. It uses a REST API as its interface and PyXenon
 to run jobs remotely.
 
-Note that this is very much a prototype at the moment, and that we are
-planning to create a more robust implementation in the future. This
-project serves as a pathfinder, with mistakes to be made and learnt
-from. It's also my first non-trivial Python program, so it will be a bit
-messy, but that will get better over time as I learn to omit semicolons
-and such.
+The implementation is fairly complete, and the main things needed are some
+real-world testing, bug fixing, and polish.
+
 
 Documentation
 -------------
-Documentation may be found in the doc/ directory. Currently there are
-the requirements for this project there, and a probably somewhat outdated
-class diagram.
+Cerise is a generic service for running CWL workflows on compute resources (i.e.
+clusters, supercomputers, and simply remote machines). It tries to offer a
+consistent environment for workflows, so that a workflow sent to resource A will
+work unchanged on resource B as well.
+
+To achieve this, and to offer a bit of safety and perhaps security, Cerise does
+not allow running arbitrary CWL command line tools. Instead, it expects the user
+to submit a workflow document that refers to predefined steps built into the
+service.
+
+Defining these steps, and adding them to the service, is called specialising the
+service. A specialisation of Cerise is always specific to a project (which
+determines which steps are available and what inputs and outputs they have), and
+to a compute resource (which determines how they are implemented). Thus, two
+workflows sent to two different specialisations to the same project, but to
+different compute resources, should give the same result (assuming the
+calculation is deterministic!).
+
+Documentation on how to specialise Cerise may be found in docs/specialising.rst.
+Other documentation there covers configuring the Cerise service itself (i.e.
+port numbers, logging configuration, etc.). There is also a requirements
+document there, a detailed description of the design, and source code
+documentation.
+
 
 Installation
 ------------
+Cerise can be run directly on a host, or in a Docker container. A local
+installation is created as follows:
+
 clone the repository
-    `git clone git@github.com:LourensVeen/cerise.git`
+    `git clone git@github.com:MD-Studio/cerise.git`
 change into the top-level directory
     `cd cerise`
 install using
     `pip3 install .`
 
+Steps and supporting files may then be placed in the api/ directory to
+specialise the service. For a detailed explanation, see docs/specialising.rst.
+
+To build the Docker image, use
+
+    `docker build -t cerise .`
+
+and then start a container using
+
+    `docker run --name=cerise -p 29593-29594:29593-29594 cerise`
+
+Note that the docker image gets its config.yml from conf/docker-config.yml in
+the source tree.
+
+However, this will run a plain, unspecialised Cerise, which is not very
+useful, as it runs jobs locally inside the container, and it doesn't contain any
+steps to execute. To use Cerise in Docker, you should make a new, specialised
+Docker image based on the standard Cerise image, and start that instead.
+Instructions for how to do so are also in docs/specialising.rst
+
+
 Dependencies
 ------------
  * Python 3.5 or up
 
+On the compute resource:
+ * Python 2.7 and CWLTool (or another CWL runner), or
+ * Python3 (using the built-in CWLTiny runner)
+
 Example usage
 -------------
-To start the service, simply run
 
-    `python3 -m cerise`
-
-and open your browser to here:
-
-```
-http://localhost:29593/ui/
-```
-
-The Swagger definition of the interface can be found at
-
-```
-http://localhost:29593/swagger.json
-```
-
-Docker
-------
-
-To build a Docker image, use
-    `cd cerise`
-    `docker build -t cerise .`
-then run it using
-    `docker run --name=cerise -p 29593 cerise`
-and point your browser to
-
-```
-http://localhost:29593/ui/
-```
-
-Note that the Dockerfile uses config-docker.yml for configuration.
+In the examples/ directory, you will find some example Python scripts that
+create jobs and execute them on the job running service.
 
 Contribution guide
 ------------------
@@ -73,9 +91,8 @@ contribute to the project please fork it, create a branch including your additio
 
 The tests use relative imports and can be run directly after making
 changes to the code. To run all tests use `pytest` in the main directory.
-To run the examples after code changes, you need to run `pip install --upgrade .`
-Documentation is generated by typing `make html` in the doc directory,
-the contents of doc/build/html/ should then be copied to the right directory of your gh-pages branch.
+This will also run the integration tests, which take several minutes to complete
+as a bunch of Docker containers is built, started, and stopped.
 
 Before creating a pull request please ensure the following:
 * You have written unit tests to test your additions
@@ -83,7 +100,7 @@ Before creating a pull request please ensure the following:
 * The examples still work and produce the same (or better) results
 * The code is compatible with Python 3.5
 * An entry about the change or addition is created in CHANGELOG.md
-* Add yourself as contributing author
+* You've added yourself as contributing author
 
 Contributing authors so far:
 * Lourens Veen
