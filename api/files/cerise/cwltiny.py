@@ -32,8 +32,7 @@ def exit_system_error(message):
     log('Encountered a system error')
     sys.exit(1)
 
-def exit_success(message):
-    log(message)
+def exit_success():
     log('Final process status is success')
     sys.exit(1)
 
@@ -163,6 +162,7 @@ def create_argument(parameter, input_dict):
         (int, [str]): The position of the argument and the items
                 comprising it
     """
+    log("Creating argument for parameter " + str(parameter) + " from input " + str(input_dict))
     arg = []
     position = 100
     value = parameter.get('default')
@@ -184,11 +184,11 @@ def create_argument(parameter, input_dict):
     if 'inputBinding' in parameter:
         binding = parameter['inputBinding']
         if 'prefix' in binding:
-            if 'separate' in binding:
+            if 'separate' in binding and not binding['separate']:
+                arg.append(binding['prefix'] + str(value))
+            else:
                 arg.append(binding['prefix'])
                 arg.append(str(value))
-            else:
-                arg.append(binding['prefix'] + str(value))
         else:
             arg.append(str(value))
 
@@ -209,7 +209,7 @@ def create_command_line(clt_desc, input_dict):
     args = []
     if 'arguments' in clt_desc:
         for argument in clt_desc['arguments']:
-            if not instanceof(argument, str):
+            if not isinstance(argument, str):
                 exit_system_error('Sorry: I only understand strings for arguments.'
                         'Please use the inputs to pass arguments from input parameters.')
         args.append((-1, clt_desc['arguments']))
@@ -312,7 +312,7 @@ def destage_output(output_dict):
                 location = urlparse(desc['location'])
                 dest_path = os.path.join(os.getcwd(), os.path.basename(location.path))
                 shutil.move(location.path, dest_path)
-                desc['location'] = 'file:///' + dest_path
+                desc['location'] = 'file://' + dest_path
 
     return output_dict
 
@@ -366,7 +366,11 @@ def normalise_workflow(workflow_dict):
             if isinstance(step['in'], dict):
                 new_in = []
                 for key, value in step['in'].items():
-                    new_in.append({'id': key, 'source': value})
+                    if isinstance(value, str):
+                        new_in.append({'id': key, 'source': value})
+                    elif isinstance(value, dict):
+                        value['id'] = key
+                        new_in.append(value)
                 step['in'] = new_in
 
         if 'out' in step:
@@ -406,7 +410,7 @@ def resolve_output_reference(reference, workflow_dict, input_dict):
     Returns:
         Union[dict, None]: A value, or None if not available
     """
-    log("Resolving reference " + reference + " from " + str(workflow_dict))
+    log("Resolving reference " + str(reference) + " from " + str(workflow_dict))
     source = reference.split(sep='/')
     if len(source) == 1:
         if reference not in input_dict:
@@ -465,6 +469,7 @@ def execute_workflow_step(step):
         step (dict): A WorkflowStep to execute
     """
     if 'run' in step:
+        log('Running workflow step from file ' + str(step['run']))
         run_dict = json.load(open(step['run'], 'r'))
         workdir_path = make_workdir()
         input_dict = step['cwltiny_input_values']
@@ -528,6 +533,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    log('====================')
+    log('CWLTiny starting run')
+    log('====================')
+
+    log('CWL file: ' + args.cwlfile)
     input_dict = json.load(open(args.inputfile, 'r'))
     cwl_dict = json.load(open(args.cwlfile, 'r'))
     workdir_path = make_workdir()
@@ -543,3 +553,8 @@ if __name__ == '__main__':
     print(json.dumps(output_dict))
 
     remove_workdirs()
+
+    log('====================')
+    log('CWLTiny ending run')
+    log('====================')
+    exit_success()
