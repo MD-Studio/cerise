@@ -111,10 +111,10 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
     except docker.errors.NotFound:
         pass
 
-    # Collect API steps dir for debugging
+    # Collect API dir for debugging
     try:
-        archive_file = os.path.join(str(tmpdir), 'docker_steps.tar')
-        stream, stat = cerise_container.get_archive('/tmp/cerise/steps')
+        archive_file = os.path.join(str(tmpdir), 'docker_api.tar')
+        stream, stat = slurm_container.get_archive('/tmp/cerise/api')
         with open(archive_file, 'wb') as f:
             f.write(stream.read())
     except docker.errors.NotFound:

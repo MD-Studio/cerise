@@ -103,6 +103,9 @@ class XenonRemoteFiles:
         self._stage_api_files(local_api_dir, remote_api_dir)
         self._stage_api_steps(local_api_dir, remote_api_dir)
 
+        remote_api_files_dir = remote_api_dir + '/files'
+        return remote_api_files_dir
+
     def stage_job(self, job_id, input_files):
         """Stage a job. Copies any necessary files to
         the remote resource.
@@ -209,18 +212,30 @@ class XenonRemoteFiles:
                 self._logger.debug(job.log)
 
     def _translate_steps(self, workflow_content):
+        """Parse workflow content, check that it calls steps, and
+        insert the location of the steps on the remote resource so that
+        the remote runner can find them.
+
+        Args:
+            workflow_content (bytes): The raw workflow data
+
+        Returns:
+            bytes: The modified workflow data, serialised as JSON
+
+        """
         workflow = yaml.safe_load(str(workflow_content, 'utf-8'))
         for _, step in workflow['steps'].items():
             if not isinstance(step['run'], str):
                 raise RuntimeError('Invalid step in workflow')
             # check against known steps?
             step['run'] = self._api_steps_dir + '/' + step['run']
-        return bytes(yaml.safe_dump(workflow), 'utf-8')
+        return bytes(json.dumps(workflow), 'utf-8')
 
     def _stage_api_steps(self, local_api_dir, remote_api_dir):
         """Copy the CWL steps forming the API to the remote compute
         resource, replacing $CERISE_API_FILES at the start of a
-        baseCommand with the remote path to the files.
+        baseCommand with the remote path to the files, and saving
+        the result as JSON.
         """
         try:
             self._api_steps_dir = remote_api_dir + '/steps'
@@ -251,7 +266,7 @@ class XenonRemoteFiles:
                         # write it to remote
                         rem_file = remote_this_dir + '/' + filename
                         x_rel_file = self._x.files().newPath(self._fs, RelativePath(rem_file))
-                        data = bytes(yaml.safe_dump(cwlfile), 'utf-8')
+                        data = bytes(json.dumps(cwlfile), 'utf-8')
                         stream = self._x.files().newOutputStream(x_rel_file,
                                 [OpenOption.CREATE, OpenOption.TRUNCATE])
                         stream.write(data)

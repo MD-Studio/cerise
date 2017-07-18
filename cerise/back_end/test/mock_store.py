@@ -7,7 +7,9 @@ from cerise.test.fixture_jobs import BrokenJob
 from cerise.job_store.in_memory_job import InMemoryJob
 from cerise.job_store.job_state import JobState
 
+import json
 import os
+import yaml
 
 class MockStore:
     """Created this by hand rather than using unittest.mock,
@@ -111,7 +113,7 @@ class MockStore:
             os.makedirs(job.remote_workdir_path)
 
             with open(job.remote_workflow_path, 'wb') as f:
-                f.write(PassJob.workflow)
+                f.write(yaml_to_json(PassJob.workflow))
 
             with open(job.remote_input_path, 'wb') as f:
                 f.write(PassJob.remote_input.encode('utf-8'))
@@ -166,7 +168,7 @@ class MockStore:
             wc_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
             wc_workdir = os.path.join(wc_jobdir, 'work')
             job.remote_workdir_path = wc_workdir
-            job.remote_workflow_path = os.path.join(wc_jobdir,'workflow.cwl')
+            job.remote_workflow_path = os.path.join(wc_jobdir, 'workflow.cwl')
             job.remote_input_path = os.path.join(wc_jobdir, 'input.json')
             job.remote_stdout_path = os.path.join(wc_jobdir, 'stdout.txt')
             job.remote_stderr_path = os.path.join(wc_jobdir, 'stderr.txt')
@@ -175,7 +177,7 @@ class MockStore:
             os.makedirs(wc_workdir)
 
             with open(job.remote_workflow_path, 'wb') as f:
-                f.write(WcJob.workflow)
+                f.write(yaml_to_json(WcJob.workflow))
 
             with open(job.remote_input_path, 'wb') as f:
                 f.write(WcJob.remote_input.encode('utf-8'))
@@ -220,7 +222,7 @@ class MockStore:
 
         if stage == 'submitted':
             with open(wc_wf_path, 'wb') as f:
-                f.write(WcJob.workflow)
+                f.write(yaml_to_json(WcJob.workflow))
 
             return job;
 
@@ -241,7 +243,7 @@ class MockStore:
             os.makedirs(job.remote_workdir_path)
 
             with open(job.remote_workflow_path, 'wb') as f:
-                f.write(SlowJob.workflow)
+                f.write(yaml_to_json(SlowJob.workflow))
 
             with open(job.remote_input_path, 'wb') as f:
                 f.write(SlowJob.remote_input.encode('utf-8'))
@@ -257,7 +259,7 @@ class MockStore:
             pass_wf_path = os.path.join(self._local_base_path, 'input', 'broken_workflow.cwl')
 
             with open(pass_wf_path, 'wb') as f:
-                f.write(BrokenJob.workflow)
+                f.write(yaml_to_json(BrokenJob.workflow))
 
             return job
 
@@ -278,7 +280,7 @@ class MockStore:
             os.makedirs(job.remote_workdir_path)
 
             with open(job.remote_workflow_path, 'wb') as f:
-                f.write(BrokenJob.workflow)
+                f.write(yaml_to_json(BrokenJob.workflow))
 
             with open(job.remote_input_path, 'wb') as f:
                 f.write(BrokenJob.remote_input.encode('utf-8'))
@@ -301,4 +303,6 @@ class MockStore:
 
             return job
 
-
+def yaml_to_json(yaml_string):
+    dict_form = yaml.safe_load(str(yaml_string, 'utf-8'))
+    return bytes(json.dumps(dict_form), 'utf-8')

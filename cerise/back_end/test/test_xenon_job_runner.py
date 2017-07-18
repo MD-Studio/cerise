@@ -4,6 +4,7 @@ from cerise.test.xenon import xenon_init
 
 from .mock_store import MockStore
 
+import os
 import pytest
 import time
 import xenon
@@ -32,7 +33,8 @@ def fixture(request, tmpdir, x):
                 'properties': None
             }}
     result['xenon-job-runner'] = XenonJobRunner(
-            result['store'], x, result['xenon-job-runner-config'])
+            result['store'], x, result['xenon-job-runner-config'],
+            os.path.dirname(__file__) + '/../../../api/files')
     return result
 
 def test_init(fixture):

@@ -8,7 +8,7 @@ from cerise.job_store.job_state import JobState
 from time import sleep
 
 class XenonJobRunner:
-    def __init__(self, job_store, xenon, xenon_config):
+    def __init__(self, job_store, xenon, xenon_config, api_files_path):
         """Create a XenonJobRunner object.
 
         Args:
@@ -24,6 +24,8 @@ class XenonJobRunner:
         """The Xenon instance to use."""
         self._username = None
         """The remote user to connect as."""
+        self._api_files_path = api_files_path
+        """str: The remote path of the API files directory."""
         self._remote_cwlrunner = None
         """str: The remote path to the cwl runner executable."""
         self._sched = None
@@ -31,9 +33,13 @@ class XenonJobRunner:
 
         self._make_scheduler(xenon_config)
 
-        self._remote_cwlrunner = xenon_config['jobs'].get('cwl-runner', 'cwl-runner')
+        self._remote_cwlrunner = xenon_config['jobs'].get('cwl-runner',
+                '$CERISE_API_FILES/cerise/cwltiny.py')
+
         if self._username is not None:
             self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_USERNAME', self._username)
+
+        self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_API_FILES', self._api_files_path)
 
 
     def _make_scheduler(self, xenon_config):
@@ -112,6 +118,7 @@ class XenonJobRunner:
             xenon_jobdesc.setArguments(args)
             xenon_jobdesc.setStdout(job.remote_stdout_path)
             xenon_jobdesc.setStderr(job.remote_stderr_path)
+            print("Starting job: " + str(xenon_jobdesc))
             xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
             job.remote_job_id = xenon_job.getIdentifier()
             self._logger.debug('Job submitted')

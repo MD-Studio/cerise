@@ -19,11 +19,9 @@ class ExecutionManager:
         self._job_store = SQLiteJobStore(config['database']['file'])
         self._local_files = LocalFiles(self._job_store, config['client-file-exchange'])
         self._remote_files = XenonRemoteFiles(self._job_store, xenon, api_config['compute-resource'])
-        self._job_runner = XenonJobRunner(self._job_store, xenon, api_config['compute-resource'])
 
-        self._logger.info('Started back-end')
+        api_files_path = self._remote_files.stage_api(apidir)
 
-        self._remote_files.stage_api(apidir)
         # TODO: recover database from crash
         with self._job_store:
             for job in self._job_store.list_jobs():
@@ -41,6 +39,11 @@ class ExecutionManager:
         # for each job in WAITING_CR or RUNNING_CR
             # if it's running
                 # send cancel request
+
+        self._job_runner = XenonJobRunner(
+                self._job_store, xenon,
+                api_config['compute-resource'], api_files_path)
+        self._logger.info('Started back-end')
 
     def shutdown(self):
         self._logger.debug('Shutdown requested')
