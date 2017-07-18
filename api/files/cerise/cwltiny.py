@@ -34,7 +34,7 @@ def exit_system_error(message):
 
 def exit_success():
     log('Final process status is success')
-    sys.exit(1)
+    sys.exit(0)
 
 # CWL process type detection
 def process_type(process_dict):
