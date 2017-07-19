@@ -10,6 +10,9 @@ Welcome to Cerise's documentation!
    :maxdepth: 4
    :caption: Contents:
 
+   requirements
+   specialising
+   design
    cerise
 
 

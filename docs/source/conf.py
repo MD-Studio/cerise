@@ -19,9 +19,7 @@
 #
 import os
 import sys
-sys.path.insert(0, '/data/home/lourens/NLeSC/projects/cwl/software/cerise/')
-sys.path.insert(0, '/data/home/lourens/NLeSC/projects/cwl/software/cerise/cerise')
-
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../cerise/'))
 
 # -- General configuration ------------------------------------------------
 
@@ -38,7 +36,7 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -51,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'cerise'
-copyright = '2017 Netherlands eScience Center'
+copyright = '2017 Netherlands eScience Center and VU University Amsterdam'
 author = 'Lourens Veen'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -101,7 +99,7 @@ html_theme = 'bizstyle'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 
 # -- Options for HTMLHelp output ------------------------------------------

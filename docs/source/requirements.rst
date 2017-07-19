@@ -1,6 +1,8 @@
-# Requirements
+Requirements
+============
 
-## Introduction
+Introduction
+------------
 
 This document describes the requirements placed on Cerise.  The aim of this
 project is to implement all these features, but in a minimal fashion, and with
@@ -8,7 +10,8 @@ the intent of eventually replacing this implementation with a more robust
 service, probably written in Java. For the time being however, it does need to
 work well enough that we can test the rest of our system with it.
 
-## Overview
+Overview
+--------
 
 Cerise provides a REST interface through which CWL workflows can be submitted
 for execution on a compute resource. The particulars of the compute resource are
@@ -20,13 +23,15 @@ the number of input and output types will be limited.
 The requirements below are categorised using the MoSCoW system: as either a
 Must have, Should have, Could have or Won't have requirement.
 
-## Functionality
+Functionality
+-------------
 
-### Basic functional requirements
+Basic functional requirements
+.............................
 
--   [M] A user can submit a CWL workflow for execution using the
-    [Netherlands eScience Center version of the GA4GH workflow execution schema](
-    https://github.com/NLeSC/workflow-execution-schemas) (the REST API).
+-   [M] A user can submit a CWL workflow for execution using the `Netherlands
+    eScience Center version of the GA4GH workflow execution schema`_ (the REST
+    API).
 
 -   [M] Multiple workflows can be submitted and executing at the same time.
 
@@ -42,7 +47,8 @@ Must have, Should have, Could have or Won't have requirement.
     is currently undefined, but supported input and output types will be
     limited.
 
-### Compute resources
+Compute resources
+.................
 
 -   [M] It must be possible to configure the service to select one compute
     resource on which submitted CWL workflows are to be run.
@@ -55,9 +61,11 @@ Must have, Should have, Could have or Won't have requirement.
 -   [S] Local execution (on the machine the service runs on) should be
     supported.
 
-### Deployment options
+Deployment options
+..................
 
 -   At least the following deployment configurations must be supported:
+
     -   [S] Client, this service, and workflow execution all on the same machine
     -   [S] Client on one machine, service and execution on another, where the
         client can connect to the service, but not vice versa.
@@ -66,3 +74,4 @@ Must have, Should have, Could have or Won't have requirement.
         service can connect to the compute resource, but no other connections are
         possible.
 
+.. _`Netherlands eScience Center version of the GA4GH workflow execution schema`: https://github.com/NLeSC/workflow-execution-schemas)
