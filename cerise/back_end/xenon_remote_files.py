@@ -234,8 +234,8 @@ class XenonRemoteFiles:
     def _stage_api_steps(self, local_api_dir, remote_api_dir):
         """Copy the CWL steps forming the API to the remote compute
         resource, replacing $CERISE_API_FILES at the start of a
-        baseCommand with the remote path to the files, and saving
-        the result as JSON.
+        baseCommand and in arguments with the remote path to the files,
+        and saving the result as JSON.
         """
         try:
             self._api_steps_dir = remote_api_dir + '/steps'
@@ -253,6 +253,13 @@ class XenonRemoteFiles:
                                 if cwlfile['baseCommand'].lstrip().startswith('$CERISE_API_FILES'):
                                     cwlfile['baseCommand'] = cwlfile['baseCommand'].replace(
                                             '$CERISE_API_FILES', self._api_files_dir, 1)
+
+                            if 'arguments' in cwlfile:
+                                for i, argument in enumerate(cwlfile['arguments']):
+                                    self._logger.debug("Processing argument " + argument)
+                                    cwlfile['arguments'][i] = argument.replace(
+                                            '$CERISE_API_FILES', self._api_files_dir)
+                                    self._logger.debug("Done processing argument " + cwlfile['arguments'][i])
 
                         # make parent directory
                         rel_this_dir = os.path.relpath(this_dir, start=local_steps_dir)
