@@ -8,6 +8,7 @@ from .xenon_job_runner import XenonJobRunner
 
 import logging
 import time
+import traceback
 
 class ExecutionManager:
     def __init__(self, config, api_config, apidir, xenon):
@@ -105,28 +106,34 @@ class ExecutionManager:
                     if self._shutting_down:
                         break
 
-                    job = self._job_store.get_job(job_id)
-                    self._logger.debug('Processing job ' + job_id + ' with current state ' + job.state.value)
-
-                    if JobState.is_remote(job.state):
-                        self._job_runner.update_job(job_id)
-                        self._remote_files.update_job(job_id)
+                    try:
                         job = self._job_store.get_job(job_id)
+                        self._logger.debug('Processing job ' + job_id + ' with current state ' + job.state.value)
 
-                    if job.state == JobState.FINISHED:
-                        self._destage_job(job_id, job)
+                        if JobState.is_remote(job.state):
+                            self._job_runner.update_job(job_id)
+                            self._remote_files.update_job(job_id)
+                            job = self._job_store.get_job(job_id)
 
-                    if job.try_transition(JobState.SUBMITTED, JobState.STAGING):
-                        self._stage_and_start_job(job_id, job)
-                        self._logger.debug('Staged and started job')
+                        if job.state == JobState.FINISHED:
+                            self._destage_job(job_id, job)
 
-                    if JobState.cancellation_active(job.state):
-                        self._cancel_job(job_id, job)
+                        if job.try_transition(JobState.SUBMITTED, JobState.STAGING):
+                            self._stage_and_start_job(job_id, job)
+                            self._logger.debug('Staged and started job')
 
-                    self._logger.debug('State is now ' + job.state.value)
+                        if JobState.cancellation_active(job.state):
+                            self._cancel_job(job_id, job)
 
-                    if job.please_delete and JobState.is_final(job.state):
-                        self._delete_job(job_id, job)
+                        self._logger.debug('State is now ' + job.state.value)
+
+                        if job.please_delete and JobState.is_final(job.state):
+                            self._delete_job(job_id, job)
+                    except:
+                        job.state = JobState.SYSTEM_ERROR
+                        self._logger.critical('An internal error occurred when processing job ' + job.id)
+                        self._logger.critical(traceback.format_exc())
+
                 self._logger.debug('Sleeping for 2 seconds')
                 try:
                     # Handler in run_back_end throws KeyboardInterrupt in order to
