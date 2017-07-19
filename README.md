@@ -34,7 +34,8 @@ Documentation on how to specialise Cerise may be found in docs/specialising.rst.
 Other documentation there covers configuring the Cerise service itself (i.e.
 port numbers, logging configuration, etc.). There is also a requirements
 document there, a detailed description of the design, and source code
-documentation.
+documentation. You can also read the documentation online at
+http://cerise.readthedocs.io/en/develop/
 
 
 Installation
