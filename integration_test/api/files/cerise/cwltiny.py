@@ -483,7 +483,7 @@ def execute_workflow_step(step):
 
         if 'out' in step:
             for output in step['out']:
-                output['cwltiny_value'] = output_dict[output['id']]
+                output['cwltiny_value'] = output_dict.get(output['id'])
 
     step['cwltiny_output_available'] = True
 
@@ -550,6 +550,10 @@ if __name__ == '__main__':
         output_dict = run_workflow(workdir_path, cwl_dict, input_dict)
 
     output_dict = destage_output(output_dict)
+    for key, value in output_dict.items():
+        if value is None:
+            exit_perm_fail("Workflow did not produce a value for at least output " + key)
+
     print(json.dumps(output_dict))
 
     remove_workdirs()
