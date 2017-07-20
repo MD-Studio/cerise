@@ -345,6 +345,7 @@ class XenonRemoteFiles:
             else:
                 self._x.files().delete(x_path_attr.path())
         self._x.files().delete(x_remote_path)
+        x_dir.close()
 
     def _write_remote_file(self, job_id, rel_path, data):
         """Write a file on the remote resource containing the given raw data.
@@ -368,14 +369,24 @@ class XenonRemoteFiles:
         """
         result = bytearray()
 
+        def sbyte_to_ubyte(buf, size):
+            ret = bytearray(size)
+            for i, val in enumerate(buf[0:size]):
+                if val >= 0:
+                    ret[i] = val
+                else:
+                    ret[i] = val + 256
+            return ret
+
         x_remote_path = self._x_abs_path(job_id, rel_path)
         if self._x.files().exists(x_remote_path):
             stream = self._x.files().newInputStream(x_remote_path)
             buf = jpype.JArray(jpype.JByte)(1024)
             bytes_read = stream.read(buf)
             while bytes_read != -1:
-                result = bytearray().join([result, bytearray(buf[0:bytes_read])])
+                result = bytearray().join([result, sbyte_to_ubyte(buf, bytes_read)])
                 bytes_read = stream.read(buf)
+            stream.close()
 
         return result
 
