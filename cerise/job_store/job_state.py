@@ -5,18 +5,18 @@ class JobState(Enum):
     """
     # Normal processing
     SUBMITTED = "Submitted"
-    STAGING = "Staging"
+    STAGING_IN = "StagingIn"
     WAITING = "Waiting"
     RUNNING = "Running"
     FINISHED = "Finished"
-    DESTAGING = "Destaging"
+    STAGING_OUT = "Destaging"
     SUCCESS = "Success"
 
     # Cancellation
-    STAGING_CR = "StagingCR"
+    STAGING_IN_CR = "StagingCR"
     WAITING_CR = "WaitingCR"
     RUNNING_CR = "RunningCR"
-    DESTAGING_CR = "DestagingCR"
+    STAGING_OUT_CR = "DestagingCR"
     CANCELLED = "Cancelled"
 
     # Error states
@@ -55,10 +55,10 @@ class JobState(Enum):
             bool: True if a job in this state has been marked for
                   cancellation.
         """
-        return state in [JobState.STAGING_CR,
+        return state in [JobState.STAGING_IN_CR,
                          JobState.WAITING_CR,
                          JobState.RUNNING_CR,
-                         JobState.DESTAGING_CR]
+                         JobState.STAGING_OUT_CR]
 
     @staticmethod
     def is_remote(state):
@@ -92,17 +92,17 @@ class JobState(Enum):
         """
         state_to_cwl_string = {
             JobState.SUBMITTED: 'Waiting',
-            JobState.STAGING: 'Waiting',
+            JobState.STAGING_IN: 'Waiting',
             JobState.WAITING: 'Waiting',
             JobState.RUNNING: 'Running',
             JobState.FINISHED: 'Running',
-            JobState.DESTAGING: 'Running',
+            JobState.STAGING_OUT: 'Running',
             JobState.SUCCESS: 'Success',
 
-            JobState.STAGING_CR: 'Waiting',
+            JobState.STAGING_IN_CR: 'Waiting',
             JobState.WAITING_CR: 'Waiting',
             JobState.RUNNING_CR: 'Running',
-            JobState.DESTAGING_CR: 'Running',
+            JobState.STAGING_OUT_CR: 'Running',
             JobState.CANCELLED: 'Cancelled',
 
             JobState.SYSTEM_ERROR: 'SystemError',

@@ -135,11 +135,11 @@ def test_setting_please_delete(job):
     assert job.please_delete == True
 
 def test_state_transitions(job):
-    assert not job.try_transition(JobState.STAGING, JobState.STAGING_CR)
-    assert job.try_transition(JobState.SUBMITTED, JobState.STAGING)
-    assert job.state == JobState.STAGING
-    assert job.try_transition(JobState.STAGING, JobState.STAGING_CR)
-    assert job.state == JobState.STAGING_CR
+    assert not job.try_transition(JobState.STAGING_IN, JobState.STAGING_IN_CR)
+    assert job.try_transition(JobState.SUBMITTED, JobState.STAGING_IN)
+    assert job.state == JobState.STAGING_IN
+    assert job.try_transition(JobState.STAGING_IN, JobState.STAGING_IN_CR)
+    assert job.state == JobState.STAGING_IN_CR
 
 def test_set_get_log(job):
     test_log = """This is a test log

@@ -48,11 +48,11 @@ def cancel_job_by_id(jobId):
             flask.abort(404, "Job not found")
 
         job.try_transition(job_state.JobState.SUBMITTED, job_state.JobState.CANCELLED)
-        job.try_transition(job_state.JobState.STAGING, job_state.JobState.STAGING_CR)
+        job.try_transition(job_state.JobState.STAGING_IN, job_state.JobState.STAGING_IN_CR)
         job.try_transition(job_state.JobState.WAITING, job_state.JobState.WAITING_CR)
         job.try_transition(job_state.JobState.RUNNING, job_state.JobState.RUNNING_CR)
         job.try_transition(job_state.JobState.FINISHED, job_state.JobState.CANCELLED)
-        job.try_transition(job_state.JobState.DESTAGING, job_state.JobState.DESTAGING_CR)
+        job.try_transition(job_state.JobState.STAGING_OUT, job_state.JobState.STAGING_OUT_CR)
 
     return get_job_by_id(jobId)
 

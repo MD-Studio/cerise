@@ -26,10 +26,10 @@ class ExecutionManager:
         # TODO: recover database from crash
         with self._job_store:
             for job in self._job_store.list_jobs():
-                if job.state == JobState.STAGING:
+                if job.state == JobState.STAGING_IN:
                     self._remote_files.delete_job(job.id)
                     job.state = JobState.SUBMITTED
-                if job.state == JobState.DESTAGING:
+                if job.state == JobState.STAGING_OUT:
                     self._local_files.delete_output_dir(job.id)
                     job.state = JobState.FINISHED
 
@@ -74,25 +74,25 @@ class ExecutionManager:
             job.state = JobState.PERMANENT_FAILURE
             return
 
-        if job.try_transition(JobState.STAGING_CR, JobState.CANCELLED):
+        if job.try_transition(JobState.STAGING_IN_CR, JobState.CANCELLED):
             self._logger.debug('Job was cancelled while resolving input')
             return
         self._remote_files.stage_job(job_id, input_files)
         self._job_runner.start_job(job_id)
-        if not (job.try_transition(JobState.STAGING, JobState.WAITING) or
-                job.try_transition(JobState.STAGING_CR, JobState.WAITING_CR)):
+        if not (job.try_transition(JobState.STAGING_IN, JobState.WAITING) or
+                job.try_transition(JobState.STAGING_IN_CR, JobState.WAITING_CR)):
             job.state = JobState.SYSTEM_ERROR
 
     def _destage_job(self, job_id, job):
         result = get_cwltool_result(job.log)
 
         if result == JobState.SUCCESS:
-            if job.try_transition(JobState.FINISHED, JobState.DESTAGING):
+            if job.try_transition(JobState.FINISHED, JobState.STAGING_OUT):
                 output_files = self._remote_files.destage_job_output(job_id)
                 if output_files is not None:
                     self._local_files.publish_job_output(job_id, output_files)
-                    job.try_transition(JobState.DESTAGING, JobState.SUCCESS)
-                    job.try_transition(JobState.DESTAGING_CR, JobState.CANCELLED)
+                    job.try_transition(JobState.STAGING_OUT, JobState.SUCCESS)
+                    job.try_transition(JobState.STAGING_OUT_CR, JobState.CANCELLED)
         else:
             job.state = result
 
@@ -118,7 +118,7 @@ class ExecutionManager:
                         if job.state == JobState.FINISHED:
                             self._destage_job(job_id, job)
 
-                        if job.try_transition(JobState.SUBMITTED, JobState.STAGING):
+                        if job.try_transition(JobState.SUBMITTED, JobState.STAGING_IN):
                             self._stage_and_start_job(job_id, job)
                             self._logger.debug('Staged and started job')
 

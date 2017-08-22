@@ -98,7 +98,7 @@ class MockStore:
 
         if stage == "resolved":
             job.workflow_content = PassJob.workflow
-            job.state = JobState.STAGING
+            job.state = JobState.STAGING_IN
             return job
 
         if stage == "staged":
@@ -108,7 +108,7 @@ class MockStore:
             job.remote_input_path = os.path.join(pass_jobdir, 'input.json')
             job.remote_stdout_path = os.path.join(pass_jobdir, 'stdout.txt')
             job.remote_stderr_path = os.path.join(pass_jobdir, 'stderr.txt')
-            job.state = JobState.STAGING
+            job.state = JobState.STAGING_IN
 
             os.makedirs(job.remote_workdir_path)
 
@@ -131,13 +131,13 @@ class MockStore:
 
             if stage == 'run_and_updated':
                 job.remote_output = PassJob.remote_output
-                job.state = JobState.DESTAGING
+                job.state = JobState.STAGING_OUT
             return job
 
         if stage == "destaged":
             job.remote_output = PassJob.remote_output
             job.local_output = PassJob.local_output
-            job.state = JobState.DESTAGING
+            job.state = JobState.STAGING_OUT
             return job
 
         raise ValueError('Invalid stage in _create_pass_job')
@@ -160,7 +160,7 @@ class MockStore:
 
         if stage == 'resolved':
             job.workflow_content = WcJob.workflow
-            job.state = JobState.STAGING
+            job.state = JobState.STAGING_IN
             return job
 
         if stage == 'staged':
@@ -172,7 +172,7 @@ class MockStore:
             job.remote_input_path = os.path.join(wc_jobdir, 'input.json')
             job.remote_stdout_path = os.path.join(wc_jobdir, 'stdout.txt')
             job.remote_stderr_path = os.path.join(wc_jobdir, 'stderr.txt')
-            job.state = JobState.STAGING
+            job.state = JobState.STAGING_IN
 
             os.makedirs(wc_workdir)
 
@@ -204,13 +204,13 @@ class MockStore:
 
             if stage == 'run_and_updated':
                 job.remote_output = WcJob.remote_output('file://' + wc_output_dir)
-                job.state = JobState.DESTAGING
+                job.state = JobState.STAGING_OUT
             return job
 
         if stage == 'destaged':
             job.remote_output = WcJob.remote_output('')
             job.local_output = WcJob.local_output
-            job.state = JobState.DESTAGING
+            job.state = JobState.STAGING_OUT
             return job
 
         return ValueError('Invalid stage in _create_wc_job')
@@ -238,7 +238,7 @@ class MockStore:
             job.remote_input_path = os.path.join(slow_jobdir, 'input.json')
             job.remote_stdout_path = os.path.join(slow_jobdir, 'stdout.txt')
             job.remote_stderr_path = os.path.join(slow_jobdir, 'stderr.txt')
-            job.state = JobState.STAGING
+            job.state = JobState.STAGING_IN
 
             os.makedirs(job.remote_workdir_path)
 
@@ -265,7 +265,7 @@ class MockStore:
 
         if stage == "resolved":
             job.workflow_content = BrokenJob.workflow
-            job.state = JobState.STAGING
+            job.state = JobState.STAGING_IN
             return job
 
         if stage == "staged":
@@ -275,7 +275,7 @@ class MockStore:
             job.remote_input_path = os.path.join(broken_jobdir, 'input.json')
             job.remote_stdout_path = os.path.join(broken_jobdir, 'stdout.txt')
             job.remote_stderr_path = os.path.join(broken_jobdir, 'stderr.txt')
-            job.state = JobState.STAGING
+            job.state = JobState.STAGING_IN
 
             os.makedirs(job.remote_workdir_path)
 
@@ -299,7 +299,7 @@ class MockStore:
 
             if stage == 'run_and_updated':
                 job.remote_output = BrokenJob.remote_output
-                job.state = JobState.DESTAGING
+                job.state = JobState.STAGING_OUT
 
             return job
 
