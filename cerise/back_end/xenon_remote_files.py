@@ -3,11 +3,9 @@ import json
 import logging
 import os
 import re
-import time
 import xenon
 import yaml
 
-from cerise.job_store.job_state import JobState
 from .cwl import get_files_from_binding
 
 class XenonRemoteFiles:
@@ -190,7 +188,6 @@ class XenonRemoteFiles:
             job_id (str): ID of the job to get the status of.
         """
         self._logger.debug("Updating " + job_id + " from remote files")
-        output_files = None
         with self._job_store:
             job = self._job_store.get_job(job_id)
 
@@ -454,8 +451,8 @@ class XenonRemoteFiles:
         if username is not None:
             self._username = username
             jpassword = jpype.JArray(jpype.JChar)(len(password))
-            for i in range(len(password)):
-                jpassword[i] = password[i]
+            for i, char in enumerate(password):
+                jpassword[i] = char
             credential = self._x.credentials().newPasswordCredential(
                     scheme, username, jpassword, None)
             self._fs = self._x.files().newFileSystem(

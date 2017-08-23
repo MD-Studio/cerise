@@ -3,8 +3,7 @@
 from __future__ import absolute_import
 from front_end.models.workflow_binding import WorkflowBinding
 from .base_model_ import Model
-from datetime import date, datetime
-from typing import List, Dict
+from datetime import datetime
 from ..util import deserialize_model
 
 

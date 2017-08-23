@@ -3,11 +3,10 @@ MAINTAINER Lourens Veen <l.veen@esciencecenter.nl>
 
 # Install requirements
 RUN apt-get update -y && apt-get -y dist-upgrade && \
-apt-get install -y python3 python3-pip && \
-apt-get install -y default-jdk && \
-apt-get install -y nginx-core && \
-apt-get install -y less && \
-apt-get install -y python python-pip && \
+apt-get install -y --no-install-recommends python3 python3-pip \
+    python3-setuptools python3-wheel python3-dev build-essential \
+    default-jre nginx-core less python python-pip python-setuptools \
+    python-wheel python-all-dev && \
 pip install cwltool cwlref-runner && \
 apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -18,7 +17,8 @@ RUN chown cerise:cerise /home/cerise
 
 # Make service dir and install dependencies
 COPY requirements.txt /home/cerise
-RUN cd /home/cerise && pip3 install -r requirements.txt
+WORKDIR /home/cerise
+RUN pip3 install -r requirements.txt
 
 # Set up WebDAV directories and give service access
 RUN mkdir /home/webdav
@@ -56,9 +56,4 @@ RUN chmod 755 /usr/local/bin/init.sh
 
 # Start the service
 CMD ["/bin/bash", "/usr/local/bin/init.sh"]
-
-# USER cerise
-# WORKDIR /home/cerise
-# CMD ["gunicorn", "--pid", "/var/run/gunicorn.pid", "--bind", "0.0.0.0:29593", "-k", "gthread", "--workers", "2", "--threads", "4", "cerise.__main__:application"]
-# CMD tail -f /home/cerise/config.yml
 

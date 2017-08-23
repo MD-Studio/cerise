@@ -61,8 +61,8 @@ class XenonJobRunner:
         if username is not None:
             self._username = username
             jpassword = jpype.JArray(jpype.JChar)(len(password))
-            for i in range(len(password)):
-                jpassword[i] = password[i]
+            for i, char in enumerate(password):
+                jpassword[i] = char
             credential = self._x.credentials().newPasswordCredential(
                     scheme, username, jpassword, None)
             properties = jpype.java.util.HashMap()

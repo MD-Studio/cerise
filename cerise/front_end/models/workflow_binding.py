@@ -3,7 +3,6 @@
 from __future__ import absolute_import
 from .base_model_ import Model
 from datetime import date, datetime
-from typing import List, Dict
 from ..util import deserialize_model
 
 
@@ -18,11 +17,11 @@ class WorkflowBinding(Model):
 
         """
         self.swagger_types = {
-            
+
         }
 
         self.attribute_map = {
-            
+
         }
 
 

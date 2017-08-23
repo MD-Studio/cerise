@@ -1,5 +1,3 @@
-import sys
-
 from cerise.back_end.local_files import LocalFiles
 from .mock_store import MockStore
 

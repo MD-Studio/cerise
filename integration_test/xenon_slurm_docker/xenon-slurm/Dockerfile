@@ -1,13 +1,13 @@
 FROM xenon-phusion-base
 MAINTAINER Lourens Veen "l.veen@esciencecenter.nl"
 
-RUN apt-get update && apt-get install -y slurm-llnl && \
+RUN apt-get update && apt-get install -y --no-install-recommends slurm-llnl && \
 apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ADD munge.key /etc/munge/munge.key
-ADD service /etc/service
+COPY munge.key /etc/munge/munge.key
+COPY service /etc/service
 # Key was generated with openssl genrsa -out slurm.key 1024 && openssl rsa -in slurm.key -pubout -out slurm.cert
-ADD etc /etc/slurm-llnl
+COPY etc /etc/slurm-llnl
 
 RUN mkdir /var/run/munge && \
 mkdir -p /var/spool/slurmctld/state && \

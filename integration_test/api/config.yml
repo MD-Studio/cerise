@@ -4,7 +4,7 @@ compute-resource:
     location: cerise-integration-test-slurm:22
     username: xenon
     password: javagat
-    path: /tmp/cerise
+    path: /home/xenon/.cerise
 
   jobs:
     scheme: slurm

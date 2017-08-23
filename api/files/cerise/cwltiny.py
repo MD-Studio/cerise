@@ -221,7 +221,7 @@ def create_command_line(clt_desc, input_dict):
 
     # drop keys and flatten
     command_line = []
-    for sort_key, items in args:
+    for _, items in args:
         command_line.extend(items)
     return command_line
 
@@ -306,7 +306,7 @@ def destage_output(output_dict):
         dict: A dict structure describing the output in the new
                 location.
     """
-    for id, desc in output_dict.items():
+    for _, desc in output_dict.items():
         if isinstance(desc, dict):
             if desc['class'] == 'File':
                 location = urlparse(desc['location'])

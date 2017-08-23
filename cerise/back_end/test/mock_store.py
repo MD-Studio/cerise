@@ -193,7 +193,7 @@ class MockStore:
             wc_job_dir = os.path.join(self._remote_base_path, 'jobs', job_id)
             wc_output_dir = os.path.join(wc_job_dir, 'work')
             os.makedirs(wc_output_dir)
-            for (name, filename, contents) in WcJob.output_files:
+            for (_, filename, contents) in WcJob.output_files:
                 wc_output_path = os.path.join(wc_output_dir, filename)
                 with open(wc_output_path, 'wb') as f:
                     f.write(contents)

@@ -70,10 +70,10 @@ def job(request, onejob_store):
 
 
 def test_create_store(db_name):
-    store = SQLiteJobStore(db_name)
+    _ = SQLiteJobStore(db_name)
 
 def test_open_existing_store(empty_db):
-    store = SQLiteJobStore(empty_db['file'])
+    _ = SQLiteJobStore(empty_db['file'])
 
 def test_open_existing_store_data(onejob_db):
     store = SQLiteJobStore(onejob_db['file'])

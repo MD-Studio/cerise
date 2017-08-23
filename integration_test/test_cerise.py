@@ -92,7 +92,7 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
 
     # Collect logs for debugging
     archive_file = os.path.join(str(tmpdir), 'docker_logs.tar')
-    stream, stat = cerise_container.get_archive('/var/log')
+    stream, _ = cerise_container.get_archive('/var/log')
     with open(archive_file, 'wb') as f:
         f.write(stream.read())
 
@@ -105,7 +105,7 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
     # Collect jobs dir for debugging
     try:
         archive_file = os.path.join(str(tmpdir), 'docker_jobs.tar')
-        stream, stat = slurm_container.get_archive('/tmp/cerise/jobs')
+        stream, stat = slurm_container.get_archive('/home/xenon/.cerise/jobs')
         with open(archive_file, 'wb') as f:
             f.write(stream.read())
     except docker.errors.NotFound:
@@ -114,7 +114,7 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
     # Collect API dir for debugging
     try:
         archive_file = os.path.join(str(tmpdir), 'docker_api.tar')
-        stream, stat = slurm_container.get_archive('/tmp/cerise/api')
+        stream, stat = slurm_container.get_archive('/home/xenon/.cerise/api')
         with open(archive_file, 'wb') as f:
             f.write(stream.read())
     except docker.errors.NotFound:
@@ -181,7 +181,6 @@ def _create_test_job(name, cwlfile, inputfile, files, webdav_client, service):
         except LocalResourceNotFound:
             # May be missing as part of the test, so log, but continue
             print("Local file missing in _create_test_job")
-            pass
         input_data[name] = {
                 "class": "File",
                 "basename": filename,
@@ -220,10 +219,6 @@ def _wait_for_finish(job_id, timeout, service):
     else:
         return test_job
 
-def test_get_jobs(service_client):
-    print(service_client.jobs.get_jobs().result())
-    assert False
-
 def test_cancel_job_by_id(webdav_client, service_client):
     """
     Test case for cancel_job_by_id
@@ -238,7 +233,7 @@ def test_cancel_job_by_id(webdav_client, service_client):
     time.sleep(3)
 
     # Cancel test job
-    (out, response) = service_client.jobs.cancel_job_by_id(jobId=test_job.id).result()
+    (_, response) = service_client.jobs.cancel_job_by_id(jobId=test_job.id).result()
 
     time.sleep(5)
 
@@ -262,7 +257,7 @@ def test_delete_job_by_id(service, webdav_client, service_client):
     time.sleep(10.0)
 
     with pytest.raises(HTTPNotFound):
-        (updated_job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
+        service_client.jobs.get_job_by_id(jobId=test_job.id).result()
 
 
 def test_get_job_by_id(service, webdav_client, service_client):
@@ -276,7 +271,7 @@ def test_get_job_by_id(service, webdav_client, service_client):
             webdav_client, service_client)
 
     time.sleep(10.0)
-    (job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
+    (job, _) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
 
     print(job)
     assert job.name == test_job.name
@@ -297,7 +292,7 @@ def test_get_job_log_by_id(service, webdav_client, service_client):
 
     Log of a job
     """
-    test_job = _create_test_job('test_get_job_log_by_id',
+    _create_test_job('test_get_job_log_by_id',
             'test_workflow.cwl', 'test_input.json', [],
             webdav_client, service_client)
 
@@ -374,7 +369,7 @@ def test_post_missing_job(service, service_client):
         workflow='http://localhost:29594/does_not_exist/no_really.cwl',
         input={}
     )
-    (job, response) = service_client.jobs.post_job(body=job_desc).result()
+    (job, _) = service_client.jobs.post_job(body=job_desc).result()
     job = _wait_for_finish(job.id, 20, service_client)
     assert job.state == 'PermanentFailure'
 
