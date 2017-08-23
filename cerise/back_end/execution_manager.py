@@ -11,15 +11,35 @@ import time
 import traceback
 
 class ExecutionManager:
+    """Handles the execution of jobs on the remote resource.
+    The execution manager monitors the job store for files that are
+    ready to be staged in, started, cancelled, staged out, or deleted,
+    and performs the required activity. It also monitors the remote
+    resource, ensuring that any remote state changes are propagated to
+    the job store correctly.
+    """
     def __init__(self, config, api_config, apidir, xenon):
+        """Set up the execution manager.
+
+        Args:
+            config (Dict): A document containing the general cerise
+                configuration
+            api_config (Dict): A document containing the API
+                configuration (from the specialisation)
+            apidir (str): The remote path to the remote API directory.
+            xenon (Xenon): The Xenon object to use.
+        """
         self._logger = logging.getLogger(__name__)
 
         self._shutting_down = False
 
         # _job_store = InMemoryJobStore()
         self._job_store = SQLiteJobStore(config['database']['file'])
+        """SQLiteJobStore: The job store to use."""
         self._local_files = LocalFiles(self._job_store, config['client-file-exchange'])
+        """LocalFiles: The local files manager."""
         self._remote_files = XenonRemoteFiles(self._job_store, xenon, api_config['compute-resource'])
+        """RemoteFiles: The remote files manager."""
 
         api_files_path = self._remote_files.stage_api(apidir)
 
@@ -47,6 +67,7 @@ class ExecutionManager:
         self._logger.info('Started back-end')
 
     def shutdown(self):
+        """Requests the execution manager to execute a clean shutdown."""
         self._logger.debug('Shutdown requested')
         self._shutting_down = True
 
