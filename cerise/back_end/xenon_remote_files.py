@@ -7,17 +7,8 @@ import time
 import xenon
 import yaml
 
-from xenon.files import OpenOption
-from xenon.files import RelativePath
-
 from cerise.job_store.job_state import JobState
 from .cwl import get_files_from_binding
-
-Utils = xenon.nl.esciencecenter.xenon.util.Utils
-PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
-NoSuchPathException = xenon.nl.esciencecenter.xenon.files.NoSuchPathException
-CopyOption = xenon.nl.esciencecenter.xenon.files.CopyOption
-PosixFilePermission = xenon.nl.esciencecenter.xenon.files.PosixFilePermission
 
 class XenonRemoteFiles:
     """Manages a remote directory structure.
@@ -45,6 +36,9 @@ class XenonRemoteFiles:
             xenon_config (Dict): A dict containing key-value pairs with
                 Xenon configuration.
         """
+        from xenon.files import RelativePath
+        PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
+
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
         self._job_store = job_store
@@ -93,6 +87,9 @@ class XenonRemoteFiles:
             local_api_dir (str): The absolute local path of the api/
                 directory to copy from
         """
+        from xenon.files import RelativePath
+        PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
+
         remote_api_dir = self._basedir + '/api'
         x_remote_api_dir = self._x.files().newPath(self._fs, RelativePath(remote_api_dir))
         try:
@@ -237,6 +234,10 @@ class XenonRemoteFiles:
         baseCommand and in arguments with the remote path to the files,
         and saving the result as JSON.
         """
+        from xenon.files import OpenOption
+        from xenon.files import RelativePath
+        PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
+
         try:
             self._api_steps_dir = remote_api_dir + '/steps'
             x_remote_steps_dir = self._x.files().newPath(self._fs, RelativePath(self._api_steps_dir))
@@ -283,6 +284,8 @@ class XenonRemoteFiles:
             pass
 
     def _stage_api_files(self, local_api_dir, remote_api_dir):
+        PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
+
         self._api_files_dir = remote_api_dir + '/files'
         local_dir = os.path.join(local_api_dir, 'files')
         if not os.path.isdir(local_dir):
@@ -299,6 +302,8 @@ class XenonRemoteFiles:
         self._x.files().createDirectories(xenonpath)
 
     def _rm_remote_dir(self, job_id, rel_path):
+        NoSuchPathException = xenon.nl.esciencecenter.xenon.files.NoSuchPathException
+
         try:
             x_remote_path = self._x_abs_path(job_id, rel_path)
             self._x_recursive_delete(x_remote_path)
@@ -314,6 +319,10 @@ class XenonRemoteFiles:
             to copy.
             remote_dir (str): The absolute remote path to copy it to
         """
+        from xenon.files import RelativePath
+        Utils = xenon.nl.esciencecenter.xenon.util.Utils
+        PosixFilePermission = xenon.nl.esciencecenter.xenon.files.PosixFilePermission
+
         x_remote_dir = self._x.files().newPath(self._fs, RelativePath(remote_dir))
         rel_local_dir = RelativePath(local_dir)
         x_local_dir = self._x.files().newPath(self._local_fs, rel_local_dir)
@@ -355,6 +364,8 @@ class XenonRemoteFiles:
             rel_path (str): A path relative to the job's directory
             data (bytes): The data to write
         """
+        from xenon.files import OpenOption
+
         x_remote_path = self._x_abs_path(job_id, rel_path)
         stream = self._x.files().newOutputStream(x_remote_path, [OpenOption.CREATE, OpenOption.TRUNCATE])
         stream.write(data)
@@ -413,6 +424,8 @@ class XenonRemoteFiles:
         Returns:
             Path: A Xenon Path object corresponding to the input
         """
+        from xenon.files import RelativePath
+
         abs_path = self._abs_path(job_id, rel_path)
         xenon_path = xenon.files.RelativePath(abs_path)
         return self._x.files().newPath(self._fs, xenon_path)

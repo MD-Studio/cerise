@@ -13,7 +13,7 @@ Welcome to Cerise's documentation!
    requirements
    specialising
    design
-   cerise
+   apidocs/modules
 
 
 Indices and tables
