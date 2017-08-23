@@ -1,6 +1,6 @@
 Cerise
 ======
-[![Build Status](https://api.travis-ci.org/LourensVeen/cerise.svg?branch=master)](https://travis-ci.org/LourensVeen/cerise) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise)
+[![Develop build status](https://api.travis-ci.org/MD-Studio/cerise.svg?branch=develop)](https://travis-ci.org/MD-Studio/cerise) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise)
 
 This is a simple REST service that can run (some) CWL jobs on some remote
 compute resource. It uses a REST API as its interface and PyXenon
