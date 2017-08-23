@@ -4,6 +4,7 @@ coverage>=4.0.3
 docker>=2.3.0
 pytest>=3.0
 pytest-cov>=2.5
+codacy-coverage
 py>=1.4.31
 randomize>=0.13
 webdavclient>=1.0.8

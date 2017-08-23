@@ -8,14 +8,9 @@ python:
 services:
   - docker
 
-before_install:
-  - sudo apt-get install jq
-  - wget -O ~/codacy-coverage-reporter-assembly-latest.jar $(curl https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r .assets[0].browser_download_url)
-
 install: "pip install -r requirements.txt && pip install -r test-requirements.txt"
 
-script: pytest --cov
+script: pytest --cov --cov-report=xml
 
 after_success:
-  - java -cp ~/codacy-coverage-reporter-assembly-latest.jar com.codacy.CodacyCoverageReporter -l Java -r build/reports/jacoco/test/jacocoTestReport.xml
-
+  - python-codacy-coverage -r coverage.xml
