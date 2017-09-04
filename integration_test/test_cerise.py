@@ -84,7 +84,7 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
             volumes={api_dir: {'bind': '/home/cerise/api', 'mode': 'ro'}},
             links={ 'cerise-integration-test-slurm':
                 'cerise-integration-test-slurm' },
-            ports={ '29593/tcp': ('127.0.0.1', 29593), '29594/tcp': ('127.0.0.1', 29594) },
+            ports={ '29593/tcp': ('127.0.0.1', 29593) },
             detach=True)
     time.sleep(2)   # Give it some time to start up
 
@@ -129,7 +129,7 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
 
 @pytest.fixture
 def webdav_client(request, service):
-    return wc.Client({'webdav_hostname': 'http://localhost:29594'})
+    return wc.Client({'webdav_hostname': 'http://localhost:29593'})
 
 @pytest.fixture
 def service_client(request, service):
@@ -158,10 +158,11 @@ def _create_test_job(name, cwlfile, inputfile, files, webdav_client, service):
         name (str): Name of the test job
         cwlfile (str): Name of the CWL file to use (in current dir)
         inputfile (str): Name of input file to use
+        files ([[str, str]]: List of name, filename pairs to stage
         webdav_client (wc.Client): WebDAV client fixture
         service (SwaggerClient): REST client fixture
     """
-    input_dir = '/input/' + name
+    input_dir = '/files/input/' + name
     webdav_client.mkdir(input_dir)
 
     cur_dir = os.path.dirname(__file__)
@@ -184,13 +185,13 @@ def _create_test_job(name, cwlfile, inputfile, files, webdav_client, service):
         input_data[name] = {
                 "class": "File",
                 "basename": filename,
-                "location": 'http://localhost:29594' + remote_path
+                "location": 'http://localhost:29593/' + remote_path
                 }
 
     JobDescription = service.get_model('job-description')
     job_desc = JobDescription(
         name=name,
-        workflow='http://localhost:29594' + remote_workflow_path,
+        workflow='http://localhost:29593' + remote_workflow_path,
         input=input_data
     )
     (job, response) = service.jobs.post_job(body=job_desc).result()
@@ -366,7 +367,7 @@ def test_post_missing_job(service, service_client):
     JobDescription = service_client.get_model('job-description')
     job_desc = JobDescription(
         name='test_post_missing_job',
-        workflow='http://localhost:29594/does_not_exist/no_really.cwl',
+        workflow='http://localhost:29593/files/does_not_exist/no_really.cwl',
         input={}
     )
     (job, _) = service_client.jobs.post_job(body=job_desc).result()

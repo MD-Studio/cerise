@@ -59,7 +59,7 @@ To build the Docker image, use
 
 and then start a container using
 
-    `docker run --name=cerise -p 29593-29594:29593-29594 cerise`
+    `docker run --name=cerise -p 29593:29593 cerise`
 
 Note that the docker image gets its config.yml from conf/docker-config.yml in
 the source tree.
