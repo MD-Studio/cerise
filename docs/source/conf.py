@@ -82,6 +82,18 @@ todo_include_todos = True
 # Also document constructors.
 autoclass_content = 'both'
 
+# -- Run apidoc plug-in manually, as readthedocs doesn't support it -------
+# See https://github.com/rtfd/readthedocs.org/issues/1139
+def run_apidoc(_):
+    from sphinx.apidoc import main
+    cur_dir = os.path.abspath(os.path.dirname(__file__))
+    sys.path.append(os.path.join(cur_dir, '..', '..', 'cerise'))
+    module = os.path.join(cur_dir, '..', '..', 'cerise')
+    output_dir = os.path.join(cur_dir, 'apidocs')
+    main(['-e', '-o', output_dir, module, '--force'])
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)
 
 # -- Options for HTML output ----------------------------------------------
 
