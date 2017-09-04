@@ -119,7 +119,7 @@ class XenonJobRunner:
             xenon_jobdesc.setStdout(job.remote_stdout_path)
             xenon_jobdesc.setStderr(job.remote_stderr_path)
             xenon_jobdesc.setMaxTime(60)
-            xenon_jobdesc.setProcessesPerNode(4)
+            xenon_jobdesc.setProcessesPerNode(1)
             xenon_jobdesc.setStartSingleProcess(True)
             print("Starting job: " + str(xenon_jobdesc))
             xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
