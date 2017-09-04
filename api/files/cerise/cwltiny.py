@@ -142,13 +142,13 @@ def stage_input(workdir_path, input_dict):
                 exit_system_error('Sorry: I don''t know how to deal with directories yet')
             if input_value['class'] == 'File':
                 location = urlparse(input_value['location'])
-#                if 'basename' in input_value:
-#                    dest_path = os.path.join(workdir_path, input_value['basename'])
-#                else:
-#                    dest_path = os.path.join(workdir_path, os.path.basename(location.path))
-#                shutil.copy(location.path, dest_path)
-#                input_value['path'] = dest_path
-                input_value['path'] = location.path
+                if 'basename' in input_value:
+                    dest_path = os.path.join(workdir_path, input_value['basename'])
+                else:
+                    dest_path = os.path.join(workdir_path, os.path.basename(location.path))
+                shutil.copy(location.path, dest_path)
+                input_value['path'] = dest_path
+#               input_value['path'] = location.path
 
 def create_argument(parameter, input_dict):
     """Create a command line argument from the given parameter of the
