@@ -15,7 +15,8 @@ function stop_container {
 
 trap stop_container SIGTERM
 
-
+# Note: systemd will strip the environment, so credentials are
+# not passed here, which is what we want.
 service nginx start
 
 cd /home/cerise
