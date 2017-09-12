@@ -8,7 +8,7 @@ outputs: []
 
 steps:
   break:
-    run: test/nonexisentt_step.cwl
+    run: cerise/test/nonexisentt_step.cwl
     in:
       message: This is going to break
     out: []

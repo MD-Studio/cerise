@@ -14,7 +14,7 @@ outputs:
 
 steps:
   echo:
-    run: test/echo.cwl
+    run: cerise/test/echo.cwl
     in:
         message: message
     out:

@@ -81,7 +81,6 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
     cerise_container = docker_client.containers.run(
             service_docker_image,
             name='cerise-integration-test-container',
-            volumes={api_dir: {'bind': '/home/cerise/api', 'mode': 'ro'}},
             links={ 'cerise-integration-test-slurm':
                 'cerise-integration-test-slurm' },
             ports={ '29593/tcp': ('127.0.0.1', 29593) },

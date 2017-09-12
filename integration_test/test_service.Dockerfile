@@ -5,7 +5,11 @@ MAINTAINER Lourens Veen <l.veen@esciencecenter.nl>
 COPY conf/config.yml /home/cerise/conf/config.yml
 RUN chown -R cerise:cerise /home/cerise/conf
 
+# Copy credentials
 RUN mkdir /home/cerise/.ssh
 COPY conf/known_hosts /home/cerise/.ssh/
 RUN chown -R cerise:cerise /home/cerise/.ssh/known_hosts
+
+# Copy API
+COPY api/ /home/cerise/api
 

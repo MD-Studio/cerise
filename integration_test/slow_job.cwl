@@ -8,7 +8,7 @@ outputs: []
 
 steps:
   sleep:
-    run: test/sleep.cwl
+    run: cerise/test/sleep.cwl
     in:
       delay:
         default: 4

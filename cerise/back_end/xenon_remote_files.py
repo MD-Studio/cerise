@@ -242,6 +242,7 @@ class XenonRemoteFiles:
 
             local_steps_dir = os.path.join(local_api_dir, 'steps')
             for this_dir, _, files in os.walk(local_steps_dir):
+                self._logger.debug('Scanning file for staging: ' + this_dir + '/' + str(files))
                 for filename in files:
                     if filename.endswith('.cwl'):
                         cwlfile = yaml.safe_load(open(os.path.join(this_dir, filename), 'r'))
@@ -270,6 +271,7 @@ class XenonRemoteFiles:
 
                         # write it to remote
                         rem_file = remote_this_dir + '/' + filename
+                        self._logger.debug('Staging step to ' + rem_file + ' from ' + filename)
                         x_rel_file = self._x.files().newPath(self._fs, RelativePath(rem_file))
                         data = bytes(json.dumps(cwlfile), 'utf-8')
                         stream = self._x.files().newOutputStream(x_rel_file,

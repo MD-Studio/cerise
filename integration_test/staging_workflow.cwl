@@ -14,7 +14,7 @@ outputs:
 
 steps:
   wc:
-    run: test/wc.cwl
+    run: cerise/test/wc.cwl
     in:
       file: file
     out:
