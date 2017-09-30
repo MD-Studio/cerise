@@ -408,6 +408,26 @@ def test_post_commandline_tool(service, webdav_client, service_client):
     test_job = _wait_for_finish(test_job.id, 20, service_client)
     assert test_job.state == 'PermanentFailure'
 
+def test_post_jobs_with_same_name(service, webdav_client, service_client):
+    """
+    Test case for post_job
+
+    submit a new job
+    """
+    test_job = _create_test_job('test_post_jobs_with_same_name',
+            'test_workflow.cwl', 'test_input.json', [],
+            webdav_client, service_client)
+
+    test_job2 = _create_test_job('test_post_jobs_with_same_name',
+            'test_workflow.cwl', 'test_input.json', [],
+            webdav_client, service_client)
+
+    test_job = _wait_for_finish(test_job.id, 20, service_client)
+    test_job2 = _wait_for_finish(test_job2.id, 20, service_client)
+
+    assert test_job.state == 'Success'
+    assert test_job2.state == 'Success'
+
 def test_restart_service(service, webdav_client, service_client):
     """
     Tests stopping and restarting the service with jobs running.
