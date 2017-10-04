@@ -43,8 +43,9 @@ def fixture(request, tmpdir, x):
     return result
 
 
-def test_init(fixture):
-    pass
+def test_stage_api(fixture):
+    assert os.path.isfile(os.path.join(
+        fixture['remote-dir'], 'api', 'steps', 'test', 'wc.cwl'))
 
 def test_stage_job(fixture):
     fixture['store'].add_test_job('test_stage_job', 'wc', 'resolved')
