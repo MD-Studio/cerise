@@ -84,6 +84,10 @@ class XenonRemoteFiles:
         Args:
             local_api_dir (str): The absolute local path of the api/
                 directory to copy from
+
+        Returns:
+            (str, str): The remote path to the api install script, and
+                the remote path to the api files/ directory.
         """
         from xenon.files import RelativePath
         PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
@@ -97,9 +101,10 @@ class XenonRemoteFiles:
 
         self._stage_api_files(local_api_dir, remote_api_dir)
         self._stage_api_steps(local_api_dir, remote_api_dir)
+        remote_api_script_path = self._stage_install_script(local_api_dir, remote_api_dir)
 
         remote_api_files_dir = remote_api_dir + '/files'
-        return remote_api_files_dir
+        return remote_api_script_path, remote_api_files_dir
 
     def stage_job(self, job_id, input_files):
         """Stage a job. Copies any necessary files to
@@ -254,11 +259,15 @@ class XenonRemoteFiles:
                                             '$CERISE_API_FILES', self._api_files_dir, 1)
 
                             if 'arguments' in cwlfile:
+                                if not isinstance(cwlfile['arguments'], list):
+                                    raise RuntimeError('Invalid step ' + filename + ': arguments must be an array')
+                                newargs = []
                                 for i, argument in enumerate(cwlfile['arguments']):
                                     self._logger.debug("Processing argument " + argument)
-                                    cwlfile['arguments'][i] = argument.replace(
-                                            '$CERISE_API_FILES', self._api_files_dir)
+                                    newargs.append(argument.replace(
+                                            '$CERISE_API_FILES', self._api_files_dir))
                                     self._logger.debug("Done processing argument " + cwlfile['arguments'][i])
+                                cwlfile['arguments'] = newargs
 
                         # make parent directory
                         rel_this_dir = os.path.relpath(this_dir, start=local_steps_dir)
@@ -296,6 +305,29 @@ class XenonRemoteFiles:
         except jpype.JException(PathAlreadyExistsException):
             pass
 
+    def _stage_install_script(self, local_api_dir, remote_api_dir):
+        from xenon.files import CopyOption
+        from xenon.files import RelativePath
+        PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
+
+        local_path = os.path.join(local_api_dir, 'install.sh')
+        if not os.path.isfile(local_path):
+            self._logger.debug('API install script not found, not staging')
+            return None
+
+        remote_path = remote_api_dir + '/install.sh'
+        self._logger.debug('Staging API install script to ' + remote_path + ' from ' + local_path)
+        x_local_path = self._x.files().newPath(self._local_fs, RelativePath(local_path))
+        x_remote_path = self._x.files().newPath(self._fs, RelativePath(remote_path))
+        if self._x.files().exists(x_remote_path):
+            self._x.files().delete(x_remote_path)
+        # CopyOption.REMOVE doesn't overwrite but fails?
+        self._x.files().copy(x_local_path, x_remote_path, [])
+
+        self._make_remote_file_executable(remote_path)
+
+        return remote_path
+
     def _make_remote_dir(self, job_id, rel_path):
         xenonpath = self._x_abs_path(job_id, rel_path)
         self._x.files().createDirectories(xenonpath)
@@ -320,7 +352,6 @@ class XenonRemoteFiles:
         """
         from xenon.files import RelativePath
         Utils = xenon.nl.esciencecenter.xenon.util.Utils
-        PosixFilePermission = xenon.nl.esciencecenter.xenon.files.PosixFilePermission
 
         x_remote_dir = self._x.files().newPath(self._fs, RelativePath(remote_dir))
         rel_local_dir = RelativePath(local_dir)
@@ -336,12 +367,18 @@ class XenonRemoteFiles:
                     rel_this_dir = os.path.relpath(this_dir, start=local_dir)
                     remote_this_dir = remote_dir + '/' + rel_this_dir
                     rem_file = remote_this_dir + '/' + filename
-                    x_rel_file = self._x.files().newPath(self._fs, RelativePath(rem_file))
-                    owner_read_execute = jpype.java.util.HashSet()
-                    owner_read_execute.add(PosixFilePermission.OWNER_READ)
-                    owner_read_execute.add(PosixFilePermission.OWNER_EXECUTE)
-                    self._x.files().setPosixFilePermissions(x_rel_file,
-                            owner_read_execute)
+                    self._make_remote_file_executable(rem_file)
+
+    def _make_remote_file_executable(self, remote_path):
+        from xenon.files import RelativePath
+        PosixFilePermission = xenon.nl.esciencecenter.xenon.files.PosixFilePermission
+
+        x_rel_file = self._x.files().newPath(self._fs, RelativePath(remote_path))
+        owner_read_execute = jpype.java.util.HashSet()
+        owner_read_execute.add(PosixFilePermission.OWNER_READ)
+        owner_read_execute.add(PosixFilePermission.OWNER_EXECUTE)
+        self._x.files().setPosixFilePermissions(x_rel_file,
+                owner_read_execute)
 
     def _x_recursive_delete(self, x_remote_path):
         x_dir = self._x.files().newAttributesDirectoryStream(x_remote_path)

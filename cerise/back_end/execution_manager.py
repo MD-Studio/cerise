@@ -41,7 +41,7 @@ class ExecutionManager:
         self._remote_files = XenonRemoteFiles(self._job_store, xenon, api_config['compute-resource'])
         """RemoteFiles: The remote files manager."""
 
-        api_files_path = self._remote_files.stage_api(apidir)
+        api_install_script_path, api_files_path = self._remote_files.stage_api(apidir)
 
         # TODO: recover database from crash
         with self._job_store:
@@ -63,7 +63,8 @@ class ExecutionManager:
 
         self._job_runner = XenonJobRunner(
                 self._job_store, xenon,
-                api_config['compute-resource'], api_files_path)
+                api_config['compute-resource'],
+                api_files_path, api_install_script_path)
         self._logger.info('Started back-end')
 
     def shutdown(self):

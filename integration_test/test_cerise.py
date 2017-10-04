@@ -207,6 +207,9 @@ def _wait_for_finish(job_id, timeout, service):
         job_id (str): The id of the job to wait for
         timeout (int): Number of seconds to time out after
         service (SwaggerClient): REST client fixture
+
+    Returns:
+        (Job): The finished job, or None if it timed out.
     """
     test_job, _ = service.jobs.get_job_by_id(jobId=job_id).result()
     count = 0
@@ -443,3 +446,20 @@ def test_restart_service(service, webdav_client, service_client):
     time.sleep(1)       # Trying to connect immediately crashes test, why?
     test_job = _wait_for_finish(test_job.id, 20, service_client)
     assert test_job.state == 'Success'
+
+def test_api_install_script(service, webdav_client, service_client):
+    """
+    Tests whether the api install script ran successfully.
+    """
+    test_job = _create_test_job('test_api_install_script',
+            'test_api_install.cwl', 'null_input.json', [],
+            webdav_client, service_client)
+
+    test_job = _wait_for_finish(test_job.id, 20, service_client)
+
+    print(test_job)
+    assert test_job.state == 'Success'
+    out_data = requests.get(test_job.output['output']['location'])
+    assert out_data.status_code == 200
+    assert out_data.text == 'Test\n'
+

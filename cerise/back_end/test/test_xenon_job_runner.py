@@ -6,6 +6,7 @@ from .mock_store import MockStore
 
 import os
 import pytest
+import shutil
 import time
 import xenon
 
@@ -32,13 +33,29 @@ def fixture(request, tmpdir, x):
                 'credential': None,
                 'properties': None
             }}
+
+    # stage api
+    base_api_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'api')
+    remote_api_dir = os.path.join(result['remote-dir'], 'api')
+    shutil.copytree(base_api_dir, remote_api_dir)
+
+    test_steps_dir = os.path.join(os.path.dirname(__file__), 'api', 'steps', 'test')
+    remote_test_steps_dir = os.path.join(result['remote-dir'], 'api', 'steps', 'test')
+    shutil.copytree(test_steps_dir, remote_test_steps_dir)
+
+    test_install_script_dir = os.path.join(os.path.dirname(__file__), 'api', 'install.sh')
+    remote_install_script_dir = os.path.join(result['remote-dir'], 'api', 'install.sh')
+    shutil.copy2(test_install_script_dir, remote_install_script_dir)
+
     result['xenon-job-runner'] = XenonJobRunner(
             result['store'], x, result['xenon-job-runner-config'],
-            os.path.dirname(__file__) + '/../../../api/files')
+            result['remote-dir'] + '/api/files',
+            result['remote-dir'] + '/api/install.sh')
     return result
 
-def test_init(fixture):
-    pass
+def test_stage_api_script_execution(fixture):
+    assert os.path.isfile(os.path.join(
+        fixture['remote-dir'], 'api', 'files', 'test', 'test_file.txt'))
 
 def test_start_job(fixture):
     fixture['store'].add_test_job('test_start_job', 'pass', 'staged')
@@ -49,7 +66,7 @@ def test_start_job(fixture):
 
     fixture['xenon-job-runner'].update_job('test_start_job')
     updated_job = fixture['store'].get_job('test_start_job')
-    assert updated_job.remote_job_id == 'local-0'
+    assert updated_job.remote_job_id == 'local-1'
     assert updated_job.state == JobState.FINISHED
 
 def test_start_staging_job(fixture):
@@ -61,7 +78,7 @@ def test_start_staging_job(fixture):
 
     fixture['xenon-job-runner'].update_job('test_start_staging_job')
     updated_job = fixture['store'].get_job('test_start_staging_job')
-    assert updated_job.remote_job_id == 'local-0'
+    assert updated_job.remote_job_id == 'local-1'
     assert updated_job.state == JobState.FINISHED
 
 def test_start_broken_job(fixture):
@@ -73,7 +90,7 @@ def test_start_broken_job(fixture):
 
     fixture['xenon-job-runner'].update_job('test_start_broken_job')
     updated_job = fixture['store'].get_job('test_start_broken_job')
-    assert updated_job.remote_job_id == 'local-0'
+    assert updated_job.remote_job_id == 'local-1'
     assert updated_job.state == JobState.FINISHED
     assert updated_job.remote_output == ''
 
