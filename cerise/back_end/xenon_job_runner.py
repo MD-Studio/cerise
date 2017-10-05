@@ -33,7 +33,7 @@ class XenonJobRunner:
         self._mpi_slots_per_node = xenon_config['jobs'].get('slots-per-node', 1)
         """Number of MPI slots per node to request."""
 
-
+        self._logger.debug('Slots per node set to ' + str(self._mpi_slots_per_node))
         self._make_scheduler(xenon_config)
 
         self._remote_cwlrunner = xenon_config['jobs'].get('cwl-runner',
