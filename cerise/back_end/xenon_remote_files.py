@@ -381,16 +381,11 @@ class XenonRemoteFiles:
                 owner_read_execute)
 
     def _x_recursive_delete(self, x_remote_path):
-        x_dir = self._x.files().newAttributesDirectoryStream(x_remote_path)
-        x_dir_it = x_dir.iterator()
-        while x_dir_it.hasNext():
-            x_path_attr = x_dir_it.next()
-            if x_path_attr.attributes().isDirectory():
-                self._x_recursive_delete(x_path_attr.path())
-            else:
-                self._x.files().delete(x_path_attr.path())
-        self._x.files().delete(x_remote_path)
-        x_dir.close()
+        Utils = xenon.nl.esciencecenter.xenon.util.Utils
+        # Xenon throws an exception if the path does not exist
+        if self._x.files().exists(x_remote_path):
+            Utils.recursiveDelete(self._x.files(), x_remote_path)
+        return
 
     def _write_remote_file(self, job_id, rel_path, data):
         """Write a file on the remote resource containing the given raw data.
