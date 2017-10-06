@@ -40,6 +40,7 @@ class ExecutionManager:
         """LocalFiles: The local files manager."""
         self._remote_files = XenonRemoteFiles(self._job_store, xenon, api_config['compute-resource'])
         """RemoteFiles: The remote files manager."""
+        self._remote_refresh = api_config['compute-resource'].get('refresh', 2)
 
         api_install_script_path, api_files_path = self._remote_files.stage_api(apidir)
 
@@ -118,49 +119,65 @@ class ExecutionManager:
         else:
             job.state = result
 
+    def _process_jobs(self, check_remote):
+        """
+        Go through the jobs and do what needs to be done.
+
+        Args:
+            check_remote (boolean): Whether to access the remote
+                compute resource to check on jobs.
+        """
+        jobs = self._job_store.list_jobs()
+        for job_id in [job.id for job in jobs]:
+            if self._shutting_down:
+                break
+
+            try:
+                job = self._job_store.get_job(job_id)
+                self._logger.debug('Processing job ' + job_id + ' with current state ' + job.state.value)
+
+                if check_remote and JobState.is_remote(job.state):
+                    self._logger.debug('Checking remote state')
+                    self._job_runner.update_job(job_id)
+                    self._remote_files.update_job(job_id)
+                    job = self._job_store.get_job(job_id)
+
+                if job.state == JobState.FINISHED:
+                    self._destage_job(job_id, job)
+
+                if job.try_transition(JobState.SUBMITTED, JobState.STAGING_IN):
+                    self._stage_and_start_job(job_id, job)
+                    self._logger.debug('Staged and started job')
+
+                if JobState.cancellation_active(job.state):
+                    self._cancel_job(job_id, job)
+
+                self._logger.debug('State is now ' + job.state.value)
+
+                if job.please_delete and JobState.is_final(job.state):
+                    self._delete_job(job_id, job)
+            except:
+                job.state = JobState.SYSTEM_ERROR
+                self._logger.critical('An internal error occurred when processing job ' + job.id)
+                self._logger.critical(traceback.format_exc())
+
     def execute_jobs(self):
         """Run the main backend execution loop.
         """
         with self._job_store:
+            last_active = time.perf_counter() - self._remote_refresh - 1
             while not self._shutting_down:
-                jobs = self._job_store.list_jobs()
-                for job_id in [job.id for job in jobs]:
-                    if self._shutting_down:
-                        break
+                now = time.perf_counter()
+                check_remote = now - last_active > self._remote_refresh
 
-                    try:
-                        job = self._job_store.get_job(job_id)
-                        self._logger.debug('Processing job ' + job_id + ' with current state ' + job.state.value)
+                self._process_jobs(check_remote)
+                if check_remote:
+                    last_active = time.perf_counter()
 
-                        if JobState.is_remote(job.state):
-                            self._job_runner.update_job(job_id)
-                            self._remote_files.update_job(job_id)
-                            job = self._job_store.get_job(job_id)
-
-                        if job.state == JobState.FINISHED:
-                            self._destage_job(job_id, job)
-
-                        if job.try_transition(JobState.SUBMITTED, JobState.STAGING_IN):
-                            self._stage_and_start_job(job_id, job)
-                            self._logger.debug('Staged and started job')
-
-                        if JobState.cancellation_active(job.state):
-                            self._cancel_job(job_id, job)
-
-                        self._logger.debug('State is now ' + job.state.value)
-
-                        if job.please_delete and JobState.is_final(job.state):
-                            self._delete_job(job_id, job)
-                    except:
-                        job.state = JobState.SYSTEM_ERROR
-                        self._logger.critical('An internal error occurred when processing job ' + job.id)
-                        self._logger.critical(traceback.format_exc())
-
-                self._logger.debug('Sleeping for 2 seconds')
                 try:
                     # Handler in run_back_end throws KeyboardInterrupt in order to
                     # break the sleep call; catch it to exit gracefully
-                    time.sleep(2)
+                    time.sleep(0.1)
                 except KeyboardInterrupt:
                     pass
 

@@ -209,9 +209,19 @@ class XenonJobRunner:
         JobState.WAITING. If it isn't cancellable, this
         function does nothing.
 
+        Cancellation may not happen immediately. If the cancellation
+        request has been executed immediately and the job is now gone,
+        this function returns False. If the job will be cancelled soon,
+        it returns True.
+
         Args:
             job_id (str): The id of the job to cancel.
+
+        Returns:
+            bool: Whether the job is still running.
         """
+        XenonException = xenon.nl.esciencecenter.xenon.XenonException
+
         self._logger.debug('Cancelling job ' + job_id)
         with self._job_store:
             job = self._job_store.get_job(job_id)
@@ -219,6 +229,11 @@ class XenonJobRunner:
                 active_jobs = self._x.jobs().getJobs(self._sched, [])
                 xenon_job = [x_job for x_job in active_jobs if x_job.getIdentifier() == job.remote_job_id]
                 if len(xenon_job) == 1:
-                    new_state = self._x.jobs().cancelJob(xenon_job[0])
-                    return bool(new_state.isRunning())
+                    status = self._x.jobs().getJobStatus(xenon_job[0])
+                    if status.isRunning():
+                        try:
+                            new_state = self._x.jobs().cancelJob(xenon_job[0])
+                        except jpype.JException(XenonException):
+                            return False
+                        return bool(new_state.isRunning())
         return False

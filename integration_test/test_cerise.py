@@ -233,12 +233,12 @@ def test_cancel_job_by_id(webdav_client, service_client):
             webdav_client, service_client)
 
     # Wait for it to start
-    time.sleep(3)
+    time.sleep(1)
 
     # Cancel test job
     (_, response) = service_client.jobs.cancel_job_by_id(jobId=test_job.id).result()
 
-    time.sleep(5)
+    time.sleep(2)
 
     # Check that state is now cancelled
     (updated_job, response) = service_client.jobs.get_job_by_id(jobId=test_job.id).result()
