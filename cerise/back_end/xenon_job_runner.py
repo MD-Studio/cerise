@@ -30,6 +30,8 @@ class XenonJobRunner:
         """str: The remote path to the cwl runner executable."""
         self._sched = None
         """The Xenon scheduler to start jobs through."""
+        self._queue_name = xenon_config['jobs'].get('queue-name')
+        """The name of the remote queue to submit jobs to."""
         self._mpi_slots_per_node = xenon_config['jobs'].get('slots-per-node', 1)
         """Number of MPI slots per node to request."""
 
@@ -47,6 +49,7 @@ class XenonJobRunner:
         if api_install_script_path is not None:
             self._run_api_install_script(xenon_config,
                     self._api_files_path, api_install_script_path)
+
 
     def _get_scheme(self, xenon_config):
         """Return the scheme, or the default value if not set."""
@@ -190,6 +193,8 @@ class XenonJobRunner:
             xenon_jobdesc.setStdout(job.remote_stdout_path)
             xenon_jobdesc.setStderr(job.remote_stderr_path)
             xenon_jobdesc.setMaxTime(60)
+            if self._queue_name:
+                xenon_jobdesc.setQueueName(self._queue_name)
             xenon_jobdesc.setProcessesPerNode(self._mpi_slots_per_node)
             xenon_jobdesc.setStartSingleProcess(True)
             print("Starting job: " + str(xenon_jobdesc))
