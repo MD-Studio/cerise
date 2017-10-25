@@ -36,7 +36,6 @@ class XenonJobRunner:
         """Number of MPI slots per node to request."""
 
         self._logger.debug('Slots per node set to ' + str(self._mpi_slots_per_node))
-        self._make_scheduler(xenon_config)
 
         self._remote_cwlrunner = xenon_config['jobs'].get('cwl-runner',
                 '$CERISE_API_FILES/cerise/cwltiny.py')
@@ -50,6 +49,7 @@ class XenonJobRunner:
             self._run_api_install_script(xenon_config,
                     self._api_files_path, api_install_script_path)
 
+        self._make_scheduler(xenon_config)
 
     def _get_scheme(self, xenon_config):
         """Return the scheme, or the default value if not set."""
