@@ -120,7 +120,7 @@ class LocalFiles:
         self._logger.debug("Publishing output for job " + job_id)
         with self._job_store:
             job = self._job_store.get_job(job_id)
-            if output_files is not None:
+            if output_files is not None and output_files != []:
                 output = json.loads(job.remote_output)
                 self.create_output_dir(job_id)
                 for output_name, file_name, content in output_files:

@@ -400,6 +400,23 @@ def test_post_missing_input(service, webdav_client, service_client):
     test_job = _wait_for_finish(test_job.id, 20, service_client)
     assert test_job.state == 'PermanentFailure'
 
+def test_failure_partial_output(service, webdav_client, service_client):
+    """
+    Tests running a job that fails and produces partial output. We want
+    to have whatever is produced back in that case.
+    """
+    test_job = _create_test_job('test_failure_partial_output',
+            'partial_failure.cwl', 'null_input.json',
+            [], webdav_client, service_client)
+
+    test_job = _wait_for_finish(test_job.id, 20, service_client)
+    assert test_job.state == 'PermanentFailure'
+
+    out_data = requests.get(test_job.output['output']['location'])
+    assert out_data.status_code == 200
+
+    assert 'missing_output' not in test_job.output
+
 def test_post_commandline_tool(service, webdav_client, service_client):
     """
     Tests posting a job with a CWL CommandLineTool process, which is

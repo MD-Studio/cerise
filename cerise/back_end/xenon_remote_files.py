@@ -158,20 +158,21 @@ class XenonRemoteFiles:
             List[str, str, bytes]: A list of (name, path, content) tuples.
         """
         self._logger.debug('Destaging job ' + job_id)
+        output_files = []
         with self._job_store:
             job = self._job_store.get_job(job_id)
-            self._logger.debug("Remote output" + job.remote_output)
-            outputs = json.loads(job.remote_output)
-            output_files = []
-            for output_name, path in get_files_from_binding(outputs):
-                self._logger.debug('Destage path = ' + path + ' for output ' + output_name)
-                prefix = 'file://' + self._basedir + '/jobs/' + job_id + '/work/'
-                if not path.startswith(prefix):
-                    raise Exception("Unexpected output location in cwl-runner output: " + path
-                            + ", expected it to start with: " + prefix)
-                rel_path = path[len(prefix):]
-                content = self._read_remote_file(job_id, 'work/' + rel_path)
-                output_files.append((output_name, rel_path, content))
+            if job.remote_output != '':
+                self._logger.debug("Remote output" + job.remote_output)
+                outputs = json.loads(job.remote_output)
+                for output_name, path in get_files_from_binding(outputs):
+                    self._logger.debug('Destage path = ' + path + ' for output ' + output_name)
+                    prefix = 'file://' + self._basedir + '/jobs/' + job_id + '/work/'
+                    if not path.startswith(prefix):
+                        raise Exception("Unexpected output location in cwl-runner output: " + path
+                                + ", expected it to start with: " + prefix)
+                    rel_path = path[len(prefix):]
+                    content = self._read_remote_file(job_id, 'work/' + rel_path)
+                    output_files.append((output_name, rel_path, content))
 
         # output_name and rel_path are (immutable) str's, while content
         # does not come from the store, so we're not leaking here

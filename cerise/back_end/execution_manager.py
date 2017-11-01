@@ -109,15 +109,13 @@ class ExecutionManager:
     def _destage_job(self, job_id, job):
         result = get_cwltool_result(job.log)
 
-        if result == JobState.SUCCESS:
-            if job.try_transition(JobState.FINISHED, JobState.STAGING_OUT):
-                output_files = self._remote_files.destage_job_output(job_id)
-                if output_files is not None:
-                    self._local_files.publish_job_output(job_id, output_files)
-                    job.try_transition(JobState.STAGING_OUT, JobState.SUCCESS)
-                    job.try_transition(JobState.STAGING_OUT_CR, JobState.CANCELLED)
-        else:
-            job.state = result
+        if job.try_transition(JobState.FINISHED, JobState.STAGING_OUT):
+            output_files = self._remote_files.destage_job_output(job_id)
+            self._local_files.publish_job_output(job_id, output_files)
+
+            if not (job.try_transition(JobState.STAGING_OUT, result) or
+                    job.try_transition(JobState.STAGING_OUT_CR, JobState.CANCELLED)):
+                job.state = JobState.SYSTEM_ERROR
 
     def _process_jobs(self, check_remote):
         """

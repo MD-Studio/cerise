@@ -31,14 +31,10 @@ def get_files_from_binding(cwl_binding):
         location the URL.
     """
     result = []
-    for name, value in cwl_binding.items():
-        item_class = None
-        try:
-            item_class = value.get('class')
-        except AttributeError:
-            pass
-        if item_class and item_class == 'File':
-            result.append((name, value['location']))
+    if cwl_binding is not None:
+        for name, value in cwl_binding.items():
+            if ('class' in value) and (value['class'] == 'File'):
+                result.append((name, value['location']))
 
     return result
 

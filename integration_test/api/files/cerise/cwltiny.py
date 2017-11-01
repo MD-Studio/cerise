@@ -262,6 +262,7 @@ def execute_clt(workdir_path, in_out, base_command, command_line):
 
     log("Ran subprocess")
     log("Result: " + str(result))
+    return result
 
 def collect_output(workdir_path, outputs):
     """Collect output files for return to caller.
@@ -296,8 +297,8 @@ def collect_output(workdir_path, outputs):
 
 def destage_output(output_dict):
     """Gets output files from the temporary working directory and
-    moves (!) them to the current directory, so that the tempdir can
-    be removed later without deleting the files.
+    moves (!) them to the current directory, so that we don't lose
+    the files when the tempdir is deleted later.
 
     Args:
         output_dict (dict): A dict structure describing the output.
@@ -326,6 +327,7 @@ def run_command_line_tool(workdir_path, clt_dict, input_dict):
         input_dict (dict): A dictionary describing inputs
     """
     log("Running command line tool " + str(clt_dict) + " with input " + str(input_dict))
+    has_error = False
     normalise_process(clt_dict)
     stage_input(workdir_path, input_dict)
     command_line = create_command_line(clt_dict, input_dict)
@@ -335,9 +337,11 @@ def run_command_line_tool(workdir_path, clt_dict, input_dict):
             'stdout': clt_dict.get('stdout'),
             'stderr': clt_dict.get('stderr')
             }
-    execute_clt(workdir_path, in_out, base_command, command_line)
+    result = execute_clt(workdir_path, in_out, base_command, command_line)
+    if result != 0:
+        has_error = True
     output_dict = collect_output(workdir_path, clt_dict['outputs'])
-    return output_dict
+    return has_error, output_dict
 
 
 # Workflow execution
@@ -474,9 +478,9 @@ def execute_workflow_step(step):
         workdir_path = make_workdir()
         input_dict = step['cwltiny_input_values']
         if process_type(run_dict) == 'Workflow':
-            output_dict = run_workflow(workdir_path, run_dict, input_dict)
+            has_error, output_dict = run_workflow(workdir_path, run_dict, input_dict)
         elif process_type(run_dict) == 'CommandLineTool':
-            output_dict = run_command_line_tool(workdir_path, run_dict, input_dict)
+            has_error, output_dict = run_command_line_tool(workdir_path, run_dict, input_dict)
 
         log("Step: " + str(step))
         log("Step output: " + str(output_dict))
@@ -486,11 +490,15 @@ def execute_workflow_step(step):
                 output['cwltiny_value'] = output_dict.get(output['id'])
 
     step['cwltiny_output_available'] = True
+    return has_error
 
 
 def get_workflow_outputs(workflow_dict, input_dict):
     """Get the outputs as described by the workflow from the values
     stored on the steps.
+
+    Missing outputs will be silently ignored, they're just not added
+    to the output dict at all.
 
     Args:
         workflow_dict (dict): The workflow to get outputs of
@@ -503,8 +511,10 @@ def get_workflow_outputs(workflow_dict, input_dict):
     output_dict = {}
     for output_parameter in workflow_dict['outputs']:
         if 'outputSource' in output_parameter:
-            output_dict[output_parameter['id']] = resolve_output_reference(
+            value = resolve_output_reference(
                     output_parameter['outputSource'], workflow_dict, input_dict)
+            if value is not None:
+                output_dict[output_parameter['id']] = value
     return output_dict
 
 def run_workflow(workdir_path, workflow_dict, input_dict):
@@ -517,13 +527,17 @@ def run_workflow(workdir_path, workflow_dict, input_dict):
     """
     normalise_workflow(workflow_dict)
     log("Normalised workflow: " + str(workflow_dict))
-    while has_unexecuted_steps(workflow_dict):
+    has_error = False
+    while has_unexecuted_steps(workflow_dict) and not has_error:
         for step in workflow_dict['steps']:
             all_bound = resolve_step_inputs(step, workflow_dict, input_dict)
             if all_bound:
-                execute_workflow_step(step)
+                step_error = execute_workflow_step(step)
+            if step_error:
+                has_error = True
+                break
 
-    return get_workflow_outputs(workflow_dict, input_dict)
+    return has_error, get_workflow_outputs(workflow_dict, input_dict)
 
 
 if __name__ == '__main__':
@@ -545,16 +559,15 @@ if __name__ == '__main__':
     proc_type = process_type(cwl_dict)
 
     if proc_type == 'CommandLineTool':
-        output_dict = run_command_line_tool(workdir_path, cwl_dict, input_dict)
+        has_error, output_dict = run_command_line_tool(workdir_path, cwl_dict, input_dict)
     elif proc_type == 'Workflow':
-        output_dict = run_workflow(workdir_path, cwl_dict, input_dict)
+        has_error, output_dict = run_workflow(workdir_path, cwl_dict, input_dict)
 
     output_dict = destage_output(output_dict)
-    for key, value in output_dict.items():
-        if value is None:
-            exit_perm_fail("Workflow did not produce a value for at least output " + key)
-
     print(json.dumps(output_dict))
+
+    if has_error:
+        exit_perm_fail("An error occured during execution")
 
     remove_workdirs()
 
