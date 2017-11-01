@@ -33,7 +33,8 @@ def get_files_from_binding(cwl_binding):
     result = []
     if cwl_binding is not None:
         for name, value in cwl_binding.items():
-            if ('class' in value) and (value['class'] == 'File'):
+            if (    isinstance(value, dict) and
+                    'class' in value and value['class'] == 'File'):
                 result.append((name, value['location']))
 
     return result
