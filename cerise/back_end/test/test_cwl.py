@@ -1,8 +1,4 @@
 import cerise.back_end.cwl as cwl
-from cerise.job_store.job_state import JobState
-
-import os
-import pytest
 
 def test_is_workflow():
     wf = """
