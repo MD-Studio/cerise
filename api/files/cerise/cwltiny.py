@@ -533,9 +533,9 @@ def run_workflow(workdir_path, workflow_dict, input_dict):
             all_bound = resolve_step_inputs(step, workflow_dict, input_dict)
             if all_bound:
                 step_error = execute_workflow_step(step)
-            if step_error:
-                has_error = True
-                break
+                if step_error:
+                    has_error = True
+                    break
 
     return has_error, get_workflow_outputs(workflow_dict, input_dict)
 
