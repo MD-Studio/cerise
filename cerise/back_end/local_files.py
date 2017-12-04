@@ -1,4 +1,5 @@
 from .cwl import get_files_from_binding
+from .input_file import InputFile
 
 from cerise.job_store.job_state import JobState
 
@@ -60,8 +61,9 @@ class LocalFiles:
 
         This function will read the job from the database, add a
         .workflow_content attribute with the contents of the
-        referenced file, and return an array of tuples containing
-        the input data.
+        workflow, and return a list of InputFile objects
+        describing the input files.
+
 
         This function will accept local file:// URLs as well as
         remote http:// URLs.
@@ -70,8 +72,7 @@ class LocalFiles:
             job_id (str): The id of the job whose input to resolve.
 
         Returns:
-            [Tuple[str, str, bytes]]: One tuple per input file, with
-            fields name, location and contents in that order.
+            [InputFile]: A list of InputFile objects to stage.
         """
         self._logger.debug("Resolving input for job " + job_id)
         with self._job_store:
@@ -84,7 +85,7 @@ class LocalFiles:
             for name, location in get_files_from_binding(inputs):
                 self._logger.debug("Resolving file " + name + " from " + location)
                 content = self._get_content_from_url(location)
-                input_files.append((name, location, content))
+                input_files.append(InputFile(name, location, content))
 
             return input_files
 

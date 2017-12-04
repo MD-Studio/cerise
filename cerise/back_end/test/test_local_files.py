@@ -40,8 +40,8 @@ def test_resolve_input(fixture):
     fixture['store'].add_test_job('test_resolve_input', 'wc', 'submitted')
     input_files = fixture['local-files'].resolve_input('test_resolve_input')
     assert fixture['store'].get_job('test_resolve_input').workflow_content == WcJob.workflow
-    assert input_files[0][0] == WcJob.local_input_files[0][0]
-    assert input_files[0][2] == WcJob.local_input_files[0][2]
+    assert input_files[0].name == WcJob.local_input_files[0].name
+    assert input_files[0].content == WcJob.local_input_files[0].content
 
 def test_resolve_missing_input(fixture):
     fixture['store'].add_test_job('test_missing_input', 'missing_input', 'submitted')

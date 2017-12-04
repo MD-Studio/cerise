@@ -55,8 +55,8 @@ def test_stage_job(fixture):
     remote_file = os.path.join(fixture['remote-dir'], 'jobs',
             'test_stage_job', 'work', '01_input_hello_world.txt')
     with open(remote_file, 'rb') as f:
-        contents = f.read()
-        assert contents == input_files[0][2]
+        content = f.read()
+        assert content == input_files[0].content
 
 def test_destage_job_no_output(fixture):
     fixture['store'].add_test_job('test_destage_job_no_output', 'pass', 'run_and_updated')

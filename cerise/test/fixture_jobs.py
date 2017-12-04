@@ -1,3 +1,4 @@
+from cerise.back_end.input_file import InputFile
 
 class PassJob:
     """A simple job with no inputs or outputs.
@@ -47,7 +48,7 @@ class WcJob:
     def local_input(local_baseurl):
         return '{ "file": { "class": "File", "location": "' + local_baseurl + '/input/hello_world.txt" } }'
 
-    local_input_files = [('file', 'input/hello_world.txt', bytes(
+    local_input_files = [InputFile('file', 'input/hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'

@@ -112,6 +112,7 @@ class XenonRemoteFiles:
 
         Args:
             job_id (str): The id of the job to stage
+            input_files ([InputFile]): A list of input files to stage.
         """
         self._logger.debug('Staging job ' + job_id)
         with self._job_store:
@@ -133,11 +134,12 @@ class XenonRemoteFiles:
             # stage input files
             inputs = json.loads(job.local_input)
             count = 1
-            for name, location, content in input_files:
-                staged_name = _create_input_filename(str(count).zfill(2), location)
+            for input_file in input_files:
+                staged_name = _create_input_filename(str(count).zfill(2), input_file.location)
                 count += 1
-                self._write_remote_file(job_id, 'work/' + staged_name, content)
-                inputs[name]['location'] = self._abs_path(job_id, 'work/' + staged_name)
+                self._write_remote_file(job_id, 'work/' + staged_name, input_file.content)
+                inputs[input_file.name]['location'] = \
+                        self._abs_path(job_id, 'work/' + staged_name)
 
             # stage input description
             inputs_json = json.dumps(inputs).encode('utf-8')

@@ -151,10 +151,10 @@ class MockStore:
             with open(wc_wf_path, 'wb') as f:
                 f.write(WcJob.workflow)
 
-            for (_, filename, contents) in WcJob.local_input_files:
-                wc_input_path = os.path.join(self._local_base_path, filename)
+            for input_file in WcJob.local_input_files:
+                wc_input_path = os.path.join(self._local_base_path, input_file.location)
                 with open(wc_input_path, 'wb') as f:
-                    f.write(contents)
+                    f.write(input_file.content)
 
             return job
 
