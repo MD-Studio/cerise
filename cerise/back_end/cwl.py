@@ -17,6 +17,46 @@ def is_workflow(workflow_content):
     process_class = workflow.get('class')
     return process_class == 'Workflow'
 
+
+class SecondaryFile:
+    """Holds a secondary file definition."""
+    def __init__(self, location):
+        """Creates a SecondaryFile.
+
+        Args:
+            location (str): The URL of this file.
+        """
+        self.location = location
+        """(str) The URL of this file."""
+        self.secondary_files = []
+        """([SecondaryFile]) Secondary files of this secondary file."""
+
+
+def get_secondary_files(secondary_files):
+    """Parses a list of secondary files.
+
+    Args:
+        secondary_files (list): A list of values from a CWL \
+                secondaryFiles attribute.
+
+    Returns:
+        ([SecondaryFile]): A list of secondary files.
+    """
+    result = []
+    for value in secondary_files:
+        if isinstance(value, dict):
+            if 'class' in value and value['class'] == 'File':
+                new_file = SecondaryFile(value['location'])
+                if 'secondaryFiles' in value:
+                    new_file.secondary_files = get_secondary_files(value['secondaryFiles'])
+                result.append(new_file)
+            elif 'class' in value and value['class'] == 'Directory':
+                raise RuntimeError("Directory inputs are not yet supported, sorry")
+            else:
+                raise RuntimeError("Invalid secondaryFiles entry: must be a File or a Directory")
+    return result
+
+
 def get_files_from_binding(cwl_binding):
     """Parses a CWL input or output binding an returns a list
     containing name: path pairs. Any non-File objects are
@@ -26,16 +66,17 @@ def get_files_from_binding(cwl_binding):
         cwl_binding (Dict): A dict structure parsed from a JSON CWL binding
 
     Returns:
-        List[Tuple[str, str]]: A list of (name, location) tuples,
-        where name contains the input or output name, and
-        location the URL.
+        (List[Tuple[str, str, SecondaryFiles]]): A list of (name, \
+                location, secondary_files) tuples, where name contains \
+                the input or output name, and location the URL.
     """
     result = []
     if cwl_binding is not None:
         for name, value in cwl_binding.items():
             if (    isinstance(value, dict) and
                     'class' in value and value['class'] == 'File'):
-                result.append((name, value['location']))
+                secondary_files = get_secondary_files(value.get('secondaryFiles', []))
+                result.append((name, value['location'], secondary_files))
 
     return result
 

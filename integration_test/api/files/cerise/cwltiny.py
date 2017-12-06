@@ -124,6 +124,26 @@ def remove_workdirs():
     for workdir in _workdirs:
         shutil.rmtree(workdir, ignore_errors=True)
 
+def stage_input_file(workdir_path, file_dict):
+    """Stage an input file into the working directory whose path
+    is in workdir_path. Uses the basename if given. Recursively
+    stages secondary files.
+
+    Args:
+        workdir_path (str): Path to the working directory
+        file_dict (dict): A dictionary with a CWL File object.
+    """
+    location = urlparse(file_dict['location'])
+    if 'basename' in file_dict:
+        dest_path = os.path.join(workdir_path, file_dict['basename'])
+    else:
+        dest_path = os.path.join(workdir_path, os.path.basename(location.path))
+    shutil.copy(location.path, dest_path)
+    file_dict['path'] = dest_path
+
+    for i, secondary_file in enumerate(file_dict.get('secondaryFiles', [])):
+        stage_input_file(workdir_path, file_dict['secondaryFiles'][i])
+
 def stage_input(workdir_path, input_dict):
     """Stage input files described in input_dict into the working
     directory whose path is in workdir_path. Uses the basename if
@@ -141,14 +161,7 @@ def stage_input(workdir_path, input_dict):
             if input_value['class'] == 'Directory':
                 exit_system_error('Sorry: I don''t know how to deal with directories yet')
             if input_value['class'] == 'File':
-                location = urlparse(input_value['location'])
-                if 'basename' in input_value:
-                    dest_path = os.path.join(workdir_path, input_value['basename'])
-                else:
-                    dest_path = os.path.join(workdir_path, os.path.basename(location.path))
-                shutil.copy(location.path, dest_path)
-                input_value['path'] = dest_path
-#               input_value['path'] = location.path
+                stage_input_file(workdir_path, input_value)
 
 def create_argument(parameter, input_dict):
     """Create a command line argument from the given parameter of the
@@ -533,9 +546,9 @@ def run_workflow(workdir_path, workflow_dict, input_dict):
             all_bound = resolve_step_inputs(step, workflow_dict, input_dict)
             if all_bound:
                 step_error = execute_workflow_step(step)
-            if step_error:
-                has_error = True
-                break
+                if step_error:
+                    has_error = True
+                    break
 
     return has_error, get_workflow_outputs(workflow_dict, input_dict)
 

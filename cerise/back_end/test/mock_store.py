@@ -3,6 +3,7 @@ from cerise.test.fixture_jobs import WcJob
 from cerise.test.fixture_jobs import MissingInputJob
 from cerise.test.fixture_jobs import SlowJob
 from cerise.test.fixture_jobs import BrokenJob
+from cerise.test.fixture_jobs import SecondaryFilesJob
 
 from cerise.job_store.in_memory_job import InMemoryJob
 from cerise.job_store.job_state import JobState
@@ -58,6 +59,8 @@ class MockStore:
             self._jobs.append(self._create_echo_job(test_job_id, test_job_stage))
         elif test_job_type == "wc":
             self._jobs.append(self._create_wc_job(test_job_id, test_job_stage))
+        elif test_job_type == "secondary_files":
+            self._jobs.append(self._create_secondary_files_job(test_job_id, test_job_stage))
         elif test_job_type == "complex":
             self._jobs.append(self._create_complex_job(test_job_id, test_job_stage))
 
@@ -68,6 +71,8 @@ class MockStore:
             return []
         elif test_job_type == "wc":
             return WcJob.local_input_files
+        elif test_job_type == "secondary_files":
+            return SecondaryFilesJob.local_input_files()
         raise NotImplementedError
 
     def get_output_files(self, test_job_type):
@@ -301,6 +306,32 @@ class MockStore:
                 job.remote_output = BrokenJob.remote_output
                 job.state = JobState.STAGING_OUT
 
+            return job
+
+    def _create_secondary_files_job(self, job_id, stage):
+        # Create
+        sf_wf_path = os.path.join(self._local_base_path, 'input', 'sf_workflow.cwl')
+        job = InMemoryJob(job_id, job_id, 'file://' + sf_wf_path,
+                SecondaryFilesJob.local_input(self._local_base_url))
+
+        if stage == 'submitted':
+            with open(sf_wf_path, 'wb') as f:
+                f.write(SecondaryFilesJob.workflow)
+
+            for input_file in SecondaryFilesJob.local_input_files():
+                sf_input_path = os.path.join(self._local_base_path, input_file.location)
+                with open(sf_input_path, 'wb') as f:
+                    f.write(input_file.content)
+                for secondary_file in input_file.secondary_files:
+                    sf_sf_path = os.path.join(self._local_base_path, secondary_file.location)
+                    with open(sf_sf_path, 'wb') as f:
+                        f.write(secondary_file.content)
+
+            return job
+
+        if stage == 'resolved':
+            job.workflow_content = SecondaryFilesJob.workflow
+            job.state = JobState.STAGING_IN
             return job
 
 def yaml_to_json(yaml_string):

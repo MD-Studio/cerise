@@ -19,3 +19,5 @@ class InputFile:
         """(str) Local URL of the file."""
         self.content = content
         """(bytes) The content of the file."""
+        self.secondary_files = []
+        """([InputFile]) CWL secondary files."""

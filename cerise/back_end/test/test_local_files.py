@@ -3,6 +3,7 @@ from .mock_store import MockStore
 
 from cerise.test.fixture_jobs import PassJob
 from cerise.test.fixture_jobs import WcJob
+from cerise.test.fixture_jobs import SecondaryFilesJob
 
 import os
 import pytest
@@ -47,6 +48,15 @@ def test_resolve_missing_input(fixture):
     fixture['store'].add_test_job('test_missing_input', 'missing_input', 'submitted')
     with pytest.raises(FileNotFoundError):
         fixture['local-files'].resolve_input('test_missing_input')
+
+def test_resolve_secondary_files(fixture):
+    fixture['store'].add_test_job('test_resolve_secondary_files', 'secondary_files', 'submitted')
+    input_files = fixture['local-files'].resolve_input('test_resolve_secondary_files')
+    assert fixture['store'].get_job('test_resolve_secondary_files').workflow_content == SecondaryFilesJob.workflow
+    assert input_files[0].name == SecondaryFilesJob.local_input_files()[0].name
+    assert input_files[0].content == SecondaryFilesJob.local_input_files()[0].content
+    assert input_files[0].secondary_files[0].content == \
+            SecondaryFilesJob.local_input_files()[0].secondary_files[0].content
 
 def test_create_output_dir(fixture):
     fixture['local-files'].create_output_dir('test_create_output_dir')

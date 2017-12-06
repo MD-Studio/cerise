@@ -106,6 +106,36 @@ class XenonRemoteFiles:
         remote_api_files_dir = remote_api_dir + '/files'
         return remote_api_script_path, remote_api_files_dir
 
+    def _stage_input_file(self, count, job_id, input_file, input_desc):
+        """Stage an input file. Copies the file to the remote resource.
+
+        Uses count to create unique file names, returns the new count \
+        (i.e. the next available number).
+
+        Args:
+            count (int): The next available unique count
+            job_id (str): The job id to stage for
+            input_file (InputFile): The input file to stage
+            input_desc (dict): The input description whose location \
+                    (and secondaryFiles) to update.
+
+        Returns:
+            (int) The updated count
+        """
+        self._logger.debug(type(input_file))
+        staged_name = _create_input_filename(str(count).zfill(2), input_file.location)
+        self._logger.debug('Staging input file {} to remote file {}'.format(
+            input_file.location, staged_name))
+        count += 1
+        self._write_remote_file(job_id, 'work/' + staged_name, input_file.content)
+        input_desc['location'] = self._abs_path(job_id, 'work/' + staged_name)
+
+        for i, secondary_file in enumerate(input_file.secondary_files):
+            sec_input_desc = input_desc['secondaryFiles'][i]
+            count = self._stage_input_file(count, job_id, secondary_file, sec_input_desc)
+
+        return count
+
     def stage_job(self, job_id, input_files):
         """Stage a job. Copies any necessary files to
         the remote resource.
@@ -135,11 +165,7 @@ class XenonRemoteFiles:
             inputs = json.loads(job.local_input)
             count = 1
             for input_file in input_files:
-                staged_name = _create_input_filename(str(count).zfill(2), input_file.location)
-                count += 1
-                self._write_remote_file(job_id, 'work/' + staged_name, input_file.content)
-                inputs[input_file.name]['location'] = \
-                        self._abs_path(job_id, 'work/' + staged_name)
+                count = self._stage_input_file(count, job_id, input_file, inputs[input_file.name])
 
             # stage input description
             inputs_json = json.dumps(inputs).encode('utf-8')
@@ -166,7 +192,7 @@ class XenonRemoteFiles:
             if job.remote_output != '':
                 self._logger.debug("Remote output" + job.remote_output)
                 outputs = json.loads(job.remote_output)
-                for output_name, path in get_files_from_binding(outputs):
+                for output_name, path, secondary_files in get_files_from_binding(outputs):
                     self._logger.debug('Destage path = ' + path + ' for output ' + output_name)
                     prefix = 'file://' + self._basedir + '/jobs/' + job_id + '/work/'
                     if not path.startswith(prefix):

@@ -347,6 +347,56 @@ def test_post_staging_job(service, webdav_client, service_client):
     assert out_data.text.startswith(' 4 11 58 ')
     assert out_data.text.endswith('hello_world.txt\n')
 
+def test_post_secondary_files_job(service, webdav_client, service_client):
+    """
+    Tests running a job that requires staging secondary files.
+    """
+    input_dir = '/files/input/test_post_secondary_files_job'
+    webdav_client.mkdir(input_dir)
+
+    cur_dir = os.path.dirname(__file__)
+    test_workflow = os.path.join(cur_dir, 'secondary_files_workflow.cwl')
+    remote_workflow_path = input_dir + '/' + 'secondary_files_workflow.cwl'
+    webdav_client.upload_sync(local_path = test_workflow, remote_path = remote_workflow_path)
+
+    for filename in ['hello_world.txt', 'hello_world.2nd']:
+        input_file = os.path.join(cur_dir, filename)
+        remote_path = input_dir + '/' + filename
+        webdav_client.upload_sync(local_path = input_file, remote_path = remote_path)
+
+    input_data = {
+            "file": {
+                "class": "File",
+                "basename": 'hello_world.txt',
+                "location": 'http://localhost:29593' + input_dir + '/hello_world.txt',
+                "secondaryFiles": [{
+                    "class": "File",
+                    "basename": 'hello_world.2nd',
+                    "location": 'http://localhost:29593' + input_dir + '/hello_world.2nd'
+                    }]
+                }
+            }
+
+    JobDescription = service_client.get_model('job-description')
+    job_desc = JobDescription(
+        name='test_post_secondary_files_job',
+        workflow='http://localhost:29593' + remote_workflow_path,
+        input=input_data
+    )
+    (test_job, response) = service_client.jobs.post_job(body=job_desc).result()
+    assert response.status_code == 201
+
+    test_job = _wait_for_finish(test_job.id, 20, service_client)
+    assert test_job.state == 'Success'
+
+    out_data = requests.get(test_job.output['output']['location'])
+    assert out_data.status_code == 200
+    print(out_data.text)
+    assert out_data.text == (
+            '  4  11  58 hello_world.txt\n' +
+            '  4  13  74 hello_world.2nd\n' +
+            '  8  24 132 total\n')
+
 def test_post_api_job(service, webdav_client, service_client):
     """
     Tests running a job that uses the files/ part of the API.

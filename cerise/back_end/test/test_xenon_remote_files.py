@@ -58,6 +58,24 @@ def test_stage_job(fixture):
         content = f.read()
         assert content == input_files[0].content
 
+def test_stage_secondary_files(fixture):
+    fixture['store'].add_test_job('test_stage_secondary_files', 'secondary_files', 'resolved')
+    input_files = fixture['store'].get_input_files('secondary_files')
+    fixture['xenon-remote-files'].stage_job('test_stage_secondary_files', input_files)
+
+    remote_file = os.path.join(fixture['remote-dir'], 'jobs',
+            'test_stage_secondary_files', 'work', '01_input_hello_world.txt')
+    with open(remote_file, 'rb') as f:
+        content = f.read()
+        assert content == input_files[0].content
+
+    remote_file = os.path.join(fixture['remote-dir'], 'jobs',
+            'test_stage_secondary_files', 'work', '02_input_hello_world.2nd')
+    with open(remote_file, 'rb') as f:
+        content = f.read()
+        assert content == input_files[0].secondary_files[0].content
+
+
 def test_destage_job_no_output(fixture):
     fixture['store'].add_test_job('test_destage_job_no_output', 'pass', 'run_and_updated')
     output_files = fixture['xenon-remote-files'].destage_job_output('test_destage_job_no_output')

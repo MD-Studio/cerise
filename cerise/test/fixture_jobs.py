@@ -140,3 +140,74 @@ class BrokenJob:
 
     output = ''
 
+
+class SecondaryFilesJob:
+    """A simple job with an input file with a secondary file and an output file.
+    """
+    workflow = bytes(
+                '#!/usr/bin/env cwl-runner\n'
+                '\n'
+                'cwlVersion: v1.0\n'
+                'class: Workflow\n'
+                'inputs:\n'
+                '  file:\n'
+                '    type: File\n'
+                '\n'
+                'outputs:\n'
+                '  counts:\n'
+                '    type: File\n'
+                '    outputSource: wc/output\n'
+                '\n'
+                'steps:\n'
+                '  wc:\n'
+                '    run: test/secondary_files.cwl\n'
+                '    in:\n'
+                '      textfile: file\n'
+                '    out:\n'
+                '      [output]\n', 'utf-8')
+
+    def local_input(local_baseurl):
+        return '''{{
+            "file": {{
+                "class": "File",
+                "location": "{0}/input/hello_world.txt",
+                "secondaryFiles": [{{
+                    "class": "File",
+                    "location": "{0}/input/hello_world.2nd"
+                    }}]
+                }}
+            }}'''.format(local_baseurl)
+
+    def local_input_files():
+        input_file = InputFile('file', 'input/hello_world.txt', bytes(
+                'Hello, World!\n'
+                '\n'
+                'Here is a test file for the staging test.\n'
+                '\n', 'utf-8'))
+        input_file.secondary_files = [
+            InputFile('file', 'input/hello_world.2nd', bytes(
+                'Hello, secondaryFiles!', 'utf-8'))]
+        return [input_file]
+
+    remote_input = '''{
+            "file": {
+                "class": "File",
+                "location": "work/01_input_hello_world.txt",
+                "secondaryFiles": [{
+                    "class": "File",
+                    "location": "work/02_input_hello_world.2nd"
+                    }]
+                }
+            }'''
+
+    remote_input_files = [
+            ('file', '01_input_hello_world.txt', bytes(
+                'Hello, World!\n'
+                '\n'
+                'Here is a test file for the staging test.\n'
+                '\n', 'utf-8')),
+            ('file', '02_input_hello_world.2nd', bytes(
+                'Hello, secondaryFiles!', 'utf-8'))
+            ]
+
+
