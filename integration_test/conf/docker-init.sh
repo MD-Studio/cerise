@@ -21,7 +21,7 @@ service nginx start
 
 cd /home/cerise
 
-su -c "coverage run cerise/run_back_end.py >>/var/log/cerise/cerise_backend.err 2>&1" cerise &
+su -c "coverage run --source=cerise cerise/run_back_end.py >>/var/log/cerise/cerise_backend.err 2>&1" cerise &
 
 su -c "gunicorn --pid ${gunicorn_pid_file} --access-logfile /var/log/gunicorn/access.log --error-logfile /var/log/gunicorn/error.log --capture-output --bind 127.0.0.1:29594 -k gevent --workers 1 cerise.run_front_end:application" cerise &
 

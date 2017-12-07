@@ -5,7 +5,7 @@ class: CommandLineTool
 baseCommand: bash
 arguments:
   - '-c'
-  - 'sleep 4'
+  - 'sleep 1'
 
 inputs: []
 

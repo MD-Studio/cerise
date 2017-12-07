@@ -1,4 +1,5 @@
 compute-resource:
+  refresh: 0.1
   files:
     scheme: ssh
     location: cerise-integration-test-slurm:22

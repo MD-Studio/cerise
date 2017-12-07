@@ -19,7 +19,6 @@ if __name__ == "__main__":
     def term_handler(signum, frame):
         logging.info('Back-end shut down requested')
         manager.shutdown()
-        raise KeyboardInterrupt
 
     signal.signal(signal.SIGTERM, term_handler)
     signal.signal(signal.SIGINT, term_handler)

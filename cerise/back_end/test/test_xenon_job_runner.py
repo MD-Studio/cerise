@@ -53,6 +53,19 @@ def fixture(request, tmpdir, x):
             result['remote-dir'] + '/api/install.sh')
     return result
 
+def _wait_for_state(fixture, job_id, state, timeout):
+    """Waits for the job to be in the given state."""
+    job = fixture['store'].get_job(job_id)
+    total_time = 0.0
+    while job.state != state and total_time < timeout:
+        time.sleep(0.1)
+        fixture['xenon-job-runner'].update_job(job_id)
+        job = fixture['store'].get_job(job_id)
+        total_time += 0.1
+
+    assert total_time < timeout
+    return job
+
 def test_stage_api_script_execution(fixture):
     assert os.path.isfile(os.path.join(
         fixture['remote-dir'], 'api', 'files', 'test', 'test_file.txt'))
@@ -62,36 +75,24 @@ def test_start_job(fixture):
     fixture['xenon-job-runner'].start_job('test_start_job')
     fixture['store'].get_job('test_start_job').state = JobState.WAITING
 
-    time.sleep(1)
-
-    fixture['xenon-job-runner'].update_job('test_start_job')
-    updated_job = fixture['store'].get_job('test_start_job')
+    updated_job = _wait_for_state(fixture, 'test_start_job', JobState.FINISHED, 1.0)
     assert updated_job.remote_job_id == 'local-1'
-    assert updated_job.state == JobState.FINISHED
 
 def test_start_staging_job(fixture):
     fixture['store'].add_test_job('test_start_staging_job', 'wc', 'staged')
     fixture['xenon-job-runner'].start_job('test_start_staging_job')
     fixture['store'].get_job('test_start_staging_job').state = JobState.WAITING
 
-    time.sleep(2)
-
-    fixture['xenon-job-runner'].update_job('test_start_staging_job')
-    updated_job = fixture['store'].get_job('test_start_staging_job')
+    updated_job = _wait_for_state(fixture, 'test_start_staging_job', JobState.FINISHED, 2.0)
     assert updated_job.remote_job_id == 'local-1'
-    assert updated_job.state == JobState.FINISHED
 
 def test_start_broken_job(fixture):
     fixture['store'].add_test_job('test_start_broken_job', 'broken', 'staged')
     fixture['xenon-job-runner'].start_job('test_start_broken_job')
     fixture['store'].get_job('test_start_broken_job').state = JobState.WAITING
 
-    time.sleep(1)
-
-    fixture['xenon-job-runner'].update_job('test_start_broken_job')
-    updated_job = fixture['store'].get_job('test_start_broken_job')
+    updated_job = _wait_for_state(fixture, 'test_start_broken_job', JobState.FINISHED, 1.0)
     assert updated_job.remote_job_id == 'local-1'
-    assert updated_job.state == JobState.FINISHED
     assert updated_job.remote_output == ''
 
 def test_update(fixture):
@@ -99,24 +100,15 @@ def test_update(fixture):
     fixture['xenon-job-runner'].start_job('test_update')
     fixture['store'].get_job('test_update').state = JobState.WAITING
 
-    time.sleep(2)
-
-    fixture['xenon-job-runner'].update_job('test_update')
-    updated_job = fixture['store'].get_job('test_update')
-    assert updated_job.state == JobState.RUNNING
-
-    time.sleep(4)
-
-    fixture['xenon-job-runner'].update_job('test_update')
-    updated_job = fixture['store'].get_job('test_update')
-    assert updated_job.state == JobState.FINISHED
+    updated_job = _wait_for_state(fixture, 'test_update', JobState.RUNNING, 2.0)
+    updated_job = _wait_for_state(fixture, 'test_update', JobState.FINISHED, 6.0)
 
 def test_cancel(fixture):
     fixture['store'].add_test_job('test_cancel', 'slow', 'staged')
     fixture['xenon-job-runner'].start_job('test_cancel')
     fixture['store'].get_job('test_cancel').state = JobState.WAITING
 
-    time.sleep(2)
+    updated_job = _wait_for_state(fixture, 'test_cancel', JobState.RUNNING, 2.0)
     is_running = fixture['xenon-job-runner'].cancel_job('test_cancel')
     assert is_running == False
 
