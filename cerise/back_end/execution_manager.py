@@ -164,19 +164,19 @@ class ExecutionManager:
         """
         with self._job_store:
             last_active = time.perf_counter() - self._remote_refresh - 1
-            while not self._shutting_down:
-                now = time.perf_counter()
-                check_remote = now - last_active > self._remote_refresh
+            # Handler in run_back_end throws KeyboardInterrupt in order to
+            # break the sleep call; catch it to exit gracefully
+            try:
+                while not self._shutting_down:
+                    now = time.perf_counter()
+                    check_remote = now - last_active > self._remote_refresh
 
-                self._process_jobs(check_remote)
-                if check_remote:
-                    last_active = time.perf_counter()
+                    self._process_jobs(check_remote)
+                    if check_remote:
+                        last_active = time.perf_counter()
 
-                try:
-                    # Handler in run_back_end throws KeyboardInterrupt in order to
-                    # break the sleep call; catch it to exit gracefully
                     time.sleep(0.1)
-                except KeyboardInterrupt:
-                    pass
 
-        self._logger.info('Back-end shutting down')
+            except KeyboardInterrupt:
+                pass
+        self._logger.debug('Shutting down')

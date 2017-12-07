@@ -1,5 +1,5 @@
 [run]
-source = cerise
+source = .
 omit =
     # The front end is generated code, so not being tested
     cerise/front_end/*
@@ -7,3 +7,7 @@ omit =
     */test/*
     integration_test/*
 
+[paths]
+source =
+    .
+    /home/cerise

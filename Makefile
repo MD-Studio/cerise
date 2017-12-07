@@ -8,3 +8,9 @@ docs-clean:
 docs:
 	sphinx-build -a docs/source docs/build
 
+.PHONY: test
+test:
+	pytest --cov
+	coverage combine --append integration_test
+	coverage xml
+	coverage report

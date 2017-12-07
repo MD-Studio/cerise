@@ -3,5 +3,5 @@
 **/*.autosave
 **/*.swp
 **/.cache/**
-.coverage
+**/.coverage*
 coverage.xml

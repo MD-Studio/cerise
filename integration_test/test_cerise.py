@@ -9,6 +9,7 @@ import json
 import os
 import pytest
 import requests
+import tarfile
 import time
 
 @pytest.fixture(scope="module")
@@ -89,6 +90,26 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
 
     yield cerise_container
 
+    # Stop containers
+    cerise_container.stop()
+    slurm_container.stop()
+
+    # Collect coverage data
+    try:
+        stream, _ = cerise_container.get_archive('/home/cerise/.coverage')
+        coverage_tar = os.path.join(str(tmpdir), 'docker_coverage.tar')
+        with open(coverage_tar, 'wb') as f:
+            f.write(stream.read())
+
+        coverage_file = os.path.join(cur_dir, '.coverage.' + request.function.__name__)
+        with tarfile.open(coverage_tar) as archive:
+            with archive.extractfile('.coverage') as cov_data:
+                with open(coverage_file, 'wb') as cov_file:
+                    cov_file.write(cov_data.read())
+
+    except docker.errors.NotFound:
+        pass
+
     # Collect logs for debugging
     archive_file = os.path.join(str(tmpdir), 'docker_logs.tar')
     stream, _ = cerise_container.get_archive('/var/log')
@@ -119,11 +140,8 @@ def service(request, tmpdir, docker_client, slurm_docker_image, service_docker_i
     except docker.errors.NotFound:
         pass
 
-    # Tear down
-    cerise_container.stop()
+    # Clean up
     cerise_container.remove()
-
-    slurm_container.stop()
     slurm_container.remove()
 
 @pytest.fixture
@@ -529,4 +547,3 @@ def test_api_install_script(service, webdav_client, service_client):
     out_data = requests.get(test_job.output['output']['location'])
     assert out_data.status_code == 200
     assert out_data.text == 'Test\n'
-
