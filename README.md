@@ -76,8 +76,9 @@ Dependencies
  * Python 3.5 or up
 
 On the compute resource:
- * Python 2.7 with CWL runner (e.g. [CWLTool](https://github.com/common-workflow-language/cwltool)) or
- * Python 3 with a built-in CWL runner (CWLTiny)
+ * Python 2.7 with [CWLTool](https://github.com/common-workflow-language/cwltool), or
+ * Python 3 with CWLTool or CWLTiny, the built-in CWL runner, or
+ * Some other CWL runner and whichever dependencies it needs
 
 Example usage
 -------------
