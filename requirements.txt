@@ -6,3 +6,4 @@ pyxenon == 0.3
 requests
 setuptools >= 21.0.0
 Sphinx
+sphinx_rtd_theme
