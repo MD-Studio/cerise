@@ -18,14 +18,11 @@ class ExecutionManager:
     resource, ensuring that any remote state changes are propagated to
     the job store correctly.
     """
-    def __init__(self, config, api_config, apidir, xenon):
+    def __init__(self, config, apidir, xenon):
         """Set up the execution manager.
 
         Args:
-            config (Dict): A document containing the general cerise
-                configuration
-            api_config (Dict): A document containing the API
-                configuration (from the specialisation)
+            config (Config): The configuration.
             apidir (str): The remote path to the remote API directory.
             xenon (Xenon): The Xenon object to use.
         """
@@ -34,13 +31,13 @@ class ExecutionManager:
         self._shutting_down = False
 
         # _job_store = InMemoryJobStore()
-        self._job_store = SQLiteJobStore(config['database']['file'])
+        self._job_store = SQLiteJobStore(config.get_database_location())
         """SQLiteJobStore: The job store to use."""
-        self._local_files = LocalFiles(self._job_store, config['client-file-exchange'])
+        self._local_files = LocalFiles(self._job_store, config)
         """LocalFiles: The local files manager."""
-        self._remote_files = XenonRemoteFiles(self._job_store, xenon, api_config['compute-resource'])
+        self._remote_files = XenonRemoteFiles(self._job_store, xenon, config)
         """RemoteFiles: The remote files manager."""
-        self._remote_refresh = api_config['compute-resource'].get('refresh', 2)
+        self._remote_refresh = config.get_remote_refresh()
 
         api_install_script_path, api_files_path = self._remote_files.stage_api(apidir)
 
@@ -63,8 +60,7 @@ class ExecutionManager:
                 # send cancel request
 
         self._job_runner = XenonJobRunner(
-                self._job_store, xenon,
-                api_config['compute-resource'],
+                self._job_store, xenon, config,
                 api_files_path, api_install_script_path)
         self._logger.info('Started back-end')
 

@@ -8,13 +8,12 @@ from cerise.job_store.job_state import JobState
 from time import sleep
 
 class XenonJobRunner:
-    def __init__(self, job_store, xenon, xenon_config, api_files_path, api_install_script_path):
+    def __init__(self, job_store, xenon, config, api_files_path, api_install_script_path):
         """Create a XenonJobRunner object.
 
         Args:
             job_store (JobStore): The job store to get jobs from.
-            xenon_config (Dict): A dict containing key-value pairs with Xenon
-                configuration.
+            config (Config): The configuration.
         """
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
@@ -28,17 +27,16 @@ class XenonJobRunner:
         """str: The remote path of the API files directory."""
         self._remote_cwlrunner = None
         """str: The remote path to the cwl runner executable."""
-        self._sched = None
+        self._sched = config.get_scheduler()
         """The Xenon scheduler to start jobs through."""
-        self._queue_name = xenon_config['jobs'].get('queue-name')
+        self._queue_name = config.get_queue_name()
         """The name of the remote queue to submit jobs to."""
-        self._mpi_slots_per_node = xenon_config['jobs'].get('slots-per-node', 1)
+        self._mpi_slots_per_node = config.get_slots_per_node()
         """Number of MPI slots per node to request."""
 
         self._logger.debug('Slots per node set to ' + str(self._mpi_slots_per_node))
 
-        self._remote_cwlrunner = xenon_config['jobs'].get('cwl-runner',
-                '$CERISE_API_FILES/cerise/cwltiny.py')
+        self._remote_cwlrunner = config.get_remote_cwl_runner()
 
         if self._username is not None:
             self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_USERNAME', self._username)
@@ -46,90 +44,11 @@ class XenonJobRunner:
         self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_API_FILES', self._api_files_path)
 
         if api_install_script_path is not None:
-            self._run_api_install_script(xenon_config,
+            self._run_api_install_script(config,
                     self._api_files_path, api_install_script_path)
 
-        self._make_scheduler(xenon_config)
-
-    def _get_scheme(self, xenon_config):
-        """Return the scheme, or the default value if not set."""
-        return xenon_config['jobs'].get('scheme', 'local')
-
-    def _get_location(self, xenon_config):
-        """Return the location, or the default value if not set."""
-        return xenon_config['jobs'].get('location', '')
-
-    def _get_credential(self, xenon_config, scheme=None):
-        """
-        Create a Xenon Credential given the configuration, and return
-        it together with the username.
-
-        Args:
-            xenon_config (dict): A configuration object.
-            scheme (str): The scheme to make a Credential for.
-                If set, this overrides the scheme specified in the
-                configuration.
-
-        Returns:
-            (str, Credential): The user name and Xenon Credential
-                object to connect with, or (None, None) if no username
-                was specified (e.g. for local connections).
-        """
-        if scheme is None:
-            scheme = self._get_scheme(xenon_config)
-
-        username = None
-        password = None
-        if 'username' in xenon_config['jobs']:
-            username = xenon_config['jobs']['username']
-            password = xenon_config['jobs']['password']
-        if 'CERISE_USERNAME' in os.environ:
-            username = os.environ['CERISE_USERNAME']
-            password = os.environ.get('CERISE_PASSWORD', '')
-        if 'CERISE_FILES_USERNAME' in os.environ:
-            username = os.environ['CERISE_FILES_USERNAME']
-            password = os.environ.get('CERISE_FILES_PASSWORD', '')
-
-        if username is not None:
-            jpassword = jpype.JArray(jpype.JChar)(len(password))
-            for i, char in enumerate(password):
-                jpassword[i] = char
-            credential = self._x.credentials().newPasswordCredential(
-                    scheme, username, jpassword, None)
-            return username, credential
-
-        return None, None
-
-    def _make_scheduler(self, xenon_config):
-        scheme = self._get_scheme(xenon_config)
-        location = self._get_location(xenon_config)
-
-        username, credential = self._get_credential(xenon_config)
-
-        if username is not None:
-            self._username = username
-            properties = jpype.java.util.HashMap()
-            properties.put('xenon.adaptors.slurm.ignore.version', 'true')
-            self._sched = self._x.jobs().newScheduler(
-                    scheme, location, credential, properties)
-        else:
-            self._sched = self._x.jobs().newScheduler(
-                    scheme, location, None, None)
-
-    def _run_api_install_script(self, xenon_config, api_files_path, api_install_script_path):
-        scheme = self._get_scheme(xenon_config)
-        if scheme != 'local':
-            scheme = 'ssh'
-        location = self._get_location(xenon_config)
-        username, credential = self._get_credential(xenon_config, scheme)
-
-        if username is not None:
-            sched = self._x.jobs().newScheduler(
-                    scheme, location, credential, None)
-        else:
-            sched = self._x.jobs().newScheduler(
-                    scheme, location, None, None)
-
+    def _run_api_install_script(self, config, api_files_path, api_install_script_path):
+        sched = config.get_scheduler(run_on_head_node=True)
         xenon_jobdesc = xenon.jobs.JobDescription()
         xenon_jobdesc.setWorkingDirectory(api_files_path)
         xenon_jobdesc.setExecutable(api_install_script_path)

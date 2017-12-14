@@ -6,9 +6,10 @@ import json
 
 from cerise.job_store import job_state
 from cerise.job_store.sqlite_job_store import SQLiteJobStore
-from cerise.config import config
+from cerise.config import make_config
 
-_job_store = SQLiteJobStore(config['database']['file'])
+_config = make_config()
+_job_store = SQLiteJobStore(_config.get_database_location())
 
 def _internal_job_to_rest_job(job):
     if job.local_output == '':

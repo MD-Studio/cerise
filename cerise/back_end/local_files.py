@@ -11,29 +11,22 @@ import shutil
 import urllib
 
 class LocalFiles:
-    def __init__(self, job_store, local_config):
+    def __init__(self, job_store, config):
         """Create a LocalFiles object.
         Sets up local directory structure as well.
 
-        Local configuration consists of the keys 'store-location-service'
-        and 'store-location-client'. The former should contain a str with
-        a file:// URL pointing to the path of the local file store, the
-        latter a str with a base URL (file or http) describing the way the
-        user sees this location.
-
         Args:
-            local_config (Dict): A dict containing key-value pairs with
-                local configuration.
+            config (Config): The configuration.
         """
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
         self._job_store = job_store
         """JobStore: The job store to get jobs from."""
 
-        self._basedir = local_config['store-location-service']
+        self._basedir = config.get_store_location_service()
         """str: The local path to the base directory where we store our stuff."""
 
-        self._baseurl = local_config['store-location-client']
+        self._baseurl = config.get_store_location_client()
         """str: The externally accessible base URL corresponding to the _basedir."""
 
         basedir = urllib.parse.urlparse(self._basedir)

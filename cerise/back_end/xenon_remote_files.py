@@ -24,15 +24,14 @@ class XenonRemoteFiles:
     - jobs/<job_id>/stderr.txt is the standard error of the CWL runner
     """
 
-    def __init__(self, job_store, x, xenon_config):
+    def __init__(self, job_store, x, config):
         """Create a XenonRemoteFiles object.
         Sets up remote directory structure as well, but refuses to
         create the top-level directory.
 
         Args:
             x (Xenon): The Xenon object to use.
-            xenon_config (Dict): A dict containing key-value pairs with
-                Xenon configuration.
+            config (Config): The configuration.
         """
         from xenon.files import RelativePath
         PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
@@ -43,25 +42,25 @@ class XenonRemoteFiles:
         """JobStore: The job store to use."""
         self._x = x
         """Xenon: The Xenon instance to use."""
-        self._fs = None
+        self._fs = config.get_file_system()
         """FileSystem: The Xenon remote file system to stage to."""
-        self._username = None
+        self._username = config.get_username('files')
         """str: The remote user name to use, if any."""
-        self._basedir = xenon_config['files']['path']
+        self._basedir = config.get_basedir()
         """str: The remote path to the base directory where we store our stuff."""
         self._api_files_dir = None
         """str: The remote path to the directory where the API files are."""
         self._api_steps_dir = None
         """str: The remote path to the directory where the API steps are."""
-        self._local_fs = None
+        self._local_fs = self._x.files().newFileSystem('local', None, None, None)
         """FileSystem: Xenon object for the local file system."""
 
-        self._create_fss(xenon_config)
-
         # Create basedir if it doesn't exist
+        self._logger.debug('username = {}'.format(self._username))
         if self._username is not None:
             self._basedir = self._basedir.replace('$CERISE_USERNAME', self._username)
         self._basedir = self._basedir.rstrip('/')
+        self._logger.debug('basedir = {}'.format(self._basedir))
         basedir_rel_path = RelativePath(self._basedir)
         basedir_full_path = self._x.files().newPath(self._fs, basedir_rel_path)
         try:
@@ -489,40 +488,6 @@ class XenonRemoteFiles:
         abs_path = self._abs_path(job_id, rel_path)
         xenon_path = xenon.files.RelativePath(abs_path)
         return self._x.files().newPath(self._fs, xenon_path)
-
-    def _create_fss(self, xenon_config):
-        """Create local and remote file systems.
-        """
-        self._local_fs = self._x.files().newFileSystem(
-                'local', None, None, None)
-
-        scheme = xenon_config['files'].get('scheme', 'local')
-        location = xenon_config['files'].get('location', '')
-
-        username = None
-        password = None
-        if 'username' in xenon_config['files']:
-            username = xenon_config['files'].get('username')
-            password = xenon_config['files'].get('password')
-        if 'CERISE_USERNAME' in os.environ:
-            username = os.environ['CERISE_USERNAME']
-            password = os.environ.get('CERISE_PASSWORD', '')
-        if 'CERISE_JOBS_USERNAME' in os.environ:
-            username = os.environ['CERISE_JOBS_USERNAME']
-            password = os.environ.get('CERISE_JOBS_PASSWORD', '')
-
-        if username is not None:
-            self._username = username
-            jpassword = jpype.JArray(jpype.JChar)(len(password))
-            for i, char in enumerate(password):
-                jpassword[i] = char
-            credential = self._x.credentials().newPasswordCredential(
-                    scheme, username, jpassword, None)
-            self._fs = self._x.files().newFileSystem(
-                    scheme, location, credential, None)
-        else:
-            self._fs = self._x.files().newFileSystem(
-                    scheme, location, None, None)
 
 def _create_input_filename(unique_prefix, orig_path):
     """Return a string containing a remote filename that

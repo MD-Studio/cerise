@@ -134,47 +134,9 @@ as described above.
 Compute resource configuration
 ------------------------------
 To complete the specialisation, a configuration file is needed with information
-on how to connect to the compute resource. This is a YAML file that looks like
-this:
-
-::
-
-  compute-resource:
-    files:
-      scheme: <connection protocol>
-      location: <hostname>
-      path: <remote path for Cerise base directory>
-
-    jobs:
-      scheme: <connection protocol or scheduler name>
-      location: <hostname>
-      cwl-runner: <remote path to CWL runner>
-
-(Note that this format is based on Xenon_ 1 terminology, and will likely change
-to the more intuitive Xenon_ 2 terminology in the near future, once that is
-finalised.)
-
-For files, the scheme can be ``file``, ``sftp``, ``ftp`` or ``webdav``, where
-``file`` refers to the local file system, and the others to the corresponding
-protocol. ``location`` provides the host name to connect to; to run locally,
-this may be omitted or empty. ``path`` configures the remote directory where
-Cerise will put its files. It may contain the string ``$CERISE_USERNAME``, which
-will be replaced with the user account name that the service is using. This is
-useful if you want to put Cerise's files into the users home directory, e.g.
-``/home/$CERISE_USERNAME/.cerise``. Note that user's home directories are not
-always in ``/home`` on compute clusters, so be sure to check this.
-
-For starting jobs, the scheme can be ``local``, ``ssh``, ``slurm``, ``torque``,
-``ge`` or ``sge``. ``local`` will run jobs locally, ``ssh`` will run them
-directly on a remote host via SSH, and ``slurm``, ``torque``, ``ge`` and ``sge``
-will submit the jobs to a remote scheduler via SSH (``ge`` and ``sge`` are for
-Sun Grid Engine). ``location`` specifies the hostname to connect to, and may be
-empty or missing if scheme equals ``local``.
-
-Finally, ``cwl-runner`` specifies the remote path to the CWL runner. It defaults
-to ``$CERISE_API_FILES/cerise/cwltiny.py``. ``$CERISE_API_FILES`` will be
-substituted for the appropriate remote directory by Cerise.
-
+on how to connect to the compute resource. This configuration file must be
+placed at `api/config.yml`. See :doc:`Cerise <configuration>` for what to put
+into this file
 
 .. _`CWL User Guide`: http://www.commonwl.org/v1.0/UserGuide.html
 .. _Xenon: http://nlesc.github.io/Xenon/

@@ -7,13 +7,15 @@ import os
 import xenon
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from cerise.config import config
-from cerise.config import api_config
+import cerise.config
 
 if __name__ == "__main__":
     # Set up Xenon
     xenon.init()
-    _xenon = xenon.Xenon()
+    xenon_ = xenon.Xenon()
+
+    # Load configuration
+    config = cerise.config.make_config(xenon_)
 
     # Set up shut-down handler
     def term_handler(signum, frame):
@@ -23,15 +25,15 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, term_handler)
     signal.signal(signal.SIGINT, term_handler)
 
-    if 'pidfile' in config:
-        with open(config['pidfile'], 'w') as f:
+    pid_file = config.get_pid_file()
+    if pid_file:
+        with open(pid_file, 'w') as f:
             f.write(str(os.getpid()))
 
     # Set up logging
-    if 'logging' in config:
-        logfile = config['logging'].get('file', '/var/log/cerise/cerise_backend.log')
-        loglevel_str = config['logging'].get('level', 'INFO')
-        loglevel = getattr(logging, loglevel_str.upper(), None)
+    if config.has_logging():
+        logfile = config.get_log_file()
+        loglevel = config.get_log_level()
         logging.basicConfig(filename=logfile, level=loglevel,
                 format='[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s [%(name)s]',
                 datefmt='%Y-%m-%d %H:%M:%S')
@@ -43,11 +45,11 @@ if __name__ == "__main__":
     logging.info('Starting up')
     try:
         apidir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'api')
-        manager = ExecutionManager(config, api_config, apidir, _xenon)
+        manager = ExecutionManager(config, apidir, xenon_)
         manager.execute_jobs()
     except:
         logging.critical(traceback.format_exc())
 
     # Shut down
     logging.info('Shutting down')
-    _xenon.close()
+    xenon_.close()

@@ -1,14 +1,17 @@
 compute-resource:
   refresh: 0.1
   files:
-    scheme: ssh
+    protocol: sftp
     location: cerise-integration-test-slurm:22
-    username: xenon
-    password: javagat
+    credentials:
+      username: xenon
+      password: javagat
     path: /home/xenon/.cerise
 
   jobs:
-    scheme: slurm
+    protocol: ssh
     location: cerise-integration-test-slurm:22
-    username: xenon
-    password: javagat
+    credentials:
+      username: xenon
+      password: javagat
+    scheduler: slurm

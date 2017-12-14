@@ -8,6 +8,16 @@ from cerise.test.fixture_jobs import SecondaryFilesJob
 import os
 import pytest
 
+class MockConfig:
+    def __init__(self, basedir):
+        self._basedir = basedir
+
+    def get_store_location_service(self):
+        return 'file://{}'.format(self._basedir)
+
+    def get_store_location_client(self):
+        return 'http://example.com'
+
 @pytest.fixture
 def fixture(request, tmpdir):
     result = {}
@@ -20,10 +30,7 @@ def fixture(request, tmpdir):
         'local-base-path': basedir
         })
 
-    result['local-files-config'] = {
-        'store-location-service': 'file://' + basedir,
-        'store-location-client': 'http://example.com'
-        }
+    result['local-files-config'] = MockConfig(basedir)
 
     result['local-files'] = LocalFiles(result['store'], result['local-files-config'])
 

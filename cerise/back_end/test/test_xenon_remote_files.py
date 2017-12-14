@@ -13,6 +13,20 @@ def x(request, xenon_init):
     yield ret
     ret.close()
 
+class MockConfig:
+    def __init__(self, x, remote_dir):
+        self._x = x
+        self._remote_dir = remote_dir
+
+    def get_file_system(self):
+        return self._x.files().newFileSystem('local', None, None, None)
+
+    def get_basedir(self):
+        return self._remote_dir
+
+    def get_username(self, kind):
+        return None
+
 @pytest.fixture
 def fixture(request, tmpdir, x):
     from cerise.back_end.xenon_remote_files import XenonRemoteFiles
@@ -28,11 +42,7 @@ def fixture(request, tmpdir, x):
 
     result['xenon'] = x
 
-    result['xenon-remote-files-config'] = {
-            'files': {
-                'scheme': 'local',
-                'path': result['remote-dir'],
-            }}
+    result['xenon-remote-files-config'] = MockConfig(result['xenon'], result['remote-dir'])
 
     result['xenon-remote-files'] = XenonRemoteFiles(
             result['store'], x, result['xenon-remote-files-config'])

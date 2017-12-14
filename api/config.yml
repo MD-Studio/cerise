@@ -1,7 +1,7 @@
 compute-resource:
   files:
-    scheme: local
+    protocol: local
     path: /tmp/cerise
 
   jobs:
-    scheme: local
+    protocol: local

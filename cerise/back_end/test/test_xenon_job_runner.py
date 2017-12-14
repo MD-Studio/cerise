@@ -16,6 +16,22 @@ def x(request, xenon_init):
     yield ret
     ret.close()
 
+class MockConfig:
+    def __init__(self, x):
+        self._x = x
+
+    def get_scheduler(self, run_on_head_node=False):
+        return self._x.jobs().newScheduler('local', None, None, None)
+
+    def get_queue_name(self):
+        return None
+
+    def get_slots_per_node(self):
+        return 1
+
+    def get_remote_cwl_runner(self):
+        return '$CERISE_API_FILES/cerise/cwltiny.py'
+
 @pytest.fixture
 def fixture(request, tmpdir, x):
     result = {}
@@ -26,13 +42,7 @@ def fixture(request, tmpdir, x):
         'remote-base-path': result['remote-dir']
         })
     result['xenon'] = x
-    result['xenon-job-runner-config'] = {
-            'jobs': {
-                'scheme': 'local',
-                'location': None,
-                'credential': None,
-                'properties': None
-            }}
+    result['xenon-job-runner-config'] = MockConfig(result['xenon'])
 
     # stage api
     base_api_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'api')
