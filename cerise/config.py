@@ -51,7 +51,7 @@ class Config:
             return env_var(kind, name) in os.environ
 
         def get_env(kind, name):
-            return os.environ(env_var(kind, name))
+            return os.environ[env_var(kind, name)]
 
         value = None
         if have_config('', name):
