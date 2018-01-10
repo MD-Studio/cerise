@@ -84,8 +84,11 @@ class XenonJobRunner:
                     job.try_transition(JobState.WAITING, JobState.RUNNING)
                     job.try_transition(JobState.WAITING_CR, JobState.RUNNING_CR)
                     return
+                if not xenon_status.isDone():
+                    # Still waiting in the queue, check again later
+                    return
 
-            # Not running, so it's finished unless we cancelled it
+            # Not running or waiting, so it's finished unless we cancelled it
             job.try_transition(JobState.WAITING, JobState.FINISHED)
             job.try_transition(JobState.RUNNING, JobState.FINISHED)
             job.try_transition(JobState.WAITING_CR, JobState.CANCELLED)
