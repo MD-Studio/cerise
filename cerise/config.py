@@ -400,11 +400,23 @@ def make_config(xenon=None):
     api_config = None
 
     config_file_path = 'conf/config.yml'
-    with open(config_file_path) as config_file:
-        config = yaml.safe_load(config_file)
+    try:
+        with open(config_file_path) as config_file:
+            config = yaml.safe_load(config_file)
+    except:
+        print("Could not load main configuration, aborting.")
+        print("Does the file exist, and is it valid YAML?")
+        print(traceback.format_exc())
+        quit(1)
 
     api_config_file_path = 'api/config.yml'
-    with open(api_config_file_path) as api_config_file:
-        api_config = yaml.safe_load(api_config_file)
+    try:
+        with open(api_config_file_path) as api_config_file:
+            api_config = yaml.safe_load(api_config_file)
+    except:
+        print("Could not load API configuration, aborting.")
+        print("Does the file exist, and is it valid YAML?")
+        print(traceback.format_exc())
+        quit(1)
 
     return Config(xenon, config, api_config)
