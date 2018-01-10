@@ -153,7 +153,9 @@ class LocalFiles:
         """Return the content referenced by a URL.
 
         This function will accept local file:// URLs as well as
-        remote http:// URLs.
+        remote http:// URLs. If a URL starts with the client-side
+        location of the file exchange store, the service-side location
+        is substituted before trying to download the file.
 
         Args:
             url (str): The URL to get the content of
@@ -161,6 +163,9 @@ class LocalFiles:
         Returns:
             bytes: The contents of the file
         """
+        if url.startswith(self._baseurl):
+            url = 'file://' + self._basedir + url[len(self._baseurl):]
+
         parsed_url = urllib.parse.urlparse(url)
 
         if parsed_url.scheme == 'file':
@@ -171,7 +176,7 @@ class LocalFiles:
                 raise FileNotFoundError
             return response.content
         else:
-            raise ValueError('Invalid scheme in input URL: ' + url)
+            raise ValueError('Invalid scheme {} in input URL: {}'.format(parsed_url.scheme, url))
 
     def _read_from_file(self, abs_path):
         """Read data from a local file.
