@@ -431,6 +431,13 @@ def resolve_output_reference(reference, workflow_dict, input_dict):
     source = reference.split(sep='/')
     if len(source) == 1:
         if reference not in input_dict:
+            if reference in workflow_dict['inputs']:
+                if 'default' in workflow_dict['inputs']:
+                    return workflow_dict['inputs']['default']
+                else
+                    exit_perm_fail("No input and no default for input {}".format(reference))
+            else:
+                exit_perm_fail("Source reference {} not found".format(reference))
             exit_perm_fail("Could not resolve input " + reference)
         return input_dict[reference]
 
@@ -466,8 +473,6 @@ def resolve_step_inputs(step, workflow_dict, input_dict):
 
     for step_input in step['in']:
         value = None
-        if 'default' in step_input:
-            value = step_input['default']
         if 'source' in step_input:
             value = resolve_output_reference(step_input['source'], workflow_dict, input_dict)
 
