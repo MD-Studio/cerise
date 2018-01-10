@@ -434,7 +434,7 @@ def resolve_output_reference(reference, workflow_dict, input_dict):
             if reference in workflow_dict['inputs']:
                 if 'default' in workflow_dict['inputs']:
                     return workflow_dict['inputs']['default']
-                else
+                else:
                     exit_perm_fail("No input and no default for input {}".format(reference))
             else:
                 exit_perm_fail("Source reference {} not found".format(reference))
