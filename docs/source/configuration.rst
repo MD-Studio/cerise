@@ -69,6 +69,13 @@ The user is expected to submit references to files that start with the URL in
 ``store-location-client``, Cerise will then fetch the corresponding files from the
 directory specified in ``store-location-service``.
 
+``store-location-client`` can be overridden by specifying the environment
+variable CERISE_STORE_LOCATION_CLIENT. If you want to run multiple Cerise
+instances in containers, simultaneously, then you need to remap the ports on
+which they are available to avoid collisions. With this environment variable,
+the port can be easily injected into the container, removing the need to have
+a different image for each container. Cerise Client uses this functionality.
+
 Finally, key ``rest-service`` has the hostname and port on which the REST
 service should listen. If you want the service to be available to the outside
 world, this should be the IP address of the network adaptor to listen on, or

@@ -375,7 +375,7 @@ class Config:
 
     def get_store_location_client(self):
         """
-        Returns the ile exchange location access point for the client.
+        Returns the file exchange location access point for the client.
 
         Returns:
             (str): A URL.
@@ -383,7 +383,10 @@ class Config:
         Raises:
             KeyError: The location was not set.
         """
+        if 'CERISE_STORE_LOCATION_CLIENT' in os.environ:
+            return os.environ['CERISE_STORE_LOCATION_CLIENT']
         return self._config['client-file-exchange']['store-location-client']
+
 
 def make_config(xenon=None):
     """Make a configuration object.
