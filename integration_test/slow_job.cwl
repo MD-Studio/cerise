@@ -3,13 +3,16 @@
 cwlVersion: v1.0
 class: Workflow
 
-inputs: []
+inputs:
+  delay:
+    type: float
+    default: 4
+
 outputs: []
 
 steps:
   sleep:
     run: cerise/test/sleep.cwl
     in:
-      delay:
-        default: 4
+      delay: delay
     out: []

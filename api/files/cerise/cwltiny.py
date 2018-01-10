@@ -431,9 +431,10 @@ def resolve_output_reference(reference, workflow_dict, input_dict):
     source = reference.split(sep='/')
     if len(source) == 1:
         if reference not in input_dict:
-            if reference in workflow_dict['inputs']:
-                if 'default' in workflow_dict['inputs']:
-                    return workflow_dict['inputs']['default']
+            input_def = [d for d in workflow_dict['inputs'] if d['id'] == reference]
+            if input_def:
+                if 'default' in input_def[0]:
+                    return input_def[0]['default']
                 else:
                     exit_perm_fail("No input and no default for input {}".format(reference))
             else:
