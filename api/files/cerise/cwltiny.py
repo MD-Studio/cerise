@@ -177,24 +177,28 @@ def create_argument(parameter, input_dict):
     """
     log("Creating argument for parameter " + str(parameter) + " from input " + str(input_dict))
     arg = []
-    position = 100
+    position = 1000
     value = parameter.get('default')
     if 'id' not in parameter:
         exit_perm_fail("Error: input parameter given without an id")
-    if parameter['id'] not in input_dict:
-        exit_perm_fail("Error: no input provided for parameter " + str(parameter['id']))
-    if 'type' in parameter:
-        if parameter['type'] == 'File':
-            if input_dict[parameter['id']]['class'] != 'File':
-                exit_perm_fail('Error: expected File for input ' + parameter['id'])
-            value = input_dict[parameter['id']]['path']
+    par_type = parameter.get('type')
+    input_value = input_dict.get(parameter['id'])
+
+    if input_value is not None:
+        if par_type is not None:
+            if par_type == 'File' or par_type == 'File?':
+                if input_value.get('class') != 'File':
+                    exit_perm_fail('Error: expected File for input {}'.format(input_value))
+                value = input_value['path']
+            else:
+                value = input_value
+    else:
+        if par_type is not None and par_type.endswith('?'):
+            value = None
         else:
-            value = input_dict.get(parameter['id'])
+            exit_perm_fail("Error: no input provided for required parameter " + str(parameter['id']))
 
-    if value is None:
-        exit_perm_fail("Missing input for parameter " + parameter['id'])
-
-    if 'inputBinding' in parameter:
+    if 'inputBinding' in parameter and value is not None:
         binding = parameter['inputBinding']
         if 'prefix' in binding:
             if 'separate' in binding and not binding['separate']:
@@ -235,7 +239,8 @@ def create_command_line(clt_desc, input_dict):
     # drop keys and flatten
     command_line = []
     for _, items in args:
-        command_line.extend(items)
+        if items is not None:
+            command_line.extend(items)
     return command_line
 
 def execute_clt(workdir_path, in_out, base_command, command_line):
@@ -425,7 +430,10 @@ def resolve_output_reference(reference, workflow_dict, input_dict):
         input_dict (dict): An input document
 
     Returns:
-        Union[dict, None]: A value, or None if not available
+        (Union[dict, None], bool): Either a tuple (value, True) where \
+                value may be None if the output is optional and \
+                missing, or a tuple (None, False) if the output is not \
+                yet available.
     """
     log("Resolving reference " + str(reference) + " from " + str(workflow_dict))
     source = reference.split(sep='/')
@@ -433,14 +441,18 @@ def resolve_output_reference(reference, workflow_dict, input_dict):
         if reference not in input_dict:
             input_def = [d for d in workflow_dict['inputs'] if d['id'] == reference]
             if input_def:
-                if 'default' in input_def[0]:
-                    return input_def[0]['default']
+                input_def = input_def[0]
+                if 'default' in input_def:
+                    return input_def['default'], True
                 else:
-                    exit_perm_fail("No input and no default for input {}".format(reference))
+                    if 'type' in input_def and input_def['type'].endswith('?'):
+                        return None, True
+                    else:
+                        exit_perm_fail("No input and no default for required input {}".format(reference))
             else:
                 exit_perm_fail("Source reference {} not found".format(reference))
             exit_perm_fail("Could not resolve input " + reference)
-        return input_dict[reference]
+        return input_dict[reference], True
 
     if len(source) != 2:
         exit_perm_fail("Source reference with more than one /")
@@ -450,10 +462,10 @@ def resolve_output_reference(reference, workflow_dict, input_dict):
     for step in workflow_dict['steps']:
         if 'id' in step and step['id'] == step_id:
             if 'cwltiny_output_available' not in step:
-                return None
+                return None, False
             for output in step['out']:
                 if output['id'] == output_id:
-                    return output['cwltiny_value']
+                    return output['cwltiny_value'], True
 
 def resolve_step_inputs(step, workflow_dict, input_dict):
     """Get input values for steps where available, and put them into
@@ -475,12 +487,12 @@ def resolve_step_inputs(step, workflow_dict, input_dict):
     for step_input in step['in']:
         value = None
         if 'source' in step_input:
-            value = resolve_output_reference(step_input['source'], workflow_dict, input_dict)
+            value, ready = resolve_output_reference(step_input['source'], workflow_dict, input_dict)
 
         log("Resolved step " + step['id'] + " input " + step_input['id'] + " to " + str(value))
 
         step['cwltiny_input_values'][step_input['id']] = value
-        if value is None:
+        if not ready:
             all_bound = False
 
     return all_bound
@@ -530,9 +542,9 @@ def get_workflow_outputs(workflow_dict, input_dict):
     output_dict = {}
     for output_parameter in workflow_dict['outputs']:
         if 'outputSource' in output_parameter:
-            value = resolve_output_reference(
+            value, found = resolve_output_reference(
                     output_parameter['outputSource'], workflow_dict, input_dict)
-            if value is not None:
+            if found:
                 output_dict[output_parameter['id']] = value
     return output_dict
 

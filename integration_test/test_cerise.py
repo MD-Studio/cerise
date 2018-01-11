@@ -524,7 +524,8 @@ def test_failure_partial_output(service, webdav_client, service_client):
     out_data = requests.get(test_job.output['output']['location'])
     assert out_data.status_code == 200
 
-    assert 'missing_output' not in test_job.output
+    assert ('missing_output' not in test_job.output or
+            test_job.output['missing_output'] is None)
 
 def test_post_commandline_tool(service, webdav_client, service_client):
     """
