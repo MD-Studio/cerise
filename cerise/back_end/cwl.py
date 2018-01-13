@@ -59,10 +59,15 @@ def get_files_from_binding(cwl_binding):
     result = []
     if cwl_binding is not None:
         for name, value in cwl_binding.items():
-            if (    isinstance(value, dict) and
-                    'class' in value and value['class'] == 'File'):
+            if isinstance(value, dict) and value.get('class') == 'File':
                 secondary_files = get_secondary_files(value.get('secondaryFiles', []))
                 result.append(InputFile(name, value['location'], None, secondary_files))
+            elif isinstance(value, list):
+                for i, val in enumerate(value):
+                    if isinstance(val, dict) and val.get('class') == 'File':
+                        secondary_files = get_secondary_files(val.get('secondaryFiles', []))
+                        input_file = InputFile(name, val['location'], None, secondary_files, i)
+                        result.append(input_file)
 
     return result
 

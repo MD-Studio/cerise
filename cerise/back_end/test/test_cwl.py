@@ -36,7 +36,7 @@ def test_get_files_from_binding():
             "input_2": {
                 "class": "File",
                 "location": "http://example.com/test.txt"
-            },
+                },
             "input_3": {
                 "class": "File",
                 "location": "http://example.com/test.in1",
@@ -44,23 +44,39 @@ def test_get_files_from_binding():
                     "class": "File",
                     "location": "http://example.com/test.in2"
                     }]
-                }
+                },
+            "input_4": [
+                {
+                    "class": "File",
+                    "location": "http://example.com/test2.in1"
+                },
+                {
+                    "class": "File",
+                    "location": "http://example.com/test2.in2"
+                }]
     }
     files = cwl.get_files_from_binding(binding)
 
-    assert len(files) == 2
+    assert len(files) == 4
 
     for f in files:
         assert isinstance(f, InputFile)
 
     input_2 = [f for f in files if f.name == 'input_2'][0]
+    assert input_2.index is None
     assert input_2.location == 'http://example.com/test.txt'
     assert input_2.content is None
     assert input_2.secondary_files == []
 
 
     input_3 = [f for f in files if f.name == 'input_3'][0]
+    assert input_3.index is None
     assert input_3.location == 'http://example.com/test.in1'
     assert len(input_3.secondary_files) == 1
     assert input_3.secondary_files[0].location == 'http://example.com/test.in2'
     assert input_3.secondary_files[0].secondary_files == []
+
+    input_4 = [f for f in files if f.name == 'input_4' and f.index == 0][0]
+    assert input_4.location == 'http://example.com/test2.in1'
+    input_4 = [f for f in files if f.name == 'input_4' and f.index == 1][0]
+    assert input_4.location == 'http://example.com/test2.in2'

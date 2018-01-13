@@ -1,5 +1,5 @@
 class InputFile:
-    def __init__(self, name, location, content, secondary_files):
+    def __init__(self, name, location, content, secondary_files, index=None):
         """Create an InputFile object.
 
         This describes an input file, and is the result of resolving \
@@ -16,6 +16,8 @@ class InputFile:
         """
         self.name = name
         """(str) The input name for which this file is."""
+        self.index = index
+        """(int) The index of this file, if it is in an array of files."""
         self.location = location
         """(str) Local URL of the file."""
         self.content = content
