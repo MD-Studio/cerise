@@ -56,20 +56,15 @@ class LocalFiles:
         Works recursively, so nested secondaryFiles work.
 
         Args:
-            secondary_files ([SecondaryFile]): List of secondary files.
+            secondary_files ([InputFile]): List of secondary files.
 
         Returns:
             ([InputFile]): Resulting InputFiles, with contents.
         """
-        result = []
         for secondary_file in secondary_files:
             self._logger.debug("Resolving secondary file from " + secondary_file.location)
-            content = self._get_content_from_url(secondary_file.location)
-            new_input = InputFile(None, secondary_file.location, content)
-            new_input.secondary_files = self.resolve_secondary_files(
-                    secondary_file.secondary_files)
-            result.append(new_input)
-        return result
+            secondary_file.content = self._get_content_from_url(secondary_file.location)
+            self.resolve_secondary_files(secondary_file.secondary_files)
 
 
     def resolve_input(self, job_id):
@@ -97,13 +92,12 @@ class LocalFiles:
             job.workflow_content = self._get_content_from_url(job.workflow)
 
             inputs = json.loads(job.local_input)
-            input_files = []
-            for name, location, secondary_files in get_files_from_binding(inputs):
-                self._logger.debug("Resolving file for input " + name + " from " + location)
-                content = self._get_content_from_url(location)
-                new_file = InputFile(name, location, content)
-                new_file.secondary_files = self.resolve_secondary_files(secondary_files)
-                input_files.append(new_file)
+            input_files = get_files_from_binding(inputs)
+            for input_file in input_files:
+                self._logger.debug("Resolving file for input {} from {}".format(
+                    input_file.name, input_file.location))
+                input_file.content = self._get_content_from_url(input_file.location)
+                self.resolve_secondary_files(input_file.secondary_files)
 
             return input_files
 

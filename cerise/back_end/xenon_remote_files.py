@@ -191,15 +191,15 @@ class XenonRemoteFiles:
             if job.remote_output != '':
                 self._logger.debug("Remote output" + job.remote_output)
                 outputs = json.loads(job.remote_output)
-                for output_name, path, secondary_files in get_files_from_binding(outputs):
-                    self._logger.debug('Destage path = ' + path + ' for output ' + output_name)
+                for output_file in get_files_from_binding(outputs):
+                    self._logger.debug('Destage path = {} for output {}'.format(
+                        output_file.location, output_file.name))
                     prefix = 'file://' + self._basedir + '/jobs/' + job_id + '/work/'
-                    if not path.startswith(prefix):
-                        raise Exception("Unexpected output location in cwl-runner output: " + path
-                                + ", expected it to start with: " + prefix)
-                    rel_path = path[len(prefix):]
+                    if not output_file.location.startswith(prefix):
+                        raise Exception("Unexpected output location in cwl-runner output: {}, expected it to start with: {}".format(output_file.location, prefix))
+                    rel_path = output_file.location[len(prefix):]
                     content = self._read_remote_file(job_id, 'work/' + rel_path)
-                    output_files.append((output_name, rel_path, content))
+                    output_files.append((output_file.name, rel_path, content))
 
         # output_name and rel_path are (immutable) str's, while content
         # does not come from the store, so we're not leaking here

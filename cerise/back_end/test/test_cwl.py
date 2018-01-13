@@ -1,5 +1,7 @@
 import cerise.back_end.cwl as cwl
 
+from cerise.back_end.input_file import InputFile
+
 def test_is_workflow():
     wf = """
         cwlVersion: v1.0
@@ -48,11 +50,17 @@ def test_get_files_from_binding():
 
     assert len(files) == 2
 
-    input_2 = [f for f in files if f[0] == 'input_2'][0]
-    assert input_2 == ('input_2', 'http://example.com/test.txt', [])
+    for f in files:
+        assert isinstance(f, InputFile)
 
-    input_3 = [f for f in files if f[0] == 'input_3'][0]
-    assert input_3[1] == 'http://example.com/test.in1'
-    assert len(input_3[2]) == 1
-    assert input_3[2][0].location == 'http://example.com/test.in2'
-    assert input_3[2][0].secondary_files == []
+    input_2 = [f for f in files if f.name == 'input_2'][0]
+    assert input_2.location == 'http://example.com/test.txt'
+    assert input_2.content is None
+    assert input_2.secondary_files == []
+
+
+    input_3 = [f for f in files if f.name == 'input_3'][0]
+    assert input_3.location == 'http://example.com/test.in1'
+    assert len(input_3.secondary_files) == 1
+    assert input_3.secondary_files[0].location == 'http://example.com/test.in2'
+    assert input_3.secondary_files[0].secondary_files == []

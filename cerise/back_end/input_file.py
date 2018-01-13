@@ -1,5 +1,5 @@
 class InputFile:
-    def __init__(self, name, location, content):
+    def __init__(self, name, location, content, secondary_files):
         """Create an InputFile object.
 
         This describes an input file, and is the result of resolving \
@@ -11,7 +11,8 @@ class InputFile:
             name (str): The name of the input for which this file is.
             location (str): A URL with the (local) location of the \
                     file.
-            contents (bytes): The contents of the file.
+            content (bytes): The content of the file.
+            secondary_files ([InputFile]): A list of secondary files.
         """
         self.name = name
         """(str) The input name for which this file is."""
@@ -19,5 +20,5 @@ class InputFile:
         """(str) Local URL of the file."""
         self.content = content
         """(bytes) The content of the file."""
-        self.secondary_files = []
+        self.secondary_files = secondary_files
         """([InputFile]) CWL secondary files."""

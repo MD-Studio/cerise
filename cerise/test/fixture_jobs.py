@@ -52,7 +52,7 @@ class WcJob:
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'
-                '\n', 'utf-8'))]
+                '\n', 'utf-8'), [])]
 
     remote_input = '{ "file": { "class": "File", "location": "work/01_input_hello_world.txt" } }'
 
@@ -183,10 +183,10 @@ class SecondaryFilesJob:
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'
-                '\n', 'utf-8'))
+                '\n', 'utf-8'), [])
         input_file.secondary_files = [
             InputFile('file', 'input/hello_world.2nd', bytes(
-                'Hello, secondaryFiles!', 'utf-8'))]
+                'Hello, secondaryFiles!', 'utf-8'), [])]
         return [input_file]
 
     remote_input = '''{

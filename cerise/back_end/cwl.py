@@ -1,5 +1,6 @@
 import yaml
 from cerise.job_store.job_state import JobState
+from .input_file import InputFile
 
 def is_workflow(workflow_content):
     """Takes CWL file contents and checks whether it is a CWL Workflow
@@ -18,35 +19,21 @@ def is_workflow(workflow_content):
     return process_class == 'Workflow'
 
 
-class SecondaryFile:
-    """Holds a secondary file definition."""
-    def __init__(self, location):
-        """Creates a SecondaryFile.
-
-        Args:
-            location (str): The URL of this file.
-        """
-        self.location = location
-        """(str) The URL of this file."""
-        self.secondary_files = []
-        """([SecondaryFile]) Secondary files of this secondary file."""
-
-
 def get_secondary_files(secondary_files):
-    """Parses a list of secondary files.
+    """Parses a list of secondary files, recursively.
 
     Args:
         secondary_files (list): A list of values from a CWL \
                 secondaryFiles attribute.
 
     Returns:
-        ([SecondaryFile]): A list of secondary files.
+        ([InputFile]): A list of secondary input files.
     """
     result = []
     for value in secondary_files:
         if isinstance(value, dict):
             if 'class' in value and value['class'] == 'File':
-                new_file = SecondaryFile(value['location'])
+                new_file = InputFile(None, value['location'], None, [])
                 if 'secondaryFiles' in value:
                     new_file.secondary_files = get_secondary_files(value['secondaryFiles'])
                 result.append(new_file)
@@ -66,9 +53,8 @@ def get_files_from_binding(cwl_binding):
         cwl_binding (Dict): A dict structure parsed from a JSON CWL binding
 
     Returns:
-        (List[Tuple[str, str, SecondaryFiles]]): A list of (name, \
-                location, secondary_files) tuples, where name contains \
-                the input or output name, and location the URL.
+        [InputFile]: A list of InputFile objects describing the input \
+                files described in the binding.
     """
     result = []
     if cwl_binding is not None:
@@ -76,7 +62,7 @@ def get_files_from_binding(cwl_binding):
             if (    isinstance(value, dict) and
                     'class' in value and value['class'] == 'File'):
                 secondary_files = get_secondary_files(value.get('secondaryFiles', []))
-                result.append((name, value['location'], secondary_files))
+                result.append(InputFile(name, value['location'], None, secondary_files))
 
     return result
 
