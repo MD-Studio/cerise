@@ -4,6 +4,7 @@ from cerise.test.fixture_jobs import MissingInputJob
 from cerise.test.fixture_jobs import SlowJob
 from cerise.test.fixture_jobs import BrokenJob
 from cerise.test.fixture_jobs import SecondaryFilesJob
+from cerise.test.fixture_jobs import FileArrayJob
 
 from cerise.job_store.in_memory_job import InMemoryJob
 from cerise.job_store.job_state import JobState
@@ -61,6 +62,8 @@ class MockStore:
             self._jobs.append(self._create_wc_job(test_job_id, test_job_stage))
         elif test_job_type == "secondary_files":
             self._jobs.append(self._create_secondary_files_job(test_job_id, test_job_stage))
+        elif test_job_type == "file_array":
+            self._jobs.append(self._create_file_array_job(test_job_id, test_job_stage))
         elif test_job_type == "complex":
             self._jobs.append(self._create_complex_job(test_job_id, test_job_stage))
 
@@ -73,6 +76,8 @@ class MockStore:
             return WcJob.local_input_files
         elif test_job_type == "secondary_files":
             return SecondaryFilesJob.local_input_files()
+        elif test_job_type == "file_array":
+            return FileArrayJob.local_input_files()
         raise NotImplementedError
 
     def get_output_files(self, test_job_type):
@@ -333,6 +338,29 @@ class MockStore:
             job.workflow_content = SecondaryFilesJob.workflow
             job.state = JobState.STAGING_IN
             return job
+
+
+    def _create_file_array_job(self, job_id, stage):
+        fa_wf_path = os.path.join(self._local_base_path, 'input', 'sf_workflow.cwl')
+        job = InMemoryJob(job_id, job_id, 'file://' + fa_wf_path,
+                FileArrayJob.local_input(self._local_base_url))
+
+        if stage == 'submitted':
+            with open(fa_wf_path, 'wb') as f:
+                f.write(FileArrayJob.workflow)
+
+            for input_file in FileArrayJob.local_input_files():
+                fa_input_path = os.path.join(self._local_base_path, input_file.location)
+                with open(fa_input_path, 'wb') as f:
+                    f.write(input_file.content)
+
+            return job
+
+        if stage == 'resolved':
+            job.workflow_content = FileArrayJob.workflow
+            job.state = JobState.STAGING_IN
+            return job
+
 
 def yaml_to_json(yaml_string):
     dict_form = yaml.safe_load(str(yaml_string, 'utf-8'))

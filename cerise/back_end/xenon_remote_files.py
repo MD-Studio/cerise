@@ -164,7 +164,11 @@ class XenonRemoteFiles:
             inputs = json.loads(job.local_input)
             count = 1
             for input_file in input_files:
-                count = self._stage_input_file(count, job_id, input_file, inputs[input_file.name])
+                if input_file.index is not None:
+                    input_desc = inputs[input_file.name][input_file.index]
+                else:
+                    input_desc = inputs[input_file.name]
+                count = self._stage_input_file(count, job_id, input_file, input_desc)
 
             # stage input description
             inputs_json = json.dumps(inputs).encode('utf-8')

@@ -211,3 +211,71 @@ class SecondaryFilesJob:
             ]
 
 
+class FileArrayJob:
+    """A simple job with an array of input files.
+    """
+    workflow = bytes(
+                '#!/usr/bin/env cwl-runner\n'
+                '\n'
+                'cwlVersion: v1.0\n'
+                'class: Workflow\n'
+                'inputs:\n'
+                '  files:\n'
+                '    type: File[]\n'
+                '\n'
+                'outputs:\n'
+                '  counts:\n'
+                '    type: File\n'
+                '    outputSource: wc/output\n'
+                '\n'
+                'steps:\n'
+                '  wc:\n'
+                '    run: test/file_array.cwl\n'
+                '    in:\n'
+                '      textfiles: files\n'
+                '    out:\n'
+                '      [output]\n', 'utf-8')
+
+    def local_input(local_baseurl):
+        return '''{{
+            "files": [
+                {{
+                    "class": "File",
+                    "location": "{0}/input/hello_world.txt"
+                    }},
+                {{
+                    "class": "File",
+                    "location": "{0}/input/hello_world.2nd"
+                }}]
+            }}'''.format(local_baseurl)
+
+    def local_input_files():
+        input_file_1 = InputFile('files', 'input/hello_world.txt', bytes(
+                'Hello, World!\n'
+                '\n'
+                'Here is a test file for the staging test.\n'
+                '\n', 'utf-8'), [], 0)
+        input_file_2 = InputFile('files', 'input/hello_world.2nd', bytes(
+                'Hello, file arrays!', 'utf-8'), [], 0)
+        return [input_file_1, input_file_2]
+
+    remote_input = '''{
+            "files": [{
+                    "class": "File",
+                    "location": "work/01_input_hello_world.txt"
+                },
+                {
+                    "class": "File",
+                    "location": "work/02_input_hello_world.2nd"
+                }]
+            }'''
+
+    remote_input_files = [
+            ('files', '01_input_hello_world.txt', bytes(
+                'Hello, World!\n'
+                '\n'
+                'Here is a test file for the staging test.\n'
+                '\n', 'utf-8')),
+            ('files', '02_input_hello_world.2nd', bytes(
+                'Hello, file arrays!', 'utf-8'))
+            ]
