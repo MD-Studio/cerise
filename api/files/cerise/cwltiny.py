@@ -124,25 +124,32 @@ def remove_workdirs():
     for workdir in _workdirs:
         shutil.rmtree(workdir, ignore_errors=True)
 
-def stage_input_file(workdir_path, file_dict):
+def stage_input_file(workdir_path, files):
     """Stage an input file into the working directory whose path
     is in workdir_path. Uses the basename if given. Recursively
     stages secondary files.
 
+    Adds a 'path' key with the path to the File objects in files.
+
     Args:
         workdir_path (str): Path to the working directory
-        file_dict (dict): A dictionary with a CWL File object.
+        files (Union[dict,[dict]]): A dictionary with a CWL File \
+                object, or a list of such.
     """
-    location = urlparse(file_dict['location'])
-    if 'basename' in file_dict:
-        dest_path = os.path.join(workdir_path, file_dict['basename'])
-    else:
-        dest_path = os.path.join(workdir_path, os.path.basename(location.path))
-    shutil.copy(location.path, dest_path)
-    file_dict['path'] = dest_path
+    if not isinstance(files, list):
+        files = [files]
 
-    for i, secondary_file in enumerate(file_dict.get('secondaryFiles', [])):
-        stage_input_file(workdir_path, file_dict['secondaryFiles'][i])
+    for file_dict in files:
+        location = urlparse(file_dict['location'])
+        if 'basename' in file_dict:
+            dest_path = os.path.join(workdir_path, file_dict['basename'])
+        else:
+            dest_path = os.path.join(workdir_path, os.path.basename(location.path))
+        shutil.copy(location.path, dest_path)
+        file_dict['path'] = dest_path
+
+        for i, secondary_file in enumerate(file_dict.get('secondaryFiles', [])):
+            stage_input_file(workdir_path, file_dict['secondaryFiles'][i])
 
 def stage_input(workdir_path, input_dict):
     """Stage input files described in input_dict into the working
@@ -155,13 +162,16 @@ def stage_input(workdir_path, input_dict):
                 string or dicts with CWL File dicts as values.
     """
     for input_name, input_value in input_dict.items():
-        if isinstance(input_value, dict):
-            if 'class' not in input_value:
-                exit_perm_fail('Error: missing class in input ' + input_name)
-            if input_value['class'] == 'Directory':
-                exit_system_error('Sorry: I don''t know how to deal with directories yet')
-            if input_value['class'] == 'File':
-                stage_input_file(workdir_path, input_value)
+        if not isinstance(input_value, list):
+            input_value = [input_value]
+        for obj in input_value:
+            if isinstance(obj, dict):
+                if 'class' not in obj:
+                    exit_perm_fail('Error: missing class in input ' + input_name)
+                if obj['class'] == 'Directory':
+                    exit_system_error('Sorry: I don''t know how to deal with directories yet')
+                if obj['class'] == 'File':
+                    stage_input_file(workdir_path, obj)
 
 def create_argument(parameter, input_dict):
     """Create a command line argument from the given parameter of the
@@ -177,38 +187,70 @@ def create_argument(parameter, input_dict):
     """
     log("Creating argument for parameter " + str(parameter) + " from input " + str(input_dict))
     arg = []
-    position = 1000
-    value = parameter.get('default')
+    position = 0
+
     if 'id' not in parameter:
         exit_perm_fail("Error: input parameter given without an id")
-    par_type = parameter.get('type')
-    input_value = input_dict.get(parameter['id'])
+    par_id = parameter['id']
 
-    if input_value is not None:
-        if par_type is not None:
-            if par_type == 'File' or par_type == 'File?':
-                if input_value.get('class') != 'File':
-                    exit_perm_fail('Error: expected File for input {}'.format(input_value))
-                value = input_value['path']
-            else:
-                value = input_value
-    else:
-        if par_type is not None and par_type.endswith('?'):
-            value = None
-        else:
-            exit_perm_fail("Error: no input provided for required parameter " + str(parameter['id']))
+    # get parameter type properties
+    par_type = parameter.get('type')
+
+    is_optional = False
+    if par_type.endswith('?'):
+        is_optional = True
+        par_type = par_type[0:-1]
+
+    is_array = False
+    if par_type.endswith('[]'):
+        is_array = True
+        par_type = par_type[0:-2]
+
+    # get input value
+    value = parameter.get('default')
+    if par_id in input_dict:
+        value = input_dict[par_id]
+
+    # check type a bit
+    if not is_optional and value is None:
+        exit_perm_fail("Error: no input provided for required parameter {}".format(str(par_id)))
+    if is_array and not isinstance(value, list):
+        exit_perm_fail("Error: expected an array input value for parameter {}".format(str(par_id)))
 
     if 'inputBinding' in parameter and value is not None:
         binding = parameter['inputBinding']
-        if 'prefix' in binding:
-            if 'separate' in binding and not binding['separate']:
-                arg.append(binding['prefix'] + str(value))
-            else:
-                arg.append(binding['prefix'])
-                arg.append(str(value))
-        else:
-            arg.append(str(value))
 
+        # get argument creation settings
+        separate = 'separate' not in binding or binding['separate']
+        item_separator = binding.get('itemSeparator')
+        prefix = binding.get('prefix')
+
+        # produce argument
+        if is_array:
+            if item_separator:
+                if par_type == 'File':
+                    value_strings = list(map(lambda x: x['path'], value))
+                else:
+                    value_strings = list(map(lambda x: str(x), value))
+                value = [item_separator.join(value_strings)]
+        else:
+            if par_type == 'File':
+                value = [value['path']]
+            else:
+                value = [value]
+
+        for val in value:
+            log('val = ' + str(val))
+            if prefix:
+                if separate:
+                    arg.append(prefix)
+                    arg.append(str(val))
+                else:
+                    arg.append(prefix + str(val))
+            else:
+                arg.append(str(val))
+
+        # put it in the right place
         if 'position' in binding:
             position = int(binding['position'])
 
