@@ -456,7 +456,7 @@ def test_post_secondary_files_job(service, webdav_client, service_client):
             '  4  13  74 hello_world.2nd\n' +
             '  8  24 132 total\n')
 
-def test_post_array_input_job(service, webdav_client, service_client, debug_output):
+def test_post_array_input_job(service, webdav_client, service_client):
     """
     Tests running a job that has arrays of files as input.
     """

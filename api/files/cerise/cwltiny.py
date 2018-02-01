@@ -185,7 +185,6 @@ def create_argument(parameter, input_dict):
         (int, [str]): The position of the argument and the items
                 comprising it
     """
-    log("Creating argument for parameter " + str(parameter) + " from input " + str(input_dict))
     arg = []
     position = 0
 
@@ -240,7 +239,6 @@ def create_argument(parameter, input_dict):
                 value = [value]
 
         for val in value:
-            log('val = ' + str(val))
             if prefix:
                 if separate:
                     arg.append(prefix)
@@ -386,7 +384,9 @@ def run_command_line_tool(workdir_path, clt_dict, input_dict):
                 to run.
         input_dict (dict): A dictionary describing inputs
     """
-    log("Running command line tool " + str(clt_dict) + " with input " + str(input_dict))
+    log("Running command line tool {}\n with input {}".format(
+            json.dumps(clt_dict, indent=4),
+            json.dumps(input_dict, indent=4)))
     has_error = False
     normalise_process(clt_dict)
     stage_input(workdir_path, input_dict)
@@ -457,7 +457,7 @@ def has_unexecuted_steps(workflow_dict):
     """
     for step in workflow_dict['steps']:
         if not 'cwltiny_output_available' in step:
-            log("Found unexecuted step " + step['id'])
+            log("\nFound unexecuted step " + step['id'])
             return True
     return False
 
@@ -531,7 +531,7 @@ def resolve_step_inputs(step, workflow_dict, input_dict):
         if 'source' in step_input:
             value, ready = resolve_output_reference(step_input['source'], workflow_dict, input_dict)
 
-        log("Resolved step " + step['id'] + " input " + step_input['id'] + " to " + str(value))
+        log("Resolved step '{}' input '{}' to {}".format(step['id'], step_input['id'], json.dumps(value, indent=4)))
 
         step['cwltiny_input_values'][step_input['id']] = value
         if not ready:
@@ -546,7 +546,7 @@ def execute_workflow_step(step):
         step (dict): A WorkflowStep to execute
     """
     if 'run' in step:
-        log('Running workflow step {} from file {}'.format(step['id'], step['run']))
+        log("\nRunning workflow step '{}' from file '{}'".format(step['id'], step['run']))
         run_dict = json.load(open(step['run'], 'r'))
         workdir_path = make_workdir()
         input_dict = step['cwltiny_input_values']
@@ -555,8 +555,7 @@ def execute_workflow_step(step):
         elif process_type(run_dict) == 'CommandLineTool':
             has_error, output_dict = run_command_line_tool(workdir_path, run_dict, input_dict)
 
-        log("Step: " + str(step))
-        log("Step output: " + str(output_dict))
+        log("Step output: {}\n".format(json.dumps(output_dict, indent=4)))
 
         if 'out' in step:
             for output in step['out']:
