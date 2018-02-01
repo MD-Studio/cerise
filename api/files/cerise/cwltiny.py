@@ -608,7 +608,7 @@ def run_workflow(workdir_path, workflow_dict, input_dict):
                 step_error = execute_workflow_step(step)
                 if step_error:
                     has_error = True
-                    break
+                break
 
     return has_error, get_workflow_outputs(workflow_dict, input_dict)
 
