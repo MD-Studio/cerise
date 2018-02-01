@@ -477,7 +477,7 @@ def resolve_output_reference(reference, workflow_dict, input_dict):
                 missing, or a tuple (None, False) if the output is not \
                 yet available.
     """
-    log("Resolving reference " + str(reference) + " from " + str(workflow_dict))
+    log("Resolving reference " + str(reference))
     source = reference.split(sep='/')
     if len(source) == 1:
         if reference not in input_dict:
@@ -546,7 +546,7 @@ def execute_workflow_step(step):
         step (dict): A WorkflowStep to execute
     """
     if 'run' in step:
-        log('Running workflow step from file ' + str(step['run']))
+        log('Running workflow step {} from file {}'.format(step['id'], step['run']))
         run_dict = json.load(open(step['run'], 'r'))
         workdir_path = make_workdir()
         input_dict = step['cwltiny_input_values']
@@ -599,7 +599,7 @@ def run_workflow(workdir_path, workflow_dict, input_dict):
         input_dict (dict): The input data to use
     """
     normalise_workflow(workflow_dict)
-    log("Normalised workflow: " + str(workflow_dict))
+    log("Normalised workflow: " + json.dumps(workflow_dict, indent=4))
     has_error = False
     while has_unexecuted_steps(workflow_dict) and not has_error:
         for step in workflow_dict['steps']:
