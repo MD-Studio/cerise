@@ -522,6 +522,7 @@ def resolve_step_inputs(step, workflow_dict, input_dict):
     Returns:
         bool: True iff all inputs for this step are bound
     """
+    log("Resolving step '{}'".format(step['id']))
     all_bound = True
     if 'cwltiny_input_values' not in step:
         step['cwltiny_input_values'] = {}
@@ -602,12 +603,14 @@ def run_workflow(workdir_path, workflow_dict, input_dict):
     has_error = False
     while has_unexecuted_steps(workflow_dict) and not has_error:
         for step in workflow_dict['steps']:
-            all_bound = resolve_step_inputs(step, workflow_dict, input_dict)
-            if all_bound:
-                step_error = execute_workflow_step(step)
-                if step_error:
-                    has_error = True
-                break
+            if not step.get('cwltiny_output_available', False):
+                log("Trying to resolve unexecuted step '{}'".format(step['id']))
+                all_bound = resolve_step_inputs(step, workflow_dict, input_dict)
+                if all_bound:
+                    step_error = execute_workflow_step(step)
+                    if step_error:
+                        has_error = True
+                    break
 
     return has_error, get_workflow_outputs(workflow_dict, input_dict)
 
