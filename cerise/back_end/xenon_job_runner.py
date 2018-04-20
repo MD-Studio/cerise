@@ -106,14 +106,19 @@ class XenonJobRunner:
             # submit job
             xenon_jobdesc = xenon.jobs.JobDescription()
             xenon_jobdesc.setWorkingDirectory(job.remote_workdir_path)
-            xenon_jobdesc.setExecutable(self._remote_cwlrunner)
+            xenon_jobdesc.setExecutable('bash')
+            # Work around Xenon issue #601
             args = [
-                    job.remote_workflow_path,
-                    job.remote_input_path
+                    '-c',
+                    self._remote_cwlrunner +
+                    ' ' + job.remote_workflow_path +
+                    ' ' + job.remote_input_path +
+                    ' >{}'.format(job.remote_stdout_path) +
+                    ' 2>{}'.format(job.remote_stderr_path)
                     ]
             xenon_jobdesc.setArguments(args)
-            xenon_jobdesc.setStdout(job.remote_stdout_path)
-            xenon_jobdesc.setStderr(job.remote_stderr_path)
+            # xenon_jobdesc.setStdout(job.remote_stdout_path)
+            # xenon_jobdesc.setStderr(job.remote_stderr_path)
             xenon_jobdesc.setMaxTime(60)
             if self._queue_name:
                 xenon_jobdesc.setQueueName(self._queue_name)
