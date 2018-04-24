@@ -105,11 +105,12 @@ class XenonJobRunner:
             job = self._job_store.get_job(job_id)
             # submit job
             xenon_jobdesc = xenon.jobs.JobDescription()
-            xenon_jobdesc.setWorkingDirectory(job.remote_workdir_path)
+            # xenon_jobdesc.setWorkingDirectory(job.remote_workdir_path)
             xenon_jobdesc.setExecutable('bash')
             # Work around Xenon issue #601
             args = [
                     '-c',
+                    'cd {};'.format(job.remote_workdir_path) +
                     self._remote_cwlrunner +
                     ' ' + job.remote_workflow_path +
                     ' ' + job.remote_input_path +
