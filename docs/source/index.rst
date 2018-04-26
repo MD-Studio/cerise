@@ -18,6 +18,7 @@ real-world testing, bug fixing, and polish.
    :caption: Contents:
 
    introduction
+   configuration
    specialising
    developers
 
