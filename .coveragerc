@@ -7,6 +7,14 @@ omit =
     */test/*
     integration_test/*
 
+[report]
+omit =
+    # The front end is generated code, so not being tested
+    cerise/front_end/*
+    # Don't test the coverage of the tests themselves
+    */test/*
+    integration_test/*
+
 [paths]
 source =
     .
