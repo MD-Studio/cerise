@@ -6,9 +6,10 @@
 Welcome to Cerise's documentation!
 ====================================================
 
-Cerise is a simple REST service that can run (some) CWL jobs on some remote
-compute resource. It uses a REST API as its interface and PyXenon
-to run jobs remotely.
+Cerise is a simple REST service that can run (many) CWL jobs on a remote
+compute resource, such as a remote server or HPC compute cluster. This
+documentation explains how to set it up and use it, and also how it works on the
+inside.
 
 The implementation is fairly complete, and the main things needed are some
 real-world testing, bug fixing, and polish.

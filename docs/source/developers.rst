@@ -1,5 +1,5 @@
-Cerise developer documentation
-====================================================
+Developer documentation
+=======================
 
 .. toctree::
    :maxdepth: 4

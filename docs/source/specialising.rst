@@ -1,3 +1,5 @@
+.. _specialising-cerise:
+
 Specialising Cerise
 ===================
 (This document assumes some knowledge of the Common Workflow Language. See the
@@ -5,10 +7,11 @@ Specialising Cerise
 
 Cerise works by letting users submit workflows to a REST API, and then executing
 those workflows on some HPC compute resource. Users submit CWL Workflow
-documents, which specify a number of steps to run. These steps are not submitted
-by the user, but are part of the Cerise service. The base Cerise service does
-not contain any steps, so those have to be added first, before Cerise can be
-used in a project. This process of adding steps is known as specialisation.
+documents, which specify a number of steps to run. Step definitions are not
+submitted by the user, but are part of the Cerise service. The base Cerise
+service does not contain any steps, so those have to be added first, before
+Cerise can be used in a project. This process of adding steps is known as
+specialisation.
 
 A Cerise specialisation is always specific to a particular project, and
 to a specific compute resource. The project determines which steps are available
@@ -35,7 +38,7 @@ specialise it. It uses the following directory structure:
 
 ``api/files/<project>``
   Contains additional files needed to implement the steps. Typically, these will
-  be shell scripts and/or binaries of necessary software. ``api/steps/cerise/``
+  be shell scripts and/or binaries of necessary software. ``api/files/cerise/``
   is reserved for Cerise itself, and contains ``cwltiny``, about which more
   below.
 
@@ -52,7 +55,7 @@ form. At least I haven't managed.
 Cerise therefore comes with ``cwltiny``, a very limited CWL implementation that
 consists of a single Python file with no dependencies. This will be used by
 default. However, if you have or can get ``cwltool`` installed on your compute
-resource, it will allow for more complex steps implementations, and for the user
+resource, it will allow for more complex step implementations, and for the user
 to submit more complex workflows. In that case, you'll need to tell Cerise where
 to find it in the config file.
 

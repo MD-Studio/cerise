@@ -1,23 +1,25 @@
 Introduction
 ============
 
-Cerise is a generic service for running CWL workflows on compute resources (i.e.
-clusters, supercomputers, and simply remote machines). It tries to offer a
+Cerise is a generic service for running workflows on compute resources, such as
+clusters, supercomputers, and simply remote machines. It tries to offer a
 consistent environment for workflows, so that a workflow sent to resource A will
 work unchanged on resource B as well.
 
 To achieve this, and to offer a bit of safety and perhaps security, Cerise does
-not allow running arbitrary CWL command line tools. Instead, it expects the user
+not allow running arbitrary command line tools. Instead, it expects the user
 to submit a workflow document that refers to predefined steps built into the
-service.
+service. Both workflows and steps are defined using the
+`Common Workflow Language`_ (CWL).
 
 Defining these steps, and adding them to the service, is called specialising the
-service. A specialisation of Cerise is always specific to a project (which
-determines which steps are available and what inputs and outputs they have), and
-to a compute resource (which determines how they are implemented). Thus, two
-workflows sent to two different specialisations to the same project, but to
-different compute resources, should give the same result (assuming the
-calculation is deterministic!).
+service. A specialisation of Cerise is always specific to a project and to a
+compute resource. The project determines which steps are available and what
+inputs and outputs they have. The compute resource determines how the steps are
+implemented. Workflows are written using steps from a particular project, and
+can then be sent to any specialisation to that project. Where the workflow runs
+will differ depending on which specialisation is used, but the result should be
+the same (assuming the calculation is deterministic!).
 
 This site contains the documentation for Cerise.
 
@@ -34,7 +36,8 @@ install using
     `pip3 install .`
 
 Steps and supporting files may then be placed in the api/ directory to
-specialise the service. For a detailed explanation, see Specialising Cerise.
+specialise the service. For a detailed explanation, see
+:ref:`specialising-cerise`.
 
 To build the Docker image, use
 
@@ -51,7 +54,7 @@ However, this will run a plain, unspecialised Cerise, which is not very
 useful, as it runs jobs locally inside the container, and it doesn't contain any
 steps to execute. To use Cerise in Docker, you should make a new, specialised
 Docker image based on the standard Cerise image, and start that instead.
-Instructions for how to do so are also under Specialising Cerise.
+Instructions for how to do so are also under :ref:`specialising-cerise`
 
 
 Dependencies
@@ -79,6 +82,7 @@ This will also run the integration tests, which take several minutes to complete
 as a bunch of Docker containers is built, started, and stopped.
 
 Before creating a pull request please ensure the following:
+
 * You have written unit tests to test your additions
 * All unit tests pass
 * The examples still work and produce the same (or better) results
@@ -87,4 +91,7 @@ Before creating a pull request please ensure the following:
 * You've added yourself as contributing author
 
 Contributing authors so far:
+
 * Lourens Veen
+
+.. _`Common Workflow Language`: http://www.commonwl.org/v1.0/UserGuide.html
