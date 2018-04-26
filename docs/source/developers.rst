@@ -5,6 +5,7 @@ Developer documentation
    :maxdepth: 4
    :caption: Contents:
 
+   releases
    requirements
    design
    source_docs
