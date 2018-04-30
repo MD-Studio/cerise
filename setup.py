@@ -8,7 +8,7 @@ REQUIRES = ["connexion"]
 
 setup(
     name = "cerise",
-    version = "develop",
+    version = "0.1.0",
     author = "Lourens Veen",
     author_email = "l.veen@esciencecenter.nl",
     description = ("A simple CWL job running service using Xenon as a backend"),
