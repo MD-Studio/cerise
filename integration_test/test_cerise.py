@@ -187,6 +187,8 @@ def service_client(request, service):
                 break
         except HTTPBadGateway:
             pass
+        except requests.exceptions.ConnectionError:
+            pass
         time.sleep(0.1)
         cur_time = time.perf_counter()
 
