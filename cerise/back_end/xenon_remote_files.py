@@ -126,7 +126,7 @@ class XenonRemoteFiles:
         self._logger.debug('Staging input file {} to remote file {}'.format(
             input_file.location, staged_name))
         count += 1
-        self._write_remote_file(job_id, 'work/' + staged_name, input_file.content)
+        self._add_file_to_job(job_id, 'work/' + staged_name, input_file.content)
         input_desc['location'] = self._abs_path(job_id, 'work/' + staged_name)
 
         for i, secondary_file in enumerate(input_file.secondary_files):
@@ -148,16 +148,16 @@ class XenonRemoteFiles:
             job = self._job_store.get_job(job_id)
 
             # create work dir
-            self._make_remote_dir(job_id, '')
-            self._make_remote_dir(job_id, 'work')
+            self._add_dir_to_job(job_id, '')
+            self._add_dir_to_job(job_id, 'work')
             job.remote_workdir_path = self._abs_path(job_id, 'work')
 
             # stage name of the job
-            self._write_remote_file(job_id, 'name.txt', job.name.encode('utf-8'))
+            self._add_file_to_job(job_id, 'name.txt', job.name.encode('utf-8'))
 
             # stage workflow
             remote_workflow_content = self._translate_steps(job.workflow_content)
-            self._write_remote_file(job_id, 'workflow.cwl', remote_workflow_content)
+            self._add_file_to_job(job_id, 'workflow.cwl', remote_workflow_content)
             job.remote_workflow_path = self._abs_path(job_id, 'workflow.cwl')
 
             # stage input files
@@ -172,7 +172,7 @@ class XenonRemoteFiles:
 
             # stage input description
             inputs_json = json.dumps(inputs).encode('utf-8')
-            self._write_remote_file(job_id, 'input.json', inputs_json)
+            self._add_file_to_job(job_id, 'input.json', inputs_json)
             job.remote_input_path = self._abs_path(job_id, 'input.json')
 
             # configure output
@@ -360,7 +360,7 @@ class XenonRemoteFiles:
 
         return remote_path
 
-    def _make_remote_dir(self, job_id, rel_path):
+    def _add_dir_to_job(self, job_id, rel_path):
         xenonpath = self._x_abs_path(job_id, rel_path)
         self._x.files().createDirectories(xenonpath)
 
@@ -419,7 +419,7 @@ class XenonRemoteFiles:
             Utils.recursiveDelete(self._x.files(), x_remote_path)
         return
 
-    def _write_remote_file(self, job_id, rel_path, data):
+    def _add_file_to_job(self, job_id, rel_path, data):
         """Write a file on the remote resource containing the given raw data.
 
         Args:
