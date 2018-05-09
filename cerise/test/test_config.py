@@ -5,18 +5,13 @@ import logging
 import pytest
 import xenon
 
-@pytest.fixture
-def x(request, xenon_init):
-    ret = xenon.Xenon()
-    yield ret
-    ret.close()
 
 @pytest.fixture
-def config_0(x):
-    return config.Config(x, {}, {})
+def config_0(xenon_init):
+    return config.Config({}, {})
 
 @pytest.fixture
-def config_1(x):
+def config_1(xenon_init):
     test_config = {
             'database': {
                 'file': 'test/database.db'
@@ -61,7 +56,7 @@ def config_1(x):
             }
         }
 
-    return config.Config(x, test_config, test_api_config)
+    return config.Config(test_config, test_api_config)
 
 def test_create_config(config_0, config_1):
     pass

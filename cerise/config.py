@@ -5,7 +5,7 @@ import xenon
 import yaml
 
 class Config:
-    def __init__(self, xenon, config, api_config):
+    def __init__(self, config, api_config):
         """Create a configuration object.
 
         Args:
@@ -14,8 +14,6 @@ class Config:
         """
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
-        self._x = xenon
-        """xenon.Xenon: The Xenon object to use."""
         self._config = config
         """The main configuration dictionary."""
         self._api_config = api_config
@@ -95,36 +93,44 @@ class Config:
                     }
             return xenon1_jobs_map[(protocol, scheduler)]
 
-    def _get_xenon1_password(self, password):
+    def _get_xenon2_adaptor(self, kind, protocol, scheduler=None):
         """
-        Manually convert a Python string containing a password to a \
-        JPype Java character array.
-
-        JPype does this incorrectly when doing it automatically,
-        leading to an incorrect password error. This works around
-        that.
+        Decides which Xenon 2 adaptor to use for a given protocol and
+        scheduler.
 
         Args:
-            password (str): A string containing a password.
-        Returns:
-            jpype.JArray(jpype.JChar): The equivalent Java char array.
-        """
-        if password is None:
-            return None
-        jpassword = jpype.JArray(jpype.JChar)(len(password))
-        for i, char in enumerate(password):
-            jpassword[i] = char
-        return jpassword
+            kind (str): Either 'files' or 'jobs'
+            protocol (str): A protocol name.
+            scheduler (str): A scheduler name.
 
-    def _get_credential(self, kind, protocol, scheduler):
+        Returns:
+            str: A Xenon 2 adaptor name.
+        """
+        if kind == 'files':
+            xenon2_files_map = {
+                    'file': 'file',
+                    'sftp': 'sftp',
+                    'ftp': 'ftp',
+                    'webdav': 'webdav'
+                    }
+            return xenon2_files_map[protocol]
+        elif kind == 'jobs':
+            xenon2_jobs_map = {
+                    ('local', 'none'): 'local',
+                    ('ssh', 'none'): 'ssh',
+                    ('ssh', 'slurm'): 'slurm',
+                    ('ssh', 'torque'): 'torque',
+                    ('ssh', 'gridengine'): 'gridengine'
+                    }
+            return xenon2_jobs_map[(protocol, scheduler)]
+
+    def _get_credential(self, kind):
         """
         Create a Xenon Credential given the configuration, and return
         it together with the username.
 
         Args:
             kind (str): Either 'files' or 'jobs'.
-            protocol (str): The protocol to connect with.
-            scheduler (str): The scheduler to use to start jobs.
 
         Returns:
             (xenon.Credential): The credential to use for connecting
@@ -134,26 +140,16 @@ class Config:
         certfile = self._get_credential_variable(kind, 'certfile')
         passphrase = self._get_credential_variable(kind, 'passphrase')
 
-        # self._logger.debug('Creating credential using {} {}'.format(username, password))
-
-        scheme = self._get_xenon1_scheme(kind, protocol, scheduler)
-        jpassword = self._get_xenon1_password(password)
-
         if username and certfile and passphrase:
-            credential = self._x.credentials().newCertificateCredential(
-                    scheme, username, jpassword, None)
+            credential = xenon.CertificateCredential(username, certfile, passphrase)
         elif username and certfile:
-            credential = self._x.credentials().newCertificateCredential(
-                    scheme, username, jpassword, None)
+            credential = xenon.CertificateCredential(username, certfile)
         elif username and password:
-            credential = self._x.credentials().newPasswordCredential(
-                    scheme, username, jpassword, None)
+            credential = xenon.PasswordCredential(username, password)
         elif username:
-            # Wait for Xenon 2
-            pass
+            credential = xenon.DefaultCredential(username)
         else:
-            credential = self._x.credentials().getDefaultCredential(
-                    scheme)
+            credential = xenon.DefaultCredential()
 
         return credential
 
@@ -213,16 +209,25 @@ class Config:
         if run_on_head_node:
             scheduler = 'none'
 
-        scheme = self._get_xenon1_scheme('jobs', protocol, scheduler)
-        credential = self._get_credential('jobs', protocol, scheduler)
+        adaptor = self._get_xenon2_adaptor('jobs', protocol, scheduler)
+        credential = self._get_credential('jobs')
 
-        properties = jpype.java.util.HashMap()
-        if scheduler == 'slurm':
-            properties.put('xenon.adaptors.slurm.ignore.version', 'true')
-
-        scheduler = self._x.jobs().newScheduler(
-                scheme, location, credential, properties)
-        return scheduler
+        if isinstance(credential, xenon.CertificateCredential):
+                return xenon.Scheduler.create(
+                        adaptor=adaptor,
+                        location=location,
+                        certificate_credential=credential)
+        elif isinstance(credential, xenon.PasswordCredential):
+                return xenon.Scheduler.create(
+                        adaptor=adaptor,
+                        location=location,
+                        password_credential=credential)
+        elif isinstance(credential, xenon.DefaultCredential):
+                return xenon.Scheduler.create(
+                        adaptor=adaptor,
+                        location=location,
+                        default_credential=credential)
+        return None
 
     def get_file_system(self):
         """
@@ -239,7 +244,7 @@ class Config:
             location = self._cr_config['files'].get('location')
 
         adaptor = self._get_xenon2_adaptor('files', protocol)
-        credential = self._get_credential('files', protocol, location)
+        credential = self._get_credential('files')
         self._logger.debug('adaptor: {}, location: {}, credential: {}'.format(
                 adaptor, location, credential))
 
