@@ -2,7 +2,7 @@ connexion == 1.0.129
 gevent >= 0.13
 gunicorn >= 19.7.1
 python_dateutil == 2.6.0
-pyxenon == 0.3
+pyxenon >= 2.2
 requests
 setuptools >= 21.0.0
 Sphinx
