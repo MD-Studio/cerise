@@ -6,6 +6,8 @@ import re
 import xenon
 import yaml
 
+from pathlib import Path
+
 from .cwl import get_files_from_binding
 
 class XenonRemoteFiles:
@@ -24,24 +26,19 @@ class XenonRemoteFiles:
     - jobs/<job_id>/stderr.txt is the standard error of the CWL runner
     """
 
-    def __init__(self, job_store, x, config):
+    def __init__(self, job_store, config):
         """Create a XenonRemoteFiles object.
         Sets up remote directory structure as well, but refuses to
         create the top-level directory.
 
         Args:
-            x (Xenon): The Xenon object to use.
+            job_store (JobStore): The job store to use.
             config (Config): The configuration.
         """
-        from xenon.files import RelativePath
-        PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
-
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
         self._job_store = job_store
         """JobStore: The job store to use."""
-        self._x = x
-        """Xenon: The Xenon instance to use."""
         self._fs = config.get_file_system()
         """FileSystem: The Xenon remote file system to stage to."""
         self._username = config.get_username('files')
@@ -52,29 +49,21 @@ class XenonRemoteFiles:
         """str: The remote path to the directory where the API files are."""
         self._api_steps_dir = None
         """str: The remote path to the directory where the API steps are."""
-        self._local_fs = self._x.files().newFileSystem('local', None, None, None)
+        self._local_fs = xenon.FileSystem.create(adaptor='file')
         """FileSystem: Xenon object for the local file system."""
 
-        # Create basedir if it doesn't exist
+        # Create directories if they don't exist
         self._logger.debug('username = {}'.format(self._username))
         if self._username is not None:
-            self._basedir = self._basedir.replace('$CERISE_USERNAME', self._username)
-        self._basedir = self._basedir.rstrip('/')
-        self._logger.debug('basedir = {}'.format(self._basedir))
-        basedir_rel_path = RelativePath(self._basedir)
-        basedir_full_path = self._x.files().newPath(self._fs, basedir_rel_path)
-        try:
-            self._x.files().createDirectories(basedir_full_path)
-        except jpype.JException(PathAlreadyExistsException):
-            pass
+            self._basedir = xenon.Path(
+                    self._basedir
+                        .replace('$CERISE_USERNAME', self._username)
+                        .rstrip('/'))
+        else:
+            self._basedir = xenon.Path(self._basedir.rstrip('/'))
 
-        # Create a subdirectory for jobs
-        jobsdir_rel_path = RelativePath(self._basedir + '/jobs')
-        jobsdir_full_path = self._x.files().newPath(self._fs, jobsdir_rel_path)
-        try:
-            self._x.files().createDirectories(jobsdir_full_path)
-        except jpype.JException(PathAlreadyExistsException):
-            pass
+        self._create_remote_directories(self._basedir)
+        self._create_remote_directories(self._basedir / 'jobs')
 
     def stage_api(self, local_api_dir):
         """Stage the API to the compute resource. Copies subdirectory
@@ -88,21 +77,16 @@ class XenonRemoteFiles:
             (str, str): The remote path to the api install script, and
                 the remote path to the api files/ directory.
         """
-        from xenon.files import RelativePath
-        PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
+        remote_api_dir = self._basedir / 'api'
+        self._logger.info('Staging API from {} to {}'.format(local_api_dir, remote_api_dir))
+        self._create_remote_directories(remote_api_dir)
 
-        remote_api_dir = self._basedir + '/api'
-        x_remote_api_dir = self._x.files().newPath(self._fs, RelativePath(remote_api_dir))
-        try:
-            self._x.files().createDirectories(x_remote_api_dir)
-        except jpype.JException(PathAlreadyExistsException):
-            pass
-
+        local_api_dir = xenon.Path(local_api_dir)
         self._stage_api_files(local_api_dir, remote_api_dir)
         self._stage_api_steps(local_api_dir, remote_api_dir)
         remote_api_script_path = self._stage_install_script(local_api_dir, remote_api_dir)
 
-        remote_api_files_dir = remote_api_dir + '/files'
+        remote_api_files_dir = remote_api_dir / 'files'
         return remote_api_script_path, remote_api_files_dir
 
     def _stage_input_file(self, count, job_id, input_file, input_desc):
@@ -156,7 +140,7 @@ class XenonRemoteFiles:
             self._add_file_to_job(job_id, 'name.txt', job.name.encode('utf-8'))
 
             # stage workflow
-            remote_workflow_content = self._translate_steps(job.workflow_content)
+            remote_workflow_content = self._translate_workflow(job.workflow_content)
             self._add_file_to_job(job_id, 'workflow.cwl', remote_workflow_content)
             job.remote_workflow_path = self._abs_path(job_id, 'workflow.cwl')
 
@@ -242,7 +226,7 @@ class XenonRemoteFiles:
                 self._logger.debug("Log:")
                 self._logger.debug(job.log)
 
-    def _translate_steps(self, workflow_content):
+    def _translate_workflow(self, workflow_content):
         """Parse workflow content, check that it calls steps, and
         insert the location of the steps on the remote resource so that
         the remote runner can find them.
@@ -268,95 +252,86 @@ class XenonRemoteFiles:
         baseCommand and in arguments with the remote path to the files,
         and saving the result as JSON.
         """
-        from xenon.files import OpenOption
-        from xenon.files import RelativePath
-        PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
+        self._api_steps_dir = remote_api_dir / 'steps'
+        self._fs.create_directories(self._api_steps_dir)
 
-        try:
-            self._api_steps_dir = remote_api_dir + '/steps'
-            x_remote_steps_dir = self._x.files().newPath(self._fs, RelativePath(self._api_steps_dir))
-            self._x.files().createDirectories(x_remote_steps_dir)
+        local_steps_dir = local_api_dir / 'steps'
 
-            local_steps_dir = os.path.join(local_api_dir, 'steps')
-            for this_dir, _, files in os.walk(local_steps_dir):
-                self._logger.debug('Scanning file for staging: ' + this_dir + '/' + str(files))
-                for filename in files:
-                    if filename.endswith('.cwl'):
-                        cwlfile = yaml.safe_load(open(os.path.join(this_dir, filename), 'r'))
-                        # do CERISE_API_FILES macro substitution
-                        if cwlfile.get('class') == 'CommandLineTool':
-                            if 'baseCommand' in cwlfile:
-                                if cwlfile['baseCommand'].lstrip().startswith('$CERISE_API_FILES'):
-                                    cwlfile['baseCommand'] = cwlfile['baseCommand'].replace(
-                                            '$CERISE_API_FILES', self._api_files_dir, 1)
-
-                            if 'arguments' in cwlfile:
-                                if not isinstance(cwlfile['arguments'], list):
-                                    raise RuntimeError('Invalid step ' + filename + ': arguments must be an array')
-                                newargs = []
-                                for i, argument in enumerate(cwlfile['arguments']):
-                                    self._logger.debug("Processing argument " + argument)
-                                    newargs.append(argument.replace(
-                                            '$CERISE_API_FILES', self._api_files_dir))
-                                    self._logger.debug("Done processing argument " + cwlfile['arguments'][i])
-                                cwlfile['arguments'] = newargs
-
+        for this_dir, _, files in os.walk(str(local_steps_dir)):
+            this_dir = Path(this_dir)
+            self._logger.debug('Scanning file for staging: ' + str(this_dir) + '/' + str(files))
+            for filename in files:
+                if filename.endswith('.cwl'):
+                        cwlfile = self._translate_api_step(this_dir / filename)
                         # make parent directory
-                        rel_this_dir = os.path.relpath(this_dir, start=local_steps_dir)
-                        remote_this_dir = remote_api_dir + '/steps/' + rel_this_dir
-                        try:
-                            x_this_dir = self._x.files().newPath(self._fs, RelativePath(remote_this_dir))
-                            self._x.files().createDirectories(x_this_dir)
-                        except jpype.JException(PathAlreadyExistsException):
-                            pass
+                        rel_this_dir = this_dir.relative_to(str(local_steps_dir))
+                        remote_this_dir = remote_api_dir / 'steps' / rel_this_dir
+                        self._create_remote_directories(remote_this_dir)
 
                         # write it to remote
-                        rem_file = remote_this_dir + '/' + filename
-                        self._logger.debug('Staging step to ' + rem_file + ' from ' + filename)
-                        x_rel_file = self._x.files().newPath(self._fs, RelativePath(rem_file))
+                        rem_file = remote_this_dir / filename
+                        self._logger.debug('Staging step to {} from {}'.format(
+                            str(rem_file), str(filename)))
                         data = bytes(json.dumps(cwlfile), 'utf-8')
-                        stream = self._x.files().newOutputStream(x_rel_file,
-                                [OpenOption.CREATE, OpenOption.TRUNCATE])
-                        stream.write(data)
-                        stream.close()
+                        self._fs.write_to_file(rem_file, [data])
 
-        except jpype.JException(PathAlreadyExistsException):
-            pass
+    def _translate_api_step(self, workflow_path):
+        """Do CERISE_API_FILES macro substitution on an API step file.
+        """
+        cwlfile = yaml.safe_load(workflow_path.open('r'))
+        if cwlfile.get('class') == 'CommandLineTool':
+            if 'baseCommand' in cwlfile:
+                if cwlfile['baseCommand'].lstrip().startswith('$CERISE_API_FILES'):
+                    cwlfile['baseCommand'] = cwlfile['baseCommand'].replace(
+                            '$CERISE_API_FILES', self._api_files_dir, 1)
+
+            if 'arguments' in cwlfile:
+                if not isinstance(cwlfile['arguments'], list):
+                    raise RuntimeError('Invalid step {}: arguments must be an array'.format(
+                        filename))
+                newargs = []
+                for i, argument in enumerate(cwlfile['arguments']):
+                    self._logger.debug("Processing argument {}".format(argument))
+                    newargs.append(argument.replace(
+                        '$CERISE_API_FILE', str(self._api_files_dir)))
+                    self._logger.debug("Done processing argument {}".format(cwlfile['arguments'][i]))
+                cwlfile['arguments'] = newargs
+        return cwlfile
 
     def _stage_api_files(self, local_api_dir, remote_api_dir):
-        PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
-
-        self._api_files_dir = remote_api_dir + '/files'
-        local_dir = os.path.join(local_api_dir, 'files')
-        if not os.path.isdir(local_dir):
+        self._api_files_dir = remote_api_dir / 'files'
+        local_dir = local_api_dir / 'files'
+        if not self._local_fs.exists(local_dir):
             self._logger.debug('API files not found, not staging')
             return
-        self._logger.debug('Staging API part to ' + self._api_files_dir + ' from ' + local_dir)
-        try:
-            self._copy_dir(local_dir, self._api_files_dir)
-        except jpype.JException(PathAlreadyExistsException):
-            pass
+        self._logger.debug('Staging API part to {} from {}'.format(
+                self._api_files_dir, local_dir))
+        copy_id = self._local_fs.copy(
+                local_dir,
+                self._fs, self._api_files_dir,
+                xenon.CopyMode.REPLACE,
+                recursive=True)
+        self._local_fs.wait_until_done(copy_id)
+        # TODO: fix up permissions?
 
     def _stage_install_script(self, local_api_dir, remote_api_dir):
-        from xenon.files import CopyOption
-        from xenon.files import RelativePath
-        PathAlreadyExistsException = xenon.nl.esciencecenter.xenon.files.PathAlreadyExistsException
-
-        local_path = os.path.join(local_api_dir, 'install.sh')
-        if not os.path.isfile(local_path):
+        local_path = local_api_dir / 'install.sh'
+        if not self._local_fs.exists(local_path):
             self._logger.debug('API install script not found, not staging')
             return None
 
-        remote_path = remote_api_dir + '/install.sh'
-        self._logger.debug('Staging API install script to ' + remote_path + ' from ' + local_path)
-        x_local_path = self._x.files().newPath(self._local_fs, RelativePath(local_path))
-        x_remote_path = self._x.files().newPath(self._fs, RelativePath(remote_path))
-        if self._x.files().exists(x_remote_path):
-            self._x.files().delete(x_remote_path)
-        # CopyOption.REMOVE doesn't overwrite but fails?
-        self._x.files().copy(x_local_path, x_remote_path, [])
+        remote_path = remote_api_dir / 'install.sh'
+        self._logger.debug('Staging API install script to {} from {}'.format(
+            remote_path, local_path))
+        copy_id = self._local_fs.copy(
+                local_path,
+                self._fs, remote_path,
+                xenon.CopyMode.REPLACE, recursive=False)
+        self._local_fs.wait_until_done(copy_id)
 
-        self._make_remote_file_executable(remote_path)
+        self._local_fs.set_posix_file_permissions(remote_path, [
+                xenon.PosixFilePermission.OWNER_READ,
+                xenon.PosixFilePermission.OWNER_EXECUTE])
 
         return remote_path
 
@@ -401,16 +376,16 @@ class XenonRemoteFiles:
                     rem_file = remote_this_dir + '/' + filename
                     self._make_remote_file_executable(rem_file)
 
-    def _make_remote_file_executable(self, remote_path):
-        from xenon.files import RelativePath
-        PosixFilePermission = xenon.nl.esciencecenter.xenon.files.PosixFilePermission
+    def _create_remote_directories(self, remote_dir):
+        """Create a remote directory, do nothing if it already exists.
 
-        x_rel_file = self._x.files().newPath(self._fs, RelativePath(remote_path))
-        owner_read_execute = jpype.java.util.HashSet()
-        owner_read_execute.add(PosixFilePermission.OWNER_READ)
-        owner_read_execute.add(PosixFilePermission.OWNER_EXECUTE)
-        self._x.files().setPosixFilePermissions(x_rel_file,
-                owner_read_execute)
+        Args:
+            remote_dir (xenon.Path): A remote path
+        """
+        try:
+            self._fs.create_directories(remote_dir)
+        except xenon.PathAlreadyExistsException:
+            pass
 
     def _x_recursive_delete(self, x_remote_path):
         Utils = xenon.nl.esciencecenter.xenon.util.Utils

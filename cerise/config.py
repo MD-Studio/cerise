@@ -238,14 +238,27 @@ class Config:
             protocol = self._cr_config['files'].get('protocol', 'file')
             location = self._cr_config['files'].get('location')
 
-        scheme = self._get_xenon1_scheme('files', protocol)
+        adaptor = self._get_xenon2_adaptor('files', protocol)
         credential = self._get_credential('files', protocol, location)
-        self._logger.debug('scheme: {}, location: {}, credential: {}'.format(
-                scheme, location, credential))
-        filesystem = self._x.files().newFileSystem(
-                scheme, location, credential, None)
+        self._logger.debug('adaptor: {}, location: {}, credential: {}'.format(
+                adaptor, location, credential))
 
-        return filesystem
+        if isinstance(credential, xenon.CertificateCredential):
+                return xenon.FileSystem.create(
+                        adaptor=adaptor,
+                        location=location,
+                        certificate_credential=credential)
+        elif isinstance(credential, xenon.PasswordCredential):
+                return xenon.FileSystem.create(
+                        adaptor=adaptor,
+                        location=location,
+                        password_credential=credential)
+        elif isinstance(credential, xenon.DefaultCredential):
+                return xenon.FileSystem.create(
+                        adaptor=adaptor,
+                        location=location,
+                        default_credential=credential)
+        return None
 
     def get_remote_cwl_runner(self):
         """
