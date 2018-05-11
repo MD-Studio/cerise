@@ -1,4 +1,4 @@
-import jpype
+import grpc
 import json
 import logging
 import os
@@ -89,36 +89,6 @@ class XenonRemoteFiles:
         remote_api_files_dir = remote_api_dir / 'files'
         return remote_api_script_path, remote_api_files_dir
 
-    def _stage_input_file(self, count, job_id, input_file, input_desc):
-        """Stage an input file. Copies the file to the remote resource.
-
-        Uses count to create unique file names, returns the new count \
-        (i.e. the next available number).
-
-        Args:
-            count (int): The next available unique count
-            job_id (str): The job id to stage for
-            input_file (InputFile): The input file to stage
-            input_desc (dict): The input description whose location \
-                    (and secondaryFiles) to update.
-
-        Returns:
-            (int) The updated count
-        """
-        self._logger.debug(type(input_file))
-        staged_name = _create_input_filename(str(count).zfill(2), input_file.location)
-        self._logger.debug('Staging input file {} to remote file {}'.format(
-            input_file.location, staged_name))
-        count += 1
-        self._add_file_to_job(job_id, 'work/' + staged_name, input_file.content)
-        input_desc['location'] = self._abs_path(job_id, 'work/' + staged_name)
-
-        for i, secondary_file in enumerate(input_file.secondary_files):
-            sec_input_desc = input_desc['secondaryFiles'][i]
-            count = self._stage_input_file(count, job_id, secondary_file, sec_input_desc)
-
-        return count
-
     def stage_job(self, job_id, input_files):
         """Stage a job. Copies any necessary files to
         the remote resource.
@@ -132,8 +102,8 @@ class XenonRemoteFiles:
             job = self._job_store.get_job(job_id)
 
             # create work dir
-            self._add_dir_to_job(job_id, '')
-            self._add_dir_to_job(job_id, 'work')
+            self._fs.create_directories(self._abs_path(job_id, ''))
+            self._fs.create_directories(self._abs_path(job_id, 'work'))
             job.remote_workdir_path = self._abs_path(job_id, 'work')
 
             # stage name of the job
@@ -182,7 +152,7 @@ class XenonRemoteFiles:
                 for output_file in get_files_from_binding(outputs):
                     self._logger.debug('Destage path = {} for output {}'.format(
                         output_file.location, output_file.name))
-                    prefix = 'file://' + self._basedir + '/jobs/' + job_id + '/work/'
+                    prefix = 'file://' + str(self._basedir / 'jobs' / job_id / 'work') + '/'
                     if not output_file.location.startswith(prefix):
                         raise Exception("Unexpected output location in cwl-runner output: {}, expected it to start with: {}".format(output_file.location, prefix))
                     rel_path = output_file.location[len(prefix):]
@@ -243,7 +213,7 @@ class XenonRemoteFiles:
             if not isinstance(step['run'], str):
                 raise RuntimeError('Invalid step in workflow')
             # check against known steps?
-            step['run'] = self._api_steps_dir + '/' + step['run']
+            step['run'] = str(self._api_steps_dir / step['run'])
         return bytes(json.dumps(workflow), 'utf-8')
 
     def _stage_api_steps(self, local_api_dir, remote_api_dir):
@@ -329,52 +299,48 @@ class XenonRemoteFiles:
                 xenon.CopyMode.REPLACE, recursive=False)
         self._local_fs.wait_until_done(copy_id)
 
-        self._local_fs.set_posix_file_permissions(remote_path, [
+        while not self._fs.exists(remote_path):
+            pass
+
+        self._fs.set_posix_file_permissions(remote_path, [
                 xenon.PosixFilePermission.OWNER_READ,
                 xenon.PosixFilePermission.OWNER_EXECUTE])
 
         return remote_path
 
-    def _add_dir_to_job(self, job_id, rel_path):
-        xenonpath = self._x_abs_path(job_id, rel_path)
-        self._x.files().createDirectories(xenonpath)
+    def _stage_input_file(self, count, job_id, input_file, input_desc):
+        """Stage an input file. Copies the file to the remote resource.
 
-    def _rm_remote_dir(self, job_id, rel_path):
-        NoSuchPathException = xenon.nl.esciencecenter.xenon.files.NoSuchPathException
-
-        try:
-            x_remote_path = self._x_abs_path(job_id, rel_path)
-            self._x_recursive_delete(x_remote_path)
-        except jpype.JException(NoSuchPathException):
-            pass
-
-    def _copy_dir(self, local_dir, remote_dir):
-        """Copy a directory and all its contents from the local filesystem
-        to the remote filesystem.
+        Uses count to create unique file names, returns the new count \
+        (i.e. the next available number).
 
         Args:
-            local_dir (str): The absolute local path of the directory
-            to copy.
-            remote_dir (str): The absolute remote path to copy it to
+            count (int): The next available unique count
+            job_id (str): The job id to stage for
+            input_file (InputFile): The input file to stage
+            input_desc (dict): The input description whose location \
+                    (and secondaryFiles) to update.
+
+        Returns:
+            (int) The updated count
         """
-        from xenon.files import RelativePath
-        Utils = xenon.nl.esciencecenter.xenon.util.Utils
+        self._logger.debug(type(input_file))
+        staged_name = _create_input_filename(str(count).zfill(2), input_file.location)
+        self._logger.debug('Staging input file {} to remote file {}'.format(
+            input_file.location, staged_name))
+        count += 1
+        self._add_file_to_job(job_id, 'work/' + staged_name, input_file.content)
+        input_desc['location'] = str(self._abs_path(job_id, 'work/' + staged_name))
 
-        x_remote_dir = self._x.files().newPath(self._fs, RelativePath(remote_dir))
-        rel_local_dir = RelativePath(local_dir)
-        x_local_dir = self._x.files().newPath(self._local_fs, rel_local_dir)
-        Utils.recursiveCopy(
-                self._x.files(), x_local_dir,
-                x_remote_dir, None)
+        for i, secondary_file in enumerate(input_file.secondary_files):
+            sec_input_desc = input_desc['secondaryFiles'][i]
+            count = self._stage_input_file(count, job_id, secondary_file, sec_input_desc)
 
-        # patch up execute permissions
-        for this_dir, _, files in os.walk(local_dir):
-            for filename in files:
-                if os.access(os.path.join(this_dir, filename), os.X_OK):
-                    rel_this_dir = os.path.relpath(this_dir, start=local_dir)
-                    remote_this_dir = remote_dir + '/' + rel_this_dir
-                    rem_file = remote_this_dir + '/' + filename
-                    self._make_remote_file_executable(rem_file)
+        return count
+
+    def _rm_remote_dir(self, job_id, rel_path):
+        remote_path = self._abs_path(job_id, rel_path)
+        self._fs.delete(remote_path, recursive=True)
 
     def _create_remote_directories(self, remote_dir):
         """Create a remote directory, do nothing if it already exists.
@@ -387,13 +353,6 @@ class XenonRemoteFiles:
         except xenon.PathAlreadyExistsException:
             pass
 
-    def _x_recursive_delete(self, x_remote_path):
-        Utils = xenon.nl.esciencecenter.xenon.util.Utils
-        # Xenon throws an exception if the path does not exist
-        if self._x.files().exists(x_remote_path):
-            Utils.recursiveDelete(self._x.files(), x_remote_path)
-        return
-
     def _add_file_to_job(self, job_id, rel_path, data):
         """Write a file on the remote resource containing the given raw data.
 
@@ -402,41 +361,24 @@ class XenonRemoteFiles:
             rel_path (str): A path relative to the job's directory
             data (bytes): The data to write
         """
-        from xenon.files import OpenOption
-
-        x_remote_path = self._x_abs_path(job_id, rel_path)
-        stream = self._x.files().newOutputStream(x_remote_path, [OpenOption.CREATE, OpenOption.TRUNCATE])
-        stream.write(data)
-        stream.close()
+        remote_path = self._abs_path(job_id, rel_path)
+        self._fs.write_to_file(remote_path, [data])
 
     def _read_remote_file(self, job_id, rel_path):
         """Read data from a remote file.
+
+        Silently returns an empty result if the file does not exist.
 
         Args:
             job_id (str): A job from whose work dir a file is read
             rel_path (str): A path relative to the job's directory
         """
         result = bytearray()
-
-        def sbyte_to_ubyte(buf, size):
-            ret = bytearray(size)
-            for i, val in enumerate(buf[0:size]):
-                if val >= 0:
-                    ret[i] = val
-                else:
-                    ret[i] = val + 256
-            return ret
-
-        x_remote_path = self._x_abs_path(job_id, rel_path)
-        if self._x.files().exists(x_remote_path):
-            stream = self._x.files().newInputStream(x_remote_path)
-            buf = jpype.JArray(jpype.JByte)(1024)
-            bytes_read = stream.read(buf)
-            while bytes_read != -1:
-                result = bytearray().join([result, sbyte_to_ubyte(buf, bytes_read)])
-                bytes_read = stream.read(buf)
-            stream.close()
-
+        try:
+            for chunk in self._fs.read_from_file(self._abs_path(job_id, rel_path)):
+                result.extend(chunk)
+        except grpc._channel._Rendezvous:
+            pass
         return result
 
     def _abs_path(self, job_id, rel_path):
@@ -446,27 +388,10 @@ class XenonRemoteFiles:
             job_id (str): A job from whose dir a file is read
             rel_path (str): A a path relative to the job's directory
         """
-        ret = self._basedir + '/jobs/' + job_id
+        ret = self._basedir / 'jobs' / job_id
         if rel_path != '':
-            ret += '/' + rel_path
+            ret /= rel_path
         return ret
-
-    def _x_abs_path(self, job_id, rel_path):
-        """Return a Xenon Path object containing an absolute path
-        corresponding to the given relative path.
-
-        Args:
-            job_id (str): A job from whose dir a file is read
-            rel_path (str): A path relative to the job's directory
-
-        Returns:
-            Path: A Xenon Path object corresponding to the input
-        """
-        from xenon.files import RelativePath
-
-        abs_path = self._abs_path(job_id, rel_path)
-        xenon_path = xenon.files.RelativePath(abs_path)
-        return self._x.files().newPath(self._fs, xenon_path)
 
 def _create_input_filename(unique_prefix, orig_path):
     """Return a string containing a remote filename that
