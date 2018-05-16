@@ -18,13 +18,12 @@ class ExecutionManager:
     resource, ensuring that any remote state changes are propagated to
     the job store correctly.
     """
-    def __init__(self, config, apidir, xenon):
+    def __init__(self, config, apidir):
         """Set up the execution manager.
 
         Args:
             config (Config): The configuration.
             apidir (str): The remote path to the remote API directory.
-            xenon (Xenon): The Xenon object to use.
         """
         self._logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class ExecutionManager:
         """SQLiteJobStore: The job store to use."""
         self._local_files = LocalFiles(self._job_store, config)
         """LocalFiles: The local files manager."""
-        self._remote_files = XenonRemoteFiles(self._job_store, xenon, config)
+        self._remote_files = XenonRemoteFiles(self._job_store, config)
         """RemoteFiles: The remote files manager."""
         self._remote_refresh = config.get_remote_refresh()
 
@@ -60,7 +59,7 @@ class ExecutionManager:
                 # send cancel request
 
         self._job_runner = XenonJobRunner(
-                self._job_store, xenon, config,
+                self._job_store, config,
                 api_files_path, api_install_script_path)
         self._logger.info('Started back-end')
 

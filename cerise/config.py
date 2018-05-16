@@ -1,4 +1,3 @@
-import jpype
 import logging
 import os
 import xenon
@@ -141,13 +140,17 @@ class Config:
         passphrase = self._get_credential_variable(kind, 'passphrase')
 
         if username and certfile and passphrase:
-            credential = xenon.CertificateCredential(username, certfile, passphrase)
+            credential = xenon.CertificateCredential(
+                    username=username, certfile=certfile, passphrase=passphrase)
         elif username and certfile:
-            credential = xenon.CertificateCredential(username, certfile)
+            credential = xenon.CertificateCredential(
+                    username=username, certfile=certfile)
         elif username and password:
-            credential = xenon.PasswordCredential(username, password)
+            credential = xenon.PasswordCredential(
+                    username=username, password=password)
         elif username:
-            credential = xenon.DefaultCredential(username)
+            credential = xenon.DefaultCredential(
+                    username=username)
         else:
             credential = xenon.DefaultCredential()
 
@@ -406,14 +409,12 @@ class Config:
         return self._config['client-file-exchange']['store-location-client']
 
 
-def make_config(xenon=None):
+def make_config():
     """Make a configuration object.
 
     Uses the configuration files and environment variables to determine
     the configuration.
 
-    Args:
-        xenon (xenon.Xenon): A Xenon object.
     Returns:
         Config: The Cerise configuration.
     """
@@ -440,4 +441,4 @@ def make_config(xenon=None):
         print(traceback.format_exc())
         quit(1)
 
-    return Config(xenon, config, api_config)
+    return Config(config, api_config)

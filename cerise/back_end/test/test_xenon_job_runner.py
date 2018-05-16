@@ -10,18 +10,10 @@ import shutil
 import time
 import xenon
 
-@pytest.fixture
-def x(request, xenon_init):
-    ret = xenon.Xenon()
-    yield ret
-    ret.close()
 
 class MockConfig:
-    def __init__(self, x):
-        self._x = x
-
     def get_scheduler(self, run_on_head_node=False):
-        return self._x.jobs().newScheduler('local', None, None, None)
+        return xenon.Scheduler.create('local')
 
     def get_queue_name(self):
         return None
@@ -33,7 +25,7 @@ class MockConfig:
         return '$CERISE_API_FILES/cerise/cwltiny.py'
 
 @pytest.fixture
-def fixture(request, tmpdir, x):
+def fixture(request, tmpdir, xenon_init):
     result = {}
 
     result['remote-dir'] = str(tmpdir)
@@ -41,8 +33,7 @@ def fixture(request, tmpdir, x):
         'local-base-path': '',
         'remote-base-path': result['remote-dir']
         })
-    result['xenon'] = x
-    result['xenon-job-runner-config'] = MockConfig(result['xenon'])
+    result['xenon-job-runner-config'] = MockConfig()
 
     # stage api
     base_api_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'api')
@@ -58,7 +49,7 @@ def fixture(request, tmpdir, x):
     shutil.copy2(test_install_script_dir, remote_install_script_dir)
 
     result['xenon-job-runner'] = XenonJobRunner(
-            result['store'], x, result['xenon-job-runner-config'],
+            result['store'], result['xenon-job-runner-config'],
             result['remote-dir'] + '/api/files',
             result['remote-dir'] + '/api/install.sh')
     return result
@@ -86,7 +77,7 @@ def test_start_job(fixture):
     fixture['store'].get_job('test_start_job').state = JobState.WAITING
 
     updated_job = _wait_for_state(fixture, 'test_start_job', JobState.FINISHED, 1.0)
-    assert updated_job.remote_job_id == 'local-1'
+    assert updated_job.remote_job_id == 'local-0'
 
 def test_start_staging_job(fixture):
     fixture['store'].add_test_job('test_start_staging_job', 'wc', 'staged')
@@ -94,7 +85,7 @@ def test_start_staging_job(fixture):
     fixture['store'].get_job('test_start_staging_job').state = JobState.WAITING
 
     updated_job = _wait_for_state(fixture, 'test_start_staging_job', JobState.FINISHED, 2.0)
-    assert updated_job.remote_job_id == 'local-1'
+    assert updated_job.remote_job_id == 'local-0'
 
 def test_start_broken_job(fixture):
     fixture['store'].add_test_job('test_start_broken_job', 'broken', 'staged')
@@ -102,7 +93,7 @@ def test_start_broken_job(fixture):
     fixture['store'].get_job('test_start_broken_job').state = JobState.WAITING
 
     updated_job = _wait_for_state(fixture, 'test_start_broken_job', JobState.FINISHED, 1.0)
-    assert updated_job.remote_job_id == 'local-1'
+    assert updated_job.remote_job_id == 'local-0'
     assert updated_job.remote_output == ''
 
 def test_update(fixture):

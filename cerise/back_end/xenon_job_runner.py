@@ -1,4 +1,3 @@
-import jpype
 import logging
 import os
 import xenon
@@ -8,7 +7,7 @@ from cerise.job_store.job_state import JobState
 from time import sleep
 
 class XenonJobRunner:
-    def __init__(self, job_store, xenon, config, api_files_path, api_install_script_path):
+    def __init__(self, job_store, config, api_files_path, api_install_script_path):
         """Create a XenonJobRunner object.
 
         Args:
@@ -19,8 +18,6 @@ class XenonJobRunner:
         """Logger: The logger for this class."""
         self._job_store = job_store
         """The JobStore to obtain jobs from."""
-        self._x = xenon
-        """The Xenon instance to use."""
         self._username = None
         """The remote user to connect as."""
         self._api_files_path = api_files_path
@@ -49,22 +46,15 @@ class XenonJobRunner:
 
     def _run_api_install_script(self, config, api_files_path, api_install_script_path):
         sched = config.get_scheduler(run_on_head_node=True)
-        xenon_jobdesc = xenon.jobs.JobDescription()
-        xenon_jobdesc.setWorkingDirectory(api_files_path)
-        xenon_jobdesc.setExecutable(api_install_script_path)
-        xenon_jobdesc.setArguments([api_files_path])
-        # Not supported with SSH adapter, waiting for Xenon 2...
-        # xenon_jobdesc.addEnvironment('CERISE_API_FILES', api_files_path)
-        self._logger.debug("Starting api install script " + api_install_script_path)
-        xenon_job = self._x.jobs().submitJob(sched, xenon_jobdesc)
+        xenon_jobdesc = xenon.JobDescription(
+                working_directory=api_files_path,
+                executable=api_install_script_path,
+                arguments=[api_files_path],
+                environment={'CERISE_API_FILES': api_files_path})
 
-        status = self._x.jobs().getJobStatus(xenon_job)
-        delay = 1
-        while not status.isDone():
-            sleep(delay)
-            if delay < 5:
-                delay += 1
-            status = self._x.jobs().getJobStatus(xenon_job)
+        self._logger.debug("Starting api install script " + api_install_script_path)
+        xenon_job = sched.submit_batch_job(xenon_jobdesc)
+        status = sched.wait_until_done(xenon_job)
         self._logger.debug("API install script done")
 
     def update_job(self, job_id):
@@ -76,15 +66,15 @@ class XenonJobRunner:
         self._logger.debug("Updating job " + job_id + " from remote job")
         with self._job_store:
             job = self._job_store.get_job(job_id)
-            active_jobs = self._x.jobs().getJobs(self._sched, [])
-            xenon_job = [x_job for x_job in active_jobs if x_job.getIdentifier() == job.remote_job_id]
+            active_jobs = self._sched.get_jobs([])
+            xenon_job = [x_job for x_job in active_jobs if x_job.id == job.remote_job_id]
             if len(xenon_job) == 1:
-                xenon_status = self._x.jobs().getJobStatus(xenon_job[0])
-                if xenon_status.isRunning():
+                xenon_status = self._sched.get_job_status(xenon_job[0])
+                if xenon_status.running:
                     job.try_transition(JobState.WAITING, JobState.RUNNING)
                     job.try_transition(JobState.WAITING_CR, JobState.RUNNING_CR)
                     return
-                if not xenon_status.isDone():
+                if not xenon_status.done:
                     # Still waiting in the queue, check again later
                     return
 
@@ -104,9 +94,6 @@ class XenonJobRunner:
         with self._job_store:
             job = self._job_store.get_job(job_id)
             # submit job
-            xenon_jobdesc = xenon.jobs.JobDescription()
-            xenon_jobdesc.setWorkingDirectory(job.remote_workdir_path)
-            xenon_jobdesc.setExecutable('bash')
             # Work around Xenon issue #601
             args = [
                     '-c',
@@ -117,23 +104,21 @@ class XenonJobRunner:
                     ' >{}'.format(job.remote_stdout_path) +
                     ' 2>{}'.format(job.remote_stderr_path)
                     ]
-            xenon_jobdesc.setArguments(args)
-            # xenon_jobdesc.setStdout(job.remote_stdout_path)
-            # xenon_jobdesc.setStderr(job.remote_stderr_path)
-            xenon_jobdesc.setMaxTime(60)
-            if self._queue_name:
-                xenon_jobdesc.setQueueName(self._queue_name)
-            xenon_jobdesc.setProcessesPerNode(self._mpi_slots_per_node)
-            xenon_jobdesc.setStartSingleProcess(True)
-            print("Starting job: " + str(xenon_jobdesc))
-            xenon_job = self._x.jobs().submitJob(self._sched, xenon_jobdesc)
-            job.remote_job_id = xenon_job.getIdentifier()
-            self._logger.debug('Job submitted')
+            xenon_jobdesc = xenon.JobDescription(
+                    working_directory=job.remote_workdir_path,
+                    executable='bash',
+                    arguments=args,
+                    max_runtime=60,
+                    queue_name=self._queue_name,
+                    processes_per_node=self._mpi_slots_per_node,
+                    start_single_process=True)
 
-        try:
-            sleep(1)    # work-around for Xenon local running bug
-        except KeyboardInterrupt:
-            pass        # exit gracefully
+            if self._queue_name:
+                xenon_jobdesc.queue_name = self._queue_name
+
+            print("Starting job: " + str(xenon_jobdesc))
+            job.remote_job_id = self._sched.submit_batch_job(xenon_jobdesc).id
+            self._logger.debug('Job submitted')
 
     def cancel_job(self, job_id):
         """Cancel a running job.
@@ -153,20 +138,15 @@ class XenonJobRunner:
         Returns:
             bool: Whether the job is still running.
         """
-        XenonException = xenon.nl.esciencecenter.xenon.XenonException
-
         self._logger.debug('Cancelling job ' + job_id)
         with self._job_store:
             job = self._job_store.get_job(job_id)
             if JobState.is_remote(job.state):
-                active_jobs = self._x.jobs().getJobs(self._sched, [])
-                xenon_job = [x_job for x_job in active_jobs if x_job.getIdentifier() == job.remote_job_id]
+                active_jobs = self._sched.get_jobs([])
+                xenon_job = [x_job for x_job in active_jobs if x_job.id == job.remote_job_id]
                 if len(xenon_job) == 1:
-                    status = self._x.jobs().getJobStatus(xenon_job[0])
-                    if status.isRunning():
-                        try:
-                            new_state = self._x.jobs().cancelJob(xenon_job[0])
-                        except jpype.JException(XenonException):
-                            return False
-                        return bool(new_state.isRunning())
+                    status = self._sched.get_job_status(xenon_job[0])
+                    if status.running:
+                        new_state = self._sched.cancel_job(xenon_job[0])
+                        return new_state.running
         return False
