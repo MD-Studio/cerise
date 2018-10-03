@@ -120,7 +120,7 @@ class XenonJobRunner:
             xenon_jobdesc.setArguments(args)
             # xenon_jobdesc.setStdout(job.remote_stdout_path)
             # xenon_jobdesc.setStderr(job.remote_stderr_path)
-            xenon_jobdesc.setMaxTime(60)
+            xenon_jobdesc.setMaxTime(2400)
             if self._queue_name:
                 xenon_jobdesc.setQueueName(self._queue_name)
             xenon_jobdesc.setProcessesPerNode(self._mpi_slots_per_node)
