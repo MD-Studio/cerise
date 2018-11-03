@@ -142,5 +142,4 @@ placed at `api/config.yml`. See :doc:`Cerise <configuration>` for what to put
 into this file
 
 .. _`CWL User Guide`: http://www.commonwl.org/v1.0/UserGuide.html
-.. _Xenon: http://nlesc.github.io/Xenon/
 

@@ -1,22 +1,15 @@
 import cerise.config as config
-from cerise.test.xenon import xenon_init
 
 import logging
 import pytest
-import xenon
+
 
 @pytest.fixture
-def x(request, xenon_init):
-    ret = xenon.Xenon()
-    yield ret
-    ret.close()
+def config_0():
+    return config.Config({}, {})
 
 @pytest.fixture
-def config_0(x):
-    return config.Config(x, {}, {})
-
-@pytest.fixture
-def config_1(x):
+def config_1():
     test_config = {
             'database': {
                 'file': 'test/database.db'
@@ -61,7 +54,7 @@ def config_1(x):
             }
         }
 
-    return config.Config(x, test_config, test_api_config)
+    return config.Config(test_config, test_api_config)
 
 def test_create_config(config_0, config_1):
     pass

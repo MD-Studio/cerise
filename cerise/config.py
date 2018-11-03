@@ -1,11 +1,10 @@
-import jpype
+import cerulean
 import logging
 import os
-import xenon
 import yaml
 
 class Config:
-    def __init__(self, xenon, config, api_config):
+    def __init__(self, config, api_config):
         """Create a configuration object.
 
         Args:
@@ -14,8 +13,6 @@ class Config:
         """
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
-        self._x = xenon
-        """xenon.Xenon: The Xenon object to use."""
         self._config = config
         """The main configuration dictionary."""
         self._api_config = api_config
@@ -64,96 +61,28 @@ class Config:
             value = get_env(kind, name)
         return value
 
-    def _get_xenon1_scheme(self, kind, protocol, scheduler=None):
+    def _get_credential(self, kind):
         """
-        Decides which Xenon 1 scheme to use for a given protocol and
-        scheduler.
-
-        Args:
-            kind (str): Either 'files' or 'jobs'.
-            protocol (str): A protocol name.
-            scheduler (str): A scheduler name.
-
-        Returns:
-            str: A Xenon 1 scheme name.
-        """
-        if kind == 'files':
-            xenon1_files_map = {
-                    'file': 'file',
-                    'sftp': 'sftp',
-                    'ftp': 'ftp',
-                    'webdav': 'http'
-                    }
-            return xenon1_files_map[protocol]
-        elif kind == 'jobs':
-            xenon1_jobs_map = {
-                    ('local', 'none'): 'local',
-                    ('ssh', 'none'): 'ssh',
-                    ('ssh', 'slurm'): 'slurm',
-                    ('ssh', 'torque'): 'torque',
-                    ('ssh', 'gridengine'): 'ge'
-                    }
-            return xenon1_jobs_map[(protocol, scheduler)]
-
-    def _get_xenon1_password(self, password):
-        """
-        Manually convert a Python string containing a password to a \
-        JPype Java character array.
-
-        JPype does this incorrectly when doing it automatically,
-        leading to an incorrect password error. This works around
-        that.
-
-        Args:
-            password (str): A string containing a password.
-        Returns:
-            jpype.JArray(jpype.JChar): The equivalent Java char array.
-        """
-        if password is None:
-            return None
-        jpassword = jpype.JArray(jpype.JChar)(len(password))
-        for i, char in enumerate(password):
-            jpassword[i] = char
-        return jpassword
-
-    def _get_credential(self, kind, protocol, scheduler):
-        """
-        Create a Xenon Credential given the configuration, and return
+        Create a Cerulean Credential given the configuration, and return
         it together with the username.
 
         Args:
             kind (str): Either 'files' or 'jobs'.
-            protocol (str): The protocol to connect with.
-            scheduler (str): The scheduler to use to start jobs.
 
         Returns:
-            (xenon.Credential): The credential to use for connecting
+            (cerulean.Credential): The credential to use for connecting
         """
         username = self._get_credential_variable(kind, 'username')
         password = self._get_credential_variable(kind, 'password')
         certfile = self._get_credential_variable(kind, 'certfile')
         passphrase = self._get_credential_variable(kind, 'passphrase')
 
-        # self._logger.debug('Creating credential using {} {}'.format(username, password))
-
-        scheme = self._get_xenon1_scheme(kind, protocol, scheduler)
-        jpassword = self._get_xenon1_password(password)
-
-        if username and certfile and passphrase:
-            credential = self._x.credentials().newCertificateCredential(
-                    scheme, username, jpassword, None)
-        elif username and certfile:
-            credential = self._x.credentials().newCertificateCredential(
-                    scheme, username, jpassword, None)
+        if username and certfile:
+            credential = cerulean.CertificateCredential(username, certfile, passphrase)
         elif username and password:
-            credential = self._x.credentials().newPasswordCredential(
-                    scheme, username, jpassword, None)
-        elif username:
-            # Wait for Xenon 2
-            pass
+            credential = cerulean.PasswordCredential(username, password)
         else:
-            credential = self._x.credentials().getDefaultCredential(
-                    scheme)
+            credential = None
 
         return credential
 
@@ -199,29 +128,23 @@ class Config:
             adaptor is a cluster scheduler (i.e. slurm, torque or gridengine).
 
         Returns:
-            (xenon.Scheduler): A new scheduler
+            (cerulean.Scheduler): A new scheduler
         """
         if 'jobs' not in self._cr_config:
             protocol = 'local'
             location = None
-            scheduler = 'none'
+            scheduler = 'directgnu'
         else:
             protocol = self._cr_config['jobs'].get('protocol', 'local')
             location = self._cr_config['jobs'].get('location')
-            scheduler = self._cr_config['jobs'].get('scheduler', 'none')
+            scheduler = self._cr_config['jobs'].get('scheduler', 'directgnu')
 
         if run_on_head_node:
-            scheduler = 'none'
+            scheduler = 'directgnu'
 
-        scheme = self._get_xenon1_scheme('jobs', protocol, scheduler)
-        credential = self._get_credential('jobs', protocol, scheduler)
-
-        properties = jpype.java.util.HashMap()
-        if scheduler == 'slurm':
-            properties.put('xenon.adaptors.slurm.ignore.version', 'true')
-
-        scheduler = self._x.jobs().newScheduler(
-                scheme, location, credential, properties)
+        credential = self._get_credential('jobs')
+        terminal = cerulean.make_terminal(protocol, location, credential)
+        scheduler = cerulean.make_scheduler(scheduler, terminal)
         return scheduler
 
     def get_file_system(self):
@@ -229,23 +152,20 @@ class Config:
         Returns a remote file system as configured by the user.
 
         Returns:
-            (xenon.FileSystem): A new filesystem
+            (cerulean.FileSystem) A new filesystem
         """
         if 'files' not in self._cr_config:
-            protocol = 'file'
+            protocol = 'local'
             location = None
         else:
-            protocol = self._cr_config['files'].get('protocol', 'file')
+            protocol = self._cr_config['files'].get('protocol', 'local')
             location = self._cr_config['files'].get('location')
 
-        scheme = self._get_xenon1_scheme('files', protocol)
-        credential = self._get_credential('files', protocol, location)
-        self._logger.debug('scheme: {}, location: {}, credential: {}'.format(
-                scheme, location, credential))
-        filesystem = self._x.files().newFileSystem(
-                scheme, location, credential, None)
+        credential = self._get_credential('files')
+        self._logger.debug('protocol: {}, location: {}, credential: {}'.format(
+                protocol, location, credential))
 
-        return filesystem
+        return cerulean.make_file_system(protocol, location, credential)
 
     def get_remote_cwl_runner(self):
         """
@@ -388,14 +308,12 @@ class Config:
         return self._config['client-file-exchange']['store-location-client']
 
 
-def make_config(xenon=None):
+def make_config():
     """Make a configuration object.
 
     Uses the configuration files and environment variables to determine
     the configuration.
 
-    Args:
-        xenon (xenon.Xenon): A Xenon object.
     Returns:
         Config: The Cerise configuration.
     """
@@ -422,4 +340,4 @@ def make_config(xenon=None):
         print(traceback.format_exc())
         quit(1)
 
-    return Config(xenon, config, api_config)
+    return Config(config, api_config)

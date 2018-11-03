@@ -6,7 +6,7 @@ RUN apt-get update -y && apt-get -y dist-upgrade && \
 apt-get install -y --no-install-recommends python3 python3-pip \
     python3-setuptools python3-wheel python3-dev build-essential \
     default-jre nginx-full less python python-pip python-setuptools \
-    python-wheel python-all-dev && \
+    python-wheel python-all-dev libffi-dev libssl-dev && \
 pip install cwltool cwlref-runner && \
 apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

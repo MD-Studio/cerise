@@ -4,8 +4,8 @@ class SQLiteJob:
     """This class provides the internal representation of a job. These
     are stored inside the service. Note that there is also a JobDescription,
     which is defined in the Swagger definition and part of the REST API,
-    and a Xenon Job class, which represents a job running on the remote
-    compute resource.
+    and a Cerulean JobDescription class, which describes a job to start on
+    a remote compute resource.
     """
     def __init__(self, store, job_id):
         """Creates a new SQLiteJob object.
