@@ -4,7 +4,7 @@ from .cwl import get_cwltool_result
 from .cwl import is_workflow
 from .local_files import LocalFiles
 from .remote_files import RemoteFiles
-from .xenon_job_runner import XenonJobRunner
+from .job_runner import JobRunner
 
 import logging
 import time
@@ -58,7 +58,7 @@ class ExecutionManager:
             # if it's running
                 # send cancel request
 
-        self._job_runner = XenonJobRunner(
+        self._job_runner = JobRunner(
                 self._job_store, config,
                 api_files_path, api_install_script_path)
         self._logger.info('Started back-end')

@@ -6,9 +6,9 @@ from cerise.job_store.job_state import JobState
 
 from time import sleep
 
-class XenonJobRunner:
+class JobRunner:
     def __init__(self, job_store, config, api_files_path, api_install_script_path):
-        """Create a XenonJobRunner object.
+        """Create a JobRunner object.
 
         Args:
             job_store (JobStore): The job store to get jobs from.
