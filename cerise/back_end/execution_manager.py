@@ -3,7 +3,8 @@ from cerise.job_store.job_state import JobState
 from .cwl import get_cwltool_result
 from .cwl import is_workflow
 from .local_files import LocalFiles
-from .remote_files import RemoteFiles
+from .remote_api_files import RemoteApiFiles
+from .remote_job_files import RemoteJobFiles
 from .job_runner import JobRunner
 
 import logging
@@ -34,17 +35,22 @@ class ExecutionManager:
         """SQLiteJobStore: The job store to use."""
         self._local_files = LocalFiles(self._job_store, config)
         """LocalFiles: The local files manager."""
-        self._remote_files = RemoteFiles(self._job_store, config)
-        """RemoteFiles: The remote files manager."""
+        self._remote_api_files = RemoteApiFiles(config)
+        """RemoteApiFiles: The remote API installer."""
         self._remote_refresh = config.get_remote_refresh()
 
-        api_install_script_path, api_files_path = self._remote_files.stage_api(apidir)
+        api_install_script_path, api_steps_path, api_files_path = (
+                self._remote_api_files.stage_api(apidir))
+
+        self._remote_job_files = RemoteJobFiles(self._job_store, api_steps_path, config)
+        """RemoteJobFiles: The remote job files manager."""
+
 
         # TODO: recover database from crash
         with self._job_store:
             for job in self._job_store.list_jobs():
                 if job.state == JobState.STAGING_IN:
-                    self._remote_files.delete_job(job.id)
+                    self._remote_job_files.delete_job(job.id)
                     job.state = JobState.SUBMITTED
                 if job.state == JobState.STAGING_OUT:
                     self._local_files.delete_output_dir(job.id)
@@ -70,7 +76,7 @@ class ExecutionManager:
 
     def _delete_job(self, job_id, job):
         self._logger.debug('Deleting job ' + job_id)
-        self._remote_files.delete_job(job_id)
+        self._remote_job_files.delete_job(job_id)
         if job.state == JobState.SUCCESS:
             self._local_files.delete_output_dir(job_id)
         self._job_store.delete_job(job_id)
@@ -95,7 +101,7 @@ class ExecutionManager:
         if job.try_transition(JobState.STAGING_IN_CR, JobState.CANCELLED):
             self._logger.debug('Job was cancelled while resolving input')
             return
-        self._remote_files.stage_job(job_id, input_files)
+        self._remote_job_files.stage_job(job_id, input_files)
         self._job_runner.start_job(job_id)
         if not (job.try_transition(JobState.STAGING_IN, JobState.WAITING) or
                 job.try_transition(JobState.STAGING_IN_CR, JobState.WAITING_CR)):
@@ -105,7 +111,7 @@ class ExecutionManager:
         result = get_cwltool_result(job.log)
 
         if job.try_transition(JobState.FINISHED, JobState.STAGING_OUT):
-            output_files = self._remote_files.destage_job_output(job_id)
+            output_files = self._remote_job_files.destage_job_output(job_id)
             self._local_files.publish_job_output(job_id, output_files)
 
             if not (job.try_transition(JobState.STAGING_OUT, result) or
@@ -132,7 +138,7 @@ class ExecutionManager:
                 if check_remote and JobState.is_remote(job.state):
                     self._logger.debug('Checking remote state')
                     self._job_runner.update_job(job_id)
-                    self._remote_files.update_job(job_id)
+                    self._remote_job_files.update_job(job_id)
                     job = self._job_store.get_job(job_id)
 
                 if job.state == JobState.FINISHED:
