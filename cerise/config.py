@@ -1,6 +1,6 @@
+import cerulean
 import logging
 import os
-import xenon
 import yaml
 
 class Config:
@@ -61,98 +61,28 @@ class Config:
             value = get_env(kind, name)
         return value
 
-    def _get_xenon1_scheme(self, kind, protocol, scheduler=None):
-        """
-        Decides which Xenon 1 scheme to use for a given protocol and
-        scheduler.
-
-        Args:
-            kind (str): Either 'files' or 'jobs'.
-            protocol (str): A protocol name.
-            scheduler (str): A scheduler name.
-
-        Returns:
-            str: A Xenon 1 scheme name.
-        """
-        if kind == 'files':
-            xenon1_files_map = {
-                    'file': 'file',
-                    'sftp': 'sftp',
-                    'ftp': 'ftp',
-                    'webdav': 'http'
-                    }
-            return xenon1_files_map[protocol]
-        elif kind == 'jobs':
-            xenon1_jobs_map = {
-                    ('local', 'none'): 'local',
-                    ('ssh', 'none'): 'ssh',
-                    ('ssh', 'slurm'): 'slurm',
-                    ('ssh', 'torque'): 'torque',
-                    ('ssh', 'gridengine'): 'ge'
-                    }
-            return xenon1_jobs_map[(protocol, scheduler)]
-
-    def _get_xenon2_adaptor(self, kind, protocol, scheduler=None):
-        """
-        Decides which Xenon 2 adaptor to use for a given protocol and
-        scheduler.
-
-        Args:
-            kind (str): Either 'files' or 'jobs'
-            protocol (str): A protocol name.
-            scheduler (str): A scheduler name.
-
-        Returns:
-            str: A Xenon 2 adaptor name.
-        """
-        if kind == 'files':
-            xenon2_files_map = {
-                    'file': 'file',
-                    'sftp': 'sftp',
-                    'ftp': 'ftp',
-                    'webdav': 'webdav'
-                    }
-            return xenon2_files_map[protocol]
-        elif kind == 'jobs':
-            xenon2_jobs_map = {
-                    ('local', 'none'): 'local',
-                    ('ssh', 'none'): 'ssh',
-                    ('ssh', 'slurm'): 'slurm',
-                    ('ssh', 'torque'): 'torque',
-                    ('ssh', 'gridengine'): 'gridengine'
-                    }
-            return xenon2_jobs_map[(protocol, scheduler)]
-
     def _get_credential(self, kind):
         """
-        Create a Xenon Credential given the configuration, and return
+        Create a Cerulean Credential given the configuration, and return
         it together with the username.
 
         Args:
             kind (str): Either 'files' or 'jobs'.
 
         Returns:
-            (xenon.Credential): The credential to use for connecting
+            (cerulean.Credential): The credential to use for connecting
         """
         username = self._get_credential_variable(kind, 'username')
         password = self._get_credential_variable(kind, 'password')
         certfile = self._get_credential_variable(kind, 'certfile')
         passphrase = self._get_credential_variable(kind, 'passphrase')
 
-        if username and certfile and passphrase:
-            credential = xenon.CertificateCredential(
-                    username=username, certfile=certfile, passphrase=passphrase)
-        elif username and certfile:
-            credential = xenon.CertificateCredential(
-                    username=username, certfile=certfile)
+        if username and certfile:
+            credential = cerulean.CertificateCredential(username, certfile, passphrase)
         elif username and password:
-            credential = xenon.PasswordCredential(
-                    username=username, password=password)
-        elif username:
-            credential = xenon.DefaultCredential(
-                    username=username)
+            credential = cerulean.PasswordCredential(username, password)
         else:
-            credential = xenon.DefaultCredential()
+            credential = None
 
         return credential
 
@@ -198,39 +128,24 @@ class Config:
             adaptor is a cluster scheduler (i.e. slurm, torque or gridengine).
 
         Returns:
-            (xenon.Scheduler): A new scheduler
+            (cerulean.Scheduler): A new scheduler
         """
         if 'jobs' not in self._cr_config:
             protocol = 'local'
             location = None
-            scheduler = 'none'
+            scheduler = 'directgnu'
         else:
             protocol = self._cr_config['jobs'].get('protocol', 'local')
             location = self._cr_config['jobs'].get('location')
-            scheduler = self._cr_config['jobs'].get('scheduler', 'none')
+            scheduler = self._cr_config['jobs'].get('scheduler', 'directgnu')
 
         if run_on_head_node:
-            scheduler = 'none'
+            scheduler = 'directgnu'
 
-        adaptor = self._get_xenon2_adaptor('jobs', protocol, scheduler)
         credential = self._get_credential('jobs')
-
-        if isinstance(credential, xenon.CertificateCredential):
-                return xenon.Scheduler.create(
-                        adaptor=adaptor,
-                        location=location,
-                        certificate_credential=credential)
-        elif isinstance(credential, xenon.PasswordCredential):
-                return xenon.Scheduler.create(
-                        adaptor=adaptor,
-                        location=location,
-                        password_credential=credential)
-        elif isinstance(credential, xenon.DefaultCredential):
-                return xenon.Scheduler.create(
-                        adaptor=adaptor,
-                        location=location,
-                        default_credential=credential)
-        return None
+        terminal = cerulean.make_terminal(protocol, location, credential)
+        scheduler = cerulean.make_scheduler(scheduler, terminal)
+        return scheduler
 
     def get_file_system(self):
         """
@@ -240,33 +155,17 @@ class Config:
             (xenon.FileSystem): A new filesystem
         """
         if 'files' not in self._cr_config:
-            protocol = 'file'
+            protocol = 'local'
             location = None
         else:
-            protocol = self._cr_config['files'].get('protocol', 'file')
+            protocol = self._cr_config['files'].get('protocol', 'local')
             location = self._cr_config['files'].get('location')
 
-        adaptor = self._get_xenon2_adaptor('files', protocol)
         credential = self._get_credential('files')
-        self._logger.debug('adaptor: {}, location: {}, credential: {}'.format(
-                adaptor, location, credential))
+        self._logger.debug('protocol: {}, location: {}, credential: {}'.format(
+                protocol, location, credential))
 
-        if isinstance(credential, xenon.CertificateCredential):
-                return xenon.FileSystem.create(
-                        adaptor=adaptor,
-                        location=location,
-                        certificate_credential=credential)
-        elif isinstance(credential, xenon.PasswordCredential):
-                return xenon.FileSystem.create(
-                        adaptor=adaptor,
-                        location=location,
-                        password_credential=credential)
-        elif isinstance(credential, xenon.DefaultCredential):
-                return xenon.FileSystem.create(
-                        adaptor=adaptor,
-                        location=location,
-                        default_credential=credential)
-        return None
+        return cerulean.make_file_system(protocol, location, credential)
 
     def get_remote_cwl_runner(self):
         """

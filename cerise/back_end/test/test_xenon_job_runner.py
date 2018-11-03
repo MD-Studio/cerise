@@ -1,19 +1,19 @@
 from cerise.back_end.xenon_job_runner import XenonJobRunner
 from cerise.job_store.job_state import JobState
-from cerise.test.xenon import xenon_init
 
 from .mock_store import MockStore
 
+import cerulean
 import os
 import pytest
 import shutil
 import time
-import xenon
 
 
 class MockConfig:
     def get_scheduler(self, run_on_head_node=False):
-        return xenon.Scheduler.create('local')
+        term = cerulean.LocalTerminal()
+        return cerulean.DirectGnuScheduler(term)
 
     def get_queue_name(self):
         return None
@@ -25,7 +25,7 @@ class MockConfig:
         return '$CERISE_API_FILES/cerise/cwltiny.py'
 
 @pytest.fixture
-def fixture(request, tmpdir, xenon_init):
+def fixture(request, tmpdir):
     result = {}
 
     result['remote-dir'] = str(tmpdir)
@@ -77,7 +77,7 @@ def test_start_job(fixture):
     fixture['store'].get_job('test_start_job').state = JobState.WAITING
 
     updated_job = _wait_for_state(fixture, 'test_start_job', JobState.FINISHED, 1.0)
-    assert updated_job.remote_job_id == 'local-0'
+    assert updated_job.remote_job_id != ''
 
 def test_start_staging_job(fixture):
     fixture['store'].add_test_job('test_start_staging_job', 'wc', 'staged')
@@ -85,7 +85,7 @@ def test_start_staging_job(fixture):
     fixture['store'].get_job('test_start_staging_job').state = JobState.WAITING
 
     updated_job = _wait_for_state(fixture, 'test_start_staging_job', JobState.FINISHED, 2.0)
-    assert updated_job.remote_job_id == 'local-0'
+    assert updated_job.remote_job_id != ''
 
 def test_start_broken_job(fixture):
     fixture['store'].add_test_job('test_start_broken_job', 'broken', 'staged')
@@ -93,7 +93,7 @@ def test_start_broken_job(fixture):
     fixture['store'].get_job('test_start_broken_job').state = JobState.WAITING
 
     updated_job = _wait_for_state(fixture, 'test_start_broken_job', JobState.FINISHED, 1.0)
-    assert updated_job.remote_job_id == 'local-0'
+    assert updated_job.remote_job_id != ''
     assert updated_job.remote_output == ''
 
 def test_update(fixture):

@@ -1,9 +1,8 @@
-import grpc
+import cerulean
 import json
 import logging
 import os
 import re
-import xenon
 import yaml
 
 from pathlib import Path
@@ -40,30 +39,30 @@ class XenonRemoteFiles:
         self._job_store = job_store
         """JobStore: The job store to use."""
         self._fs = config.get_file_system()
-        """FileSystem: The Xenon remote file system to stage to."""
+        """cerulean.FileSystem: The Cerulean remote file system to stage to."""
         self._username = config.get_username('files')
         """str: The remote user name to use, if any."""
-        self._basedir = config.get_basedir()
-        """str: The remote path to the base directory where we store our stuff."""
+        self._basedir = None
+        """cerulean.Path: The remote path to the base directory where we store our stuff."""
         self._api_files_dir = None
-        """str: The remote path to the directory where the API files are."""
+        """cerulean.Path: The remote path to the directory where the API files are."""
         self._api_steps_dir = None
-        """str: The remote path to the directory where the API steps are."""
-        self._local_fs = xenon.FileSystem.create(adaptor='file')
-        """FileSystem: Xenon object for the local file system."""
+        """cerulean.Path: The remote path to the directory where the API steps are."""
+        self._local_fs = cerulean.LocalFileSystem()
+        """Cerulean.FileSystem: Cerulean object for the local file system."""
 
         # Create directories if they don't exist
         self._logger.debug('username = {}'.format(self._username))
         if self._username is not None:
-            self._basedir = xenon.Path(
-                    self._basedir
+            self._basedir = self._fs / (config.get_basedir()
                         .replace('$CERISE_USERNAME', self._username)
-                        .rstrip('/'))
+                        .strip('/'))
         else:
-            self._basedir = xenon.Path(self._basedir.rstrip('/'))
+            self._basedir = self._fs / config.get_basedir().strip('/')
 
-        self._create_remote_directories(self._basedir)
-        self._create_remote_directories(self._basedir / 'jobs')
+        print('basedir: {}'.format(self._basedir))
+        self._basedir.mkdir(0o750, parents=True, exists_ok=True)
+        (self._basedir / 'jobs').mkdir(parents=True, exists_ok=True)
 
     def stage_api(self, local_api_dir):
         """Stage the API to the compute resource. Copies subdirectory
@@ -79,12 +78,12 @@ class XenonRemoteFiles:
         """
         remote_api_dir = self._basedir / 'api'
         self._logger.info('Staging API from {} to {}'.format(local_api_dir, remote_api_dir))
-        self._create_remote_directories(remote_api_dir)
+        remote_api_dir.mkdir(0o750, exists_ok=True)
 
-        local_api_dir = xenon.Path(local_api_dir)
-        self._stage_api_files(local_api_dir, remote_api_dir)
-        self._stage_api_steps(local_api_dir, remote_api_dir)
-        remote_api_script_path = self._stage_install_script(local_api_dir, remote_api_dir)
+        local_api_dir_path = self._local_fs / local_api_dir
+        self._stage_api_files(local_api_dir_path, remote_api_dir)
+        self._stage_api_steps(local_api_dir_path, remote_api_dir)
+        remote_api_script_path = self._stage_install_script(local_api_dir_path, remote_api_dir)
 
         remote_api_files_dir = remote_api_dir / 'files'
         return remote_api_script_path, remote_api_files_dir
@@ -102,9 +101,9 @@ class XenonRemoteFiles:
             job = self._job_store.get_job(job_id)
 
             # create work dir
-            self._fs.create_directories(self._abs_path(job_id, ''))
-            self._fs.create_directories(self._abs_path(job_id, 'work'))
-            job.remote_workdir_path = self._abs_path(job_id, 'work')
+            self._abs_path(job_id, '').mkdir(0o700, parents=True, exists_ok=True)
+            self._abs_path(job_id, 'work').mkdir(0o700, parents=True, exists_ok=True)
+            job.remote_workdir_path = str(self._abs_path(job_id, 'work'))
 
             # stage name of the job
             self._add_file_to_job(job_id, 'name.txt', job.name.encode('utf-8'))
@@ -112,7 +111,7 @@ class XenonRemoteFiles:
             # stage workflow
             remote_workflow_content = self._translate_workflow(job.workflow_content)
             self._add_file_to_job(job_id, 'workflow.cwl', remote_workflow_content)
-            job.remote_workflow_path = self._abs_path(job_id, 'workflow.cwl')
+            job.remote_workflow_path = str(self._abs_path(job_id, 'workflow.cwl'))
 
             # stage input files
             inputs = json.loads(job.local_input)
@@ -127,11 +126,11 @@ class XenonRemoteFiles:
             # stage input description
             inputs_json = json.dumps(inputs).encode('utf-8')
             self._add_file_to_job(job_id, 'input.json', inputs_json)
-            job.remote_input_path = self._abs_path(job_id, 'input.json')
+            job.remote_input_path = str(self._abs_path(job_id, 'input.json'))
 
             # configure output
-            job.remote_stdout_path = self._abs_path(job_id, 'stdout.txt')
-            job.remote_stderr_path = self._abs_path(job_id, 'stderr.txt')
+            job.remote_stdout_path = str(self._abs_path(job_id, 'stdout.txt'))
+            job.remote_stderr_path = str(self._abs_path(job_id, 'stderr.txt'))
 
     def destage_job_output(self, job_id):
         """Download results of the given job from the compute resource.
@@ -154,7 +153,7 @@ class XenonRemoteFiles:
                         output_file.location, output_file.name))
                     prefix = 'file://' + str(self._basedir / 'jobs' / job_id / 'work') + '/'
                     if not output_file.location.startswith(prefix):
-                        raise Exception("Unexpected output location in cwl-runner output: {}, expected it to start with: {}".format(output_file.location, prefix))
+                        raise Exception("Unexpected output location in cwl-runner output: {}, expected it to start with: {}, {}".format(output_file.location, prefix, str(self._basedir._Path__path)))
                     rel_path = output_file.location[len(prefix):]
                     content = self._read_remote_file(job_id, 'work/' + rel_path)
                     output_files.append((output_file.name, rel_path, content))
@@ -170,10 +169,10 @@ class XenonRemoteFiles:
         Args:
             job_id (str): The id of the job whose work directory to delete.
         """
-        self._rm_remote_dir(job_id, '')
+        self._abs_path(job_id, '').rmdir(recursive=True)
 
     def update_job(self, job_id):
-        """Get status from Xenon and update store.
+        """Get status from remote resource and update store.
 
         Args:
             job_id (str): ID of the job to get the status of.
@@ -223,37 +222,36 @@ class XenonRemoteFiles:
         and saving the result as JSON.
         """
         self._api_steps_dir = remote_api_dir / 'steps'
-        self._fs.create_directories(self._api_steps_dir)
+        self._api_steps_dir.mkdir(0o750, parents=True, exists_ok=True)
 
         local_steps_dir = local_api_dir / 'steps'
 
-        for this_dir, _, files in os.walk(str(local_steps_dir)):
-            this_dir = Path(this_dir)
+        for this_dir, _, files in local_steps_dir.walk():
             self._logger.debug('Scanning file for staging: ' + str(this_dir) + '/' + str(files))
             for filename in files:
                 if filename.endswith('.cwl'):
-                        cwlfile = self._translate_api_step(this_dir / filename)
-                        # make parent directory
-                        rel_this_dir = this_dir.relative_to(str(local_steps_dir))
-                        remote_this_dir = remote_api_dir / 'steps' / rel_this_dir
-                        self._create_remote_directories(remote_this_dir)
+                    cwlfile = self._translate_api_step(this_dir / filename)
+                    # make parent directory
+                    rel_this_dir = this_dir.relative_to(str(local_steps_dir))
+                    remote_this_dir = remote_api_dir / 'steps' / str(rel_this_dir)
+                    remote_this_dir.mkdir(0o700, parents=True, exists_ok=True)
 
-                        # write it to remote
-                        rem_file = remote_this_dir / filename
-                        self._logger.debug('Staging step to {} from {}'.format(
-                            str(rem_file), str(filename)))
-                        data = bytes(json.dumps(cwlfile), 'utf-8')
-                        self._fs.write_to_file(rem_file, [data])
+                    # write it to remote
+                    rem_file = remote_this_dir / filename
+                    self._logger.debug('Staging step to {} from {}'.format(
+                        rem_file, filename))
+                    data = bytes(json.dumps(cwlfile), 'utf-8')
+                    rem_file.write_bytes(data)
 
     def _translate_api_step(self, workflow_path):
         """Do CERISE_API_FILES macro substitution on an API step file.
         """
-        cwlfile = yaml.safe_load(workflow_path.open('r'))
+        cwlfile = yaml.safe_load(workflow_path.read_text())
         if cwlfile.get('class') == 'CommandLineTool':
             if 'baseCommand' in cwlfile:
                 if cwlfile['baseCommand'].lstrip().startswith('$CERISE_API_FILES'):
                     cwlfile['baseCommand'] = cwlfile['baseCommand'].replace(
-                            '$CERISE_API_FILES', self._api_files_dir, 1)
+                            '$CERISE_API_FILES', str(self._api_files_dir), 1)
 
             if 'arguments' in cwlfile:
                 if not isinstance(cwlfile['arguments'], list):
@@ -263,7 +261,7 @@ class XenonRemoteFiles:
                 for i, argument in enumerate(cwlfile['arguments']):
                     self._logger.debug("Processing argument {}".format(argument))
                     newargs.append(argument.replace(
-                        '$CERISE_API_FILE', str(self._api_files_dir)))
+                        '$CERISE_API_FILES', str(self._api_files_dir)))
                     self._logger.debug("Done processing argument {}".format(cwlfile['arguments'][i]))
                 cwlfile['arguments'] = newargs
         return cwlfile
@@ -271,41 +269,29 @@ class XenonRemoteFiles:
     def _stage_api_files(self, local_api_dir, remote_api_dir):
         self._api_files_dir = remote_api_dir / 'files'
         local_dir = local_api_dir / 'files'
-        if not self._local_fs.exists(local_dir):
+        if not local_dir.exists():
             self._logger.debug('API files not found, not staging')
             return
         self._logger.debug('Staging API part to {} from {}'.format(
                 self._api_files_dir, local_dir))
-        copy_id = self._local_fs.copy(
-                local_dir,
-                self._fs, self._api_files_dir,
-                xenon.CopyMode.REPLACE,
-                recursive=True)
-        self._local_fs.wait_until_done(copy_id)
-        # TODO: fix up permissions?
+        cerulean.copy(local_dir, self._api_files_dir, overwrite='always',
+                      copy_into=False, copy_permissions=True)
 
     def _stage_install_script(self, local_api_dir, remote_api_dir):
         local_path = local_api_dir / 'install.sh'
-        if not self._local_fs.exists(local_path):
+        if not local_path.exists():
             self._logger.debug('API install script not found, not staging')
             return None
 
         remote_path = remote_api_dir / 'install.sh'
         self._logger.debug('Staging API install script to {} from {}'.format(
             remote_path, local_path))
-        copy_id = self._local_fs.copy(
-                local_path,
-                self._fs, remote_path,
-                xenon.CopyMode.REPLACE, recursive=False)
-        self._local_fs.wait_until_done(copy_id)
+        cerulean.copy(local_path, remote_path, overwrite='always', copy_into=False)
 
-        while not self._fs.exists(remote_path):
+        while not remote_path.exists():
             pass
 
-        self._fs.set_posix_file_permissions(remote_path, [
-                xenon.PosixFilePermission.OWNER_READ,
-                xenon.PosixFilePermission.OWNER_EXECUTE])
-
+        remote_path.chmod(0o700)
         return remote_path
 
     def _stage_input_file(self, count, job_id, input_file, input_desc):
@@ -338,21 +324,6 @@ class XenonRemoteFiles:
 
         return count
 
-    def _rm_remote_dir(self, job_id, rel_path):
-        remote_path = self._abs_path(job_id, rel_path)
-        self._fs.delete(remote_path, recursive=True)
-
-    def _create_remote_directories(self, remote_dir):
-        """Create a remote directory, do nothing if it already exists.
-
-        Args:
-            remote_dir (xenon.Path): A remote path
-        """
-        try:
-            self._fs.create_directories(remote_dir)
-        except xenon.PathAlreadyExistsException:
-            pass
-
     def _add_file_to_job(self, job_id, rel_path, data):
         """Write a file on the remote resource containing the given raw data.
 
@@ -362,7 +333,7 @@ class XenonRemoteFiles:
             data (bytes): The data to write
         """
         remote_path = self._abs_path(job_id, rel_path)
-        self._fs.write_to_file(remote_path, [data])
+        remote_path.write_bytes(data)
 
     def _read_remote_file(self, job_id, rel_path):
         """Read data from a remote file.
@@ -373,13 +344,10 @@ class XenonRemoteFiles:
             job_id (str): A job from whose work dir a file is read
             rel_path (str): A path relative to the job's directory
         """
-        result = bytearray()
         try:
-            for chunk in self._fs.read_from_file(self._abs_path(job_id, rel_path)):
-                result.extend(chunk)
-        except grpc._channel._Rendezvous:
-            pass
-        return result
+            return self._abs_path(job_id, rel_path).read_bytes()
+        except FileNotFoundError:
+            return bytes()
 
     def _abs_path(self, job_id, rel_path):
         """Return an absolute remote path given a job-relative path.

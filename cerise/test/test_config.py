@@ -1,17 +1,15 @@
 import cerise.config as config
-from cerise.test.xenon import xenon_init
 
 import logging
 import pytest
-import xenon
 
 
 @pytest.fixture
-def config_0(xenon_init):
+def config_0():
     return config.Config({}, {})
 
 @pytest.fixture
-def config_1(xenon_init):
+def config_1():
     test_config = {
             'database': {
                 'file': 'test/database.db'

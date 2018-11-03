@@ -1,6 +1,6 @@
+import cerulean
 import logging
 import os
-import xenon
 
 from cerise.job_store.job_state import JobState
 
@@ -25,7 +25,7 @@ class XenonJobRunner:
         self._remote_cwlrunner = None
         """str: The remote path to the cwl runner executable."""
         self._sched = config.get_scheduler()
-        """The Xenon scheduler to start jobs through."""
+        """The Cerulean scheduler to start jobs through."""
         self._queue_name = config.get_queue_name()
         """The name of the remote queue to submit jobs to."""
         self._mpi_slots_per_node = config.get_slots_per_node()
@@ -38,7 +38,7 @@ class XenonJobRunner:
         if self._username is not None:
             self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_USERNAME', self._username)
 
-        self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_API_FILES', self._api_files_path)
+        self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_API_FILES', str(self._api_files_path))
 
         if api_install_script_path is not None:
             self._run_api_install_script(config,
@@ -46,19 +46,21 @@ class XenonJobRunner:
 
     def _run_api_install_script(self, config, api_files_path, api_install_script_path):
         sched = config.get_scheduler(run_on_head_node=True)
-        xenon_jobdesc = xenon.JobDescription(
-                working_directory=api_files_path,
-                executable=api_install_script_path,
-                arguments=[api_files_path],
-                environment={'CERISE_API_FILES': api_files_path})
+        self._logger.warning('sched: {}'.format(dir(sched)))
+        jobdesc = cerulean.JobDescription()
+        jobdesc.working_directory= api_files_path
+        jobdesc.command = str(api_install_script_path)
+        jobdesc.arguments=[str(api_files_path)]
+        jobdesc.environment={'CERISE_API_FILES': str(api_files_path)}
 
-        self._logger.debug("Starting api install script " + api_install_script_path)
-        xenon_job = sched.submit_batch_job(xenon_jobdesc)
-        status = sched.wait_until_done(xenon_job)
+        self._logger.debug("Starting api install script {}".format(api_install_script_path))
+        job_id = sched.submit(jobdesc)
+        while sched.get_status(job_id) != cerulean.JobStatus.DONE:
+            time.sleep(1.0)
         self._logger.debug("API install script done")
 
     def update_job(self, job_id):
-        """Get status from Xenon and update store.
+        """Get status from compute resource and update store.
 
         Args:
             job_id (str): ID of the job to get the status of.
@@ -66,15 +68,12 @@ class XenonJobRunner:
         self._logger.debug("Updating job " + job_id + " from remote job")
         with self._job_store:
             job = self._job_store.get_job(job_id)
-            active_jobs = self._sched.get_jobs([])
-            xenon_job = [x_job for x_job in active_jobs if x_job.id == job.remote_job_id]
-            if len(xenon_job) == 1:
-                xenon_status = self._sched.get_job_status(xenon_job[0])
-                if xenon_status.running:
-                    job.try_transition(JobState.WAITING, JobState.RUNNING)
-                    job.try_transition(JobState.WAITING_CR, JobState.RUNNING_CR)
-                    return
-                if not xenon_status.done:
+            status = self._sched.get_status(job.remote_job_id)
+            if status == cerulean.JobStatus.RUNNING:
+                job.try_transition(JobState.WAITING, JobState.RUNNING)
+                job.try_transition(JobState.WAITING_CR, JobState.RUNNING_CR)
+                return
+            if status != cerulean.JobStatus.DONE:
                     # Still waiting in the queue, check again later
                     return
 
@@ -93,31 +92,23 @@ class XenonJobRunner:
         self._logger.debug('Starting job ' + job_id)
         with self._job_store:
             job = self._job_store.get_job(job_id)
+
             # submit job
-            # Work around Xenon issue #601
-            args = [
-                    '-c',
-                    'cd {};'.format(job.remote_workdir_path) +
-                    self._remote_cwlrunner +
-                    ' ' + job.remote_workflow_path +
-                    ' ' + job.remote_input_path +
-                    ' >{}'.format(job.remote_stdout_path) +
-                    ' 2>{}'.format(job.remote_stderr_path)
-                    ]
-            xenon_jobdesc = xenon.JobDescription(
-                    working_directory=job.remote_workdir_path,
-                    executable='bash',
-                    arguments=args,
-                    max_runtime=60,
-                    queue_name=self._queue_name,
-                    processes_per_node=self._mpi_slots_per_node,
-                    start_single_process=True)
+            jobdesc = cerulean.JobDescription()
+            jobdesc.working_directory = job.remote_workdir_path
+            jobdesc.command = self._remote_cwlrunner
+            jobdesc.arguments = [job.remote_workflow_path, job.remote_input_path]
+            jobdesc.stdout_file = job.remote_stdout_path
+            jobdesc.stderr_file = job.remote_stderr_path
+            jobdesc.time_reserved = 60 * 60
+            if not isinstance(self._sched, cerulean.DirectGnuScheduler):
+                jobdesc.mpi_processes_per_node = self._mpi_slots_per_node
 
             if self._queue_name:
-                xenon_jobdesc.queue_name = self._queue_name
+                jobdesc.queue_name = self._queue_name
 
-            print("Starting job: " + str(xenon_jobdesc))
-            job.remote_job_id = self._sched.submit_batch_job(xenon_jobdesc).id
+            print("Starting job: " + str(jobdesc))
+            job.remote_job_id = self._sched.submit(jobdesc)
             self._logger.debug('Job submitted')
 
     def cancel_job(self, job_id):
@@ -142,11 +133,8 @@ class XenonJobRunner:
         with self._job_store:
             job = self._job_store.get_job(job_id)
             if JobState.is_remote(job.state):
-                active_jobs = self._sched.get_jobs([])
-                xenon_job = [x_job for x_job in active_jobs if x_job.id == job.remote_job_id]
-                if len(xenon_job) == 1:
-                    status = self._sched.get_job_status(xenon_job[0])
-                    if status.running:
-                        new_state = self._sched.cancel_job(xenon_job[0])
-                        return new_state.running
+                status = self._sched.get_status(job.remote_job_id)
+                if status == cerulean.JobStatus.RUNNING:
+                    new_state = self._sched.cancel(job.remote_job_id)
+                    return new_state == cerulean.JobStatus.RUNNING
         return False

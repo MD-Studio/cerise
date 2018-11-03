@@ -1,18 +1,18 @@
-from cerise.test.xenon import xenon_init
-
 from .mock_store import MockStore
 from cerise.test.fixture_jobs import WcJob
 
+import cerulean
+
 import os
 import pytest
-import xenon
+
 
 class MockConfig:
     def __init__(self, remote_dir):
         self._remote_dir = remote_dir
 
     def get_file_system(self):
-        return xenon.FileSystem.create('file')
+        return cerulean.LocalFileSystem()
 
     def get_basedir(self):
         return self._remote_dir
@@ -21,7 +21,7 @@ class MockConfig:
         return None
 
 @pytest.fixture
-def fixture(request, tmpdir, xenon_init):
+def fixture(request, tmpdir):
     from cerise.back_end.xenon_remote_files import XenonRemoteFiles
 
     result = {}
