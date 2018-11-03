@@ -3,7 +3,7 @@ from cerise.job_store.job_state import JobState
 from .cwl import get_cwltool_result
 from .cwl import is_workflow
 from .local_files import LocalFiles
-from .xenon_remote_files import XenonRemoteFiles
+from .remote_files import RemoteFiles
 from .xenon_job_runner import XenonJobRunner
 
 import logging
@@ -34,7 +34,7 @@ class ExecutionManager:
         """SQLiteJobStore: The job store to use."""
         self._local_files = LocalFiles(self._job_store, config)
         """LocalFiles: The local files manager."""
-        self._remote_files = XenonRemoteFiles(self._job_store, config)
+        self._remote_files = RemoteFiles(self._job_store, config)
         """RemoteFiles: The remote files manager."""
         self._remote_refresh = config.get_remote_refresh()
 

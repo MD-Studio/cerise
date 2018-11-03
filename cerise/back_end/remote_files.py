@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .cwl import get_files_from_binding
 
-class XenonRemoteFiles:
+class RemoteFiles:
     """Manages a remote directory structure.
     Expects to be given a remote dir to work within. Inside this
     directory, it makes a jobs/ directory, and inside that there
@@ -26,7 +26,7 @@ class XenonRemoteFiles:
     """
 
     def __init__(self, job_store, config):
-        """Create a XenonRemoteFiles object.
+        """Create a RemoteFiles object.
         Sets up remote directory structure as well, but refuses to
         create the top-level directory.
 
