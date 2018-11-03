@@ -7,6 +7,8 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import cerise.config
+from cerise.back_end.execution_manager import ExecutionManager
+
 
 if __name__ == "__main__":
     # Load configuration
@@ -34,9 +36,6 @@ if __name__ == "__main__":
                 datefmt='%Y-%m-%d %H:%M:%S')
 
     # Run
-    # Note: needs to be imported after Xenon is inited
-    from cerise.back_end.execution_manager import ExecutionManager
-
     logging.info('Starting up')
     try:
         apidir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'api')

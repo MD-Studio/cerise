@@ -3,7 +3,7 @@ Cerise
 [![Develop build status](https://api.travis-ci.org/MD-Studio/cerise.svg?branch=develop)](https://travis-ci.org/MD-Studio/cerise) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise) [![Coverage Badge](https://api.codacy.com/project/badge/Coverage/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise) [![Documentation Status](https://readthedocs.org/projects/cerise/badge/?version=latest)](http://cerise.readthedocs.io/en/latest/?badge=latest) [![Docker Build Status](https://img.shields.io/docker/build/mdstudio/cerise.svg)](https://hub.docker.com/r/mdstudio/cerise/)
 
 This is a simple REST service that can run (some) CWL jobs on some remote
-compute resource. It uses a REST API as its interface and PyXenon
+compute resource. It uses a REST API as its interface and Cerulean
 to run jobs remotely.
 
 The implementation is fairly complete, and the main things needed are some

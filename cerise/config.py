@@ -152,7 +152,7 @@ class Config:
         Returns a remote file system as configured by the user.
 
         Returns:
-            (xenon.FileSystem): A new filesystem
+            (cerulean.FileSystem) A new filesystem
         """
         if 'files' not in self._cr_config:
             protocol = 'local'
