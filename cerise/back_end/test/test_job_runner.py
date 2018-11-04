@@ -21,6 +21,9 @@ class MockConfig:
     def get_slots_per_node(self):
         return 1
 
+    def get_scheduler_options(self):
+        return None
+
     def get_remote_cwl_runner(self):
         return '$CERISE_API_FILES/cerise/cwltiny.py'
 

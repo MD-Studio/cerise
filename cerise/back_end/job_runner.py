@@ -30,6 +30,8 @@ class JobRunner:
         """The name of the remote queue to submit jobs to."""
         self._mpi_slots_per_node = config.get_slots_per_node()
         """Number of MPI slots per node to request."""
+        self._scheduler_options = config.get_scheduler_options()
+        """Additional scheduler options to add."""
 
         self._logger.debug('Slots per node set to ' + str(self._mpi_slots_per_node))
 
@@ -106,6 +108,9 @@ class JobRunner:
 
             if self._queue_name:
                 jobdesc.queue_name = self._queue_name
+
+            if self._scheduler_options:
+                jobdesc.extra_scheduler_options = self._scheduler_options
 
             print("Starting job: " + str(jobdesc))
             job.remote_job_id = self._sched.submit(jobdesc)

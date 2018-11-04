@@ -231,6 +231,16 @@ class Config:
             return default
         return self._cr_config['jobs'].get('slots-per-node', default)
 
+    def get_scheduler_options(self):
+        """Returns the additional scheduler options to use.
+
+        Returns:
+            (str): The options as a single string.
+        """
+        if 'jobs' not in self._cr_config:
+            return None
+        return self._cr_config['jobs'].get('scheduler-options', None)
+
     def get_remote_refresh(self):
         """
         Returns the interval in between checks of the remote job \

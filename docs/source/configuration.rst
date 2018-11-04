@@ -131,6 +131,7 @@ format::
 
       queue-name: None      # cluster default
       slots-per-node: None  # cluster default
+      scheduler-options: None
       cwl-runner: $CERISE_API_FILES/cerise/cwltiny.py
 
     refresh: 10
@@ -172,9 +173,12 @@ Other valid values for ``scheduler`` are ``slurm``, ``torque`` and
 If jobs need to be sent to a particular queue, then you can pass the queue name
 using the corresponding option; if it is not specified, the default queue is
 used. If one or more of your steps start MPI jobs, then you may want to set the
-number of MPI slots per node via ``slots-per-node`` for better performance.
-Ideally, it would be possible to specify this in the CWL file for the step, but
-neither CWL nor Cerise currently support this.
+number of MPI slots per node via ``slots-per-node`` for better performance. If
+you need to specify additional scheduler options to e.g. select a GPU node, you
+can do so using e.g. ``scheduler-options: "-C TitanX --gres=gpu:1"``. Ideally,
+it would be possible to specify this in the CWL file for the step, but support
+for this in CWL is partial and in-development, and Cerise does not currently
+support this.
 
 Finally, ``cwl-runner`` specifies the remote path to the CWL runner. It defaults
 to ``$CERISE_API_FILES/cerise/cwltiny.py``, which is Cerise's included simple

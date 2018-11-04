@@ -15,3 +15,4 @@ compute-resource:
       username: xenon
       password: javagat
     scheduler: slurm
+    scheduler-options: --comment='testing'
