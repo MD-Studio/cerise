@@ -9,7 +9,7 @@ class MockConfig:
         return cerulean.LocalFileSystem()
 
     def get_basedir(self):
-        return self._remote_dir
+        return self.get_file_system() / self._remote_dir.strip('/')
 
     def get_username(self, kind):
         return None

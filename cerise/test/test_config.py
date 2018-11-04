@@ -78,8 +78,8 @@ def test_get_remote_cwl_runner(config_0, config_1):
     assert config_1.get_remote_cwl_runner() == '$CERISE_API_FILES/myfiles/cwltool.sh'
 
 def test_get_basedir(config_0, config_1):
-    assert config_0.get_basedir() == '/home/$CERISE_USERNAME/.cerise'
-    assert config_1.get_basedir() == '/scratch/$CERISE_USERNAME/.cerise'
+    assert str(config_0.get_basedir()) == '/home/$CERISE_USERNAME/.cerise'
+    assert str(config_1.get_basedir()) == '/scratch/test_user/.cerise'
 
 def test_get_queue_name(config_0, config_1):
     assert config_0.get_queue_name() is None

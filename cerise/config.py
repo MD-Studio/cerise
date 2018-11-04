@@ -3,6 +3,10 @@ import logging
 import os
 import yaml
 
+
+_remote_file_system = None
+
+
 class Config:
     def __init__(self, config, api_config):
         """Create a configuration object.
@@ -154,18 +158,23 @@ class Config:
         Returns:
             (cerulean.FileSystem) A new filesystem
         """
-        if 'files' not in self._cr_config:
-            protocol = 'local'
-            location = None
-        else:
-            protocol = self._cr_config['files'].get('protocol', 'local')
-            location = self._cr_config['files'].get('location')
+        global _remote_file_system
+        if _remote_file_system is None:
+            if 'files' not in self._cr_config:
+                protocol = 'local'
+                location = None
+            else:
+                protocol = self._cr_config['files'].get('protocol', 'local')
+                location = self._cr_config['files'].get('location')
 
-        credential = self._get_credential('files')
-        self._logger.debug('protocol: {}, location: {}, credential: {}'.format(
-                protocol, location, credential))
+            credential = self._get_credential('files')
+            self._logger.debug(('protocol: {}, location: {}, credential: {}'
+                    ).format(protocol, location, credential))
 
-        return cerulean.make_file_system(protocol, location, credential)
+            _remote_file_system = cerulean.make_file_system(
+                    protocol, location, credential)
+
+        return _remote_file_system
 
     def get_remote_cwl_runner(self):
         """
@@ -188,10 +197,15 @@ class Config:
         Returns:
             (str): The remote path to the base directory.
         """
-        default = '/home/$CERISE_USERNAME/.cerise'
-        if 'files' not in self._cr_config:
-            return default
-        return self._cr_config['files'].get('path', default)
+        basedir = '/home/$CERISE_USERNAME/.cerise'
+        if 'files' in self._cr_config:
+            basedir = self._cr_config['files'].get('path', basedir)
+
+        username = self.get_username('files')
+        if username is not None:
+            basedir = basedir.replace('$CERISE_USERNAME', username)
+        basedir = basedir.strip('/')
+        return self.get_file_system() / basedir
 
     def get_queue_name(self):
         """

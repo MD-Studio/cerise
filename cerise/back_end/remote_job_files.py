@@ -42,7 +42,7 @@ class RemoteJobFiles:
         """cerulean.FileSystem: The Cerulean remote file system to stage to."""
         self._username = config.get_username('files')
         """str: The remote user name to use, if any."""
-        self._basedir = None
+        self._basedir = config.get_basedir()
         """cerulean.Path: The remote path to the directory where the API files are."""
         self._api_steps_dir = api_steps_dir
         """cerulean.Path: The remote path to the directory where the API steps are."""
@@ -50,14 +50,6 @@ class RemoteJobFiles:
         """Cerulean.FileSystem: Cerulean object for the local file system."""
 
         # Create directories if they don't exist
-        self._logger.debug('username = {}'.format(self._username))
-        if self._username is not None:
-            self._basedir = self._fs / (config.get_basedir()
-                        .replace('$CERISE_USERNAME', self._username)
-                        .strip('/'))
-        else:
-            self._basedir = self._fs / config.get_basedir().strip('/')
-
         print('basedir: {}'.format(self._basedir))
         self._basedir.mkdir(0o750, parents=True, exists_ok=True)
         (self._basedir / 'jobs').mkdir(parents=True, exists_ok=True)
