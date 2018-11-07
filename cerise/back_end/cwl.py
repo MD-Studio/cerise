@@ -19,6 +19,34 @@ def is_workflow(workflow_content):
     return process_class == 'Workflow'
 
 
+def get_required_num_cores(workflow_content):
+    """Takes a CWL file contents and extracts number of cores required.
+
+    Args:
+        workflow_content (bytes): The contents of a CWL file.
+
+    Returns:
+        int: The number of cores required, or 0 if not specified.
+    """
+    workflow = yaml.safe_load(workflow_content)
+    hints = workflow.get('hints')
+    if hints is None:
+        return 0
+
+    resource_requirement = hints.get('ResourceRequirement')
+    if resource_requirement is None:
+        return 0
+
+    cores_min = resource_requirement.get('coresMin')
+    cores_max = resource_requirement.get('coresMax')
+
+    if cores_min is not None:
+        return cores_min
+    if cores_max is not None:
+        return cores_max
+    return 0
+
+
 def get_secondary_files(secondary_files):
     """Parses a list of secondary files, recursively.
 
@@ -70,6 +98,7 @@ def get_files_from_binding(cwl_binding):
                         result.append(input_file)
 
     return result
+
 
 def get_cwltool_result(cwltool_log):
     """Parses cwltool log output and returns a JobState object

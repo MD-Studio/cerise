@@ -44,6 +44,9 @@ class InMemoryJob:
         """Union[bytes, NoneType]: The content of the workflow
         description file, or None if it has not been resolved yet.
         """
+        self.required_num_cores = 0
+        """The number of cores to reserve for this workflow.
+        If 0, use cluster default."""
 
         # Post-staging data
         self.remote_workdir_path = ''

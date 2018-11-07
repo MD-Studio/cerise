@@ -21,6 +21,9 @@ class MockConfig:
     def get_slots_per_node(self):
         return 1
 
+    def get_cores_per_node(self):
+        return 16
+
     def get_scheduler_options(self):
         return None
 

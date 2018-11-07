@@ -49,6 +49,7 @@ def config_1():
                     'scheduler': 'slurm',
                     'cwl-runner': '$CERISE_API_FILES/myfiles/cwltool.sh',
                     'queue-name': 'test_queue',
+                    'cores-per-node': 24,
                     'slots-per-node': 4
                 }
             }
@@ -88,6 +89,10 @@ def test_get_queue_name(config_0, config_1):
 def test_get_slots_per_node(config_0, config_1):
     assert config_0.get_slots_per_node() is 1
     assert config_1.get_slots_per_node() == 4
+
+def test_get_cores_per_node(config_0, config_1):
+    assert config_0.get_cores_per_node() == 32
+    assert config_1.get_cores_per_node() == 24
 
 def test_get_remote_refresh(config_0, config_1):
     assert config_0.get_remote_refresh() == 60.0

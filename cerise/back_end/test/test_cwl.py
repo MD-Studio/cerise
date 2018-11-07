@@ -30,6 +30,72 @@ def test_is_not_workflow():
         """
     assert not cwl.is_workflow(wf)
 
+
+def test_get_required_num_cores_coresmin():
+    wf = """
+        cwlVersion: v1.0
+        class: Workflow
+
+        inputs: []
+        outputs: []
+
+        steps: []
+
+        hints:
+            ResourceRequirement:
+                coresMin: 10
+        """
+    assert cwl.get_required_num_cores(wf) == 10
+
+
+def test_get_required_num_cores_coresmax():
+    wf = """
+        cwlVersion: v1.0
+        class: Workflow
+
+        inputs: []
+        outputs: []
+
+        steps: []
+
+        hints:
+            ResourceRequirement:
+                coresMax: 10
+        """
+    assert cwl.get_required_num_cores(wf) == 10
+
+
+def test_get_required_num_cores_both():
+    wf = """
+        cwlVersion: v1.0
+        class: Workflow
+
+        inputs: []
+        outputs: []
+
+        steps: []
+
+        hints:
+            ResourceRequirement:
+                coresMin: 5
+                coresMax: 10
+        """
+    assert cwl.get_required_num_cores(wf) == 5
+
+
+def test_get_required_num_cores_default():
+    wf = """
+        cwlVersion: v1.0
+        class: Workflow
+
+        inputs: []
+        outputs: []
+
+        steps: []
+        """
+    assert cwl.get_required_num_cores(wf) == 0
+
+
 def test_get_files_from_binding():
     binding = {
             "input_1": 10,

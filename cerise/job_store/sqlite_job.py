@@ -100,6 +100,15 @@ class SQLiteJob:
     def workflow_content(self, value):
         self._set_var('workflow_content', value)
 
+    @property
+    def required_num_cores(self):
+        """int: The number of cores to reserve for this workflow.
+        """
+        return self._get_var('required_num_cores')
+
+    @required_num_cores.setter
+    def required_num_cores(self, value):
+        self._set_var('required_num_cores', value)
 
     # Post-staging data
     @property

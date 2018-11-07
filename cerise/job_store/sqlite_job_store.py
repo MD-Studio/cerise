@@ -50,6 +50,7 @@ class SQLiteJobStore(JobStore):
                 log TEXT DEFAULT '',
                 remote_output TEXT DEFAULT '',
                 workflow_content BLOB,
+                required_num_cores INTEGER DEFAULT 0,
                 remote_workdir_path VARCHAR(255) DEFAULT '',
                 remote_workflow_path VARCHAR(255) DEFAULT '',
                 remote_input_path VARCHAR(255) DEFAULT '',

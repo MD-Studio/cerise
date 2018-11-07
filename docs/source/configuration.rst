@@ -131,6 +131,7 @@ format::
 
       queue-name: None      # cluster default
       slots-per-node: None  # cluster default
+      cores-per-node: 32
       scheduler-options: None
       cwl-runner: $CERISE_API_FILES/cerise/cwltiny.py
 
@@ -178,7 +179,10 @@ you need to specify additional scheduler options to e.g. select a GPU node, you
 can do so using e.g. ``scheduler-options: "-C TitanX --gres=gpu:1"``. Ideally,
 it would be possible to specify this in the CWL file for the step, but support
 for this in CWL is partial and in-development, and Cerise does not currently
-support this.
+support this. Users can specify the number of cores to run on using a CWL
+ResourceRequirement, but Cerise always allocates whole nodes. It therefore needs
+to know the number of cores in each node, which you should specify using
+``cores-per-node``.
 
 Finally, ``cwl-runner`` specifies the remote path to the CWL runner. It defaults
 to ``$CERISE_API_FILES/cerise/cwltiny.py``, which is Cerise's included simple

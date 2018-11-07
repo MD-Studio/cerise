@@ -1,5 +1,6 @@
 import cerulean
 import logging
+from math import ceil
 import os
 
 from cerise.job_store.job_state import JobState
@@ -32,6 +33,8 @@ class JobRunner:
         """Number of MPI slots per node to request."""
         self._scheduler_options = config.get_scheduler_options()
         """Additional scheduler options to add."""
+        self._cores_per_node = config.get_cores_per_node()
+        """Number of cores per node on the configured machine/queue."""
 
         self._logger.debug('Slots per node set to ' + str(self._mpi_slots_per_node))
 
@@ -103,6 +106,9 @@ class JobRunner:
             jobdesc.stdout_file = job.remote_stdout_path
             jobdesc.stderr_file = job.remote_stderr_path
             jobdesc.time_reserved = 60 * 60
+            if job.required_num_cores > 0:
+                jobdesc.num_nodes = ceil(job.required_num_cores / self._cores_per_node)
+
             if not isinstance(self._sched, cerulean.DirectGnuScheduler):
                 jobdesc.mpi_processes_per_node = self._mpi_slots_per_node
 

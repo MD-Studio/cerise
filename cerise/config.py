@@ -241,6 +241,26 @@ class Config:
             return None
         return self._cr_config['jobs'].get('scheduler-options', None)
 
+    def get_cores_per_node(self):
+        """Returns the number of cores per node.
+
+        This depends on the available compute hardware, and should be
+        configured in the specialisation. The incoming workflow
+        specifies a number of cores, but we reserve nodes, so we need
+        to convert.
+
+        The default is 32, which is probably more than what you have,
+        as a result of which we'll allocate fewer nodes than the user
+        specified if no value is given. That'll slow things down, but
+        at least we won't be burning core hours needlessly.
+
+        Returns:
+            (int): The number of cores per node on this machine.
+        """
+        if 'jobs' not in self._cr_config:
+            return 32
+        return self._cr_config['jobs'].get('cores-per-node', 32)
+
     def get_remote_refresh(self):
         """
         Returns the interval in between checks of the remote job \

@@ -10,7 +10,10 @@ class PassJob:
                 'class: CommandLineTool\n'
                 'baseCommand: echo\n'
                 'inputs: []\n'
-                'outputs: []\n', 'utf-8')
+                'outputs: []\n'
+                'hints:\n'
+                '  ResourceRequirement:\n'
+                '    coresMin: 42', 'utf-8')
 
     local_input = '{}'
 
