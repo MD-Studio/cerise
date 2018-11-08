@@ -5,7 +5,7 @@ import os
 import re
 import yaml
 
-from .cwl import get_files_from_binding
+from .cwl import get_files_from_binding, get_required_num_cores
 
 
 class RemoteApiFiles:
@@ -43,6 +43,8 @@ class RemoteApiFiles:
         """cerulean.Path: The remote path to the directory where the API files are."""
         self._steps_dir = self._basedir / 'api' / 'steps'
         """cerulean.Path: The remote path to the directory where the API steps are."""
+        self._steps_requirements = dict()  # type: Dict[Dict[str, int]]
+        """Resource requirements for each loaded step."""
 
         print('basedir: {}'.format(self._basedir))
         self._api_dir.mkdir(0o750, parents=True, exists_ok=True)

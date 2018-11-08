@@ -19,16 +19,51 @@ def is_workflow(workflow_content):
     return process_class == 'Workflow'
 
 
-def get_required_num_cores(workflow_content):
+def get_workflow_step_names(workflow_content):
+    """Takes a CWL workflow and extracts names of steps.
+
+    This assumes that the steps are not inlined, but referenced by
+    name, as we require for workflows submitted to Cerise. Also, this
+    is not the name of the step in the workflow document, but the name
+    of the step in the API to run. It's the content of the ``run``
+    attribute, not that of the ``id`` attribute.
+
+    Args:
+        workflow_content (bytes): The contents of the workflow file.
+
+    Returns:
+        (List[str]): A list of step names.
+    """
+    workflow = yaml.safe_load(workflow_content)
+    if not 'class' in workflow or workflow['class'] != 'Workflow':
+        if steps is None:
+            raise RuntimeError('Invalid workflow file')
+    if not 'steps' in workflow:
+        if steps is None:
+            raise RuntimeError('Invalid workflow file')
+
+    steps = None
+    if isinstance(workflow['steps'], dict):
+        steps = workflow['steps'].values()
+    elif isinstance(workflow['steps'], list):
+        steps = workflow['steps']
+
+    if steps is None:
+        raise RuntimeError('Invalid workflow file')
+
+    return [step['run'] for step in steps]
+
+
+def get_required_num_cores(cwl_content):
     """Takes a CWL file contents and extracts number of cores required.
 
     Args:
-        workflow_content (bytes): The contents of a CWL file.
+        cwl_content (bytes): The contents of a CWL file.
 
     Returns:
         int: The number of cores required, or 0 if not specified.
     """
-    workflow = yaml.safe_load(workflow_content)
+    workflow = yaml.safe_load(cwl_content)
     hints = workflow.get('hints')
     if hints is None:
         return 0

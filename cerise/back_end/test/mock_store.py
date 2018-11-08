@@ -1,4 +1,5 @@
 from cerise.test.fixture_jobs import PassJob
+from cerise.test.fixture_jobs import HostnameJob
 from cerise.test.fixture_jobs import WcJob
 from cerise.test.fixture_jobs import MissingInputJob
 from cerise.test.fixture_jobs import SlowJob
@@ -50,6 +51,8 @@ class MockStore:
         """
         if test_job_type == "pass":
             self._jobs.append(self._create_pass_job(test_job_id, test_job_stage))
+        elif test_job_type == "hostname":
+            self._jobs.append(self._create_hostname_job(test_job_id, test_job_stage))
         elif test_job_type == "slow":
             self._jobs.append(self._create_slow_job(test_job_id, test_job_stage))
         elif test_job_type == "broken":
@@ -66,6 +69,8 @@ class MockStore:
             self._jobs.append(self._create_file_array_job(test_job_id, test_job_stage))
         elif test_job_type == "complex":
             self._jobs.append(self._create_complex_job(test_job_id, test_job_stage))
+        else:
+            raise RuntimeError('Unknown test job type')
 
     def get_input_files(self, test_job_type):
         if test_job_type == "pass":
@@ -151,6 +156,16 @@ class MockStore:
             return job
 
         raise ValueError('Invalid stage in _create_pass_job')
+
+    def _create_hostname_job(self, job_id, stage):
+        hostname_wf_path = os.path.join(self._local_base_path, 'input', 'hostname_workflow.cwl')
+        job = InMemoryJob(job_id, job_id, 'file://' + hostname_wf_path, "{}")
+
+        if stage == "resolved":
+            job.workflow_content = HostnameJob.workflow
+            job.state = JobState.STAGING_IN
+            return job
+
 
     def _create_wc_job(self, job_id, stage):
         # Create

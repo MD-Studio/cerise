@@ -12,3 +12,7 @@ outputs:
   output:
     type: File
     outputBinding: { glob: output.txt }
+
+hints:
+  ResourceRequirement:
+    coresMin: 2

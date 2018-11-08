@@ -5,6 +5,7 @@ from .cwl import is_workflow
 from .local_files import LocalFiles
 from .remote_api_files import RemoteApiFiles
 from .remote_job_files import RemoteJobFiles
+from .job_planner import JobPlanner
 from .job_runner import JobRunner
 
 import logging
@@ -41,6 +42,9 @@ class ExecutionManager:
 
         api_install_script_path, api_steps_path, api_files_path = (
                 self._remote_api_files.stage_api(apidir))
+
+        self._job_planner = JobPlanner(self._job_store, apidir)
+        """JobPlanner: Determines required hardware resources."""
 
         self._remote_job_files = RemoteJobFiles(self._job_store, api_steps_path, config)
         """RemoteJobFiles: The remote job files manager."""
@@ -101,8 +105,11 @@ class ExecutionManager:
         if job.try_transition(JobState.STAGING_IN_CR, JobState.CANCELLED):
             self._logger.debug('Job was cancelled while resolving input')
             return
+
+        self._job_planner.plan_job(job_id)
         self._remote_job_files.stage_job(job_id, input_files)
         self._job_runner.start_job(job_id)
+
         if not (job.try_transition(JobState.STAGING_IN, JobState.WAITING) or
                 job.try_transition(JobState.STAGING_IN_CR, JobState.WAITING_CR)):
             job.state = JobState.SYSTEM_ERROR

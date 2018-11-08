@@ -177,7 +177,6 @@ class RemoteJobFiles:
         for _, step in workflow['steps'].items():
             if not isinstance(step['run'], str):
                 raise RuntimeError('Invalid step in workflow')
-            # check against known steps?
             step['run'] = str(self._api_steps_dir / step['run'])
         return bytes(json.dumps(workflow), 'utf-8')
 

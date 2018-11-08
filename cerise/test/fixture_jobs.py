@@ -23,6 +23,34 @@ class PassJob:
 
     local_output = '{}'
 
+class HostnameJob:
+    """A simple job with no inputs and one output.
+    """
+    workflow = bytes(
+                '#!/usr/bin/env cwl-runner\n'
+                '\n'
+                'cwlVersion: v1.0\n'
+                'class: Workflow\n'
+                'inputs: []\n'
+                'outputs:\n'
+                '  host:\n'
+                '    type: File\n'
+                '    outputSource: hostname/output\n'
+                '\n'
+                'steps:\n'
+                '  hostname:\n'
+                '    run: cerise/test/hostname.cwl\n'
+                '    out:\n'
+                '      [output]\n', 'utf-8')
+
+    local_input = '{}'
+
+    remote_input = '{}'
+
+    remote_output = '{}\n'
+
+    local_output = '{}'
+
 class WcJob:
     """A simple job with an input file and an output file.
     """
@@ -42,7 +70,7 @@ class WcJob:
                 '\n'
                 'steps:\n'
                 '  wc:\n'
-                '    run: test/wc.cwl\n'
+                '    run: cerise/test/wc.cwl\n'
                 '    in:\n'
                 '      textfile: file\n'
                 '    out:\n'
@@ -163,7 +191,7 @@ class SecondaryFilesJob:
                 '\n'
                 'steps:\n'
                 '  wc:\n'
-                '    run: test/secondary_files.cwl\n'
+                '    run: cerise/test/secondary_files.cwl\n'
                 '    in:\n'
                 '      textfile: file\n'
                 '    out:\n'
@@ -233,7 +261,7 @@ class FileArrayJob:
                 '\n'
                 'steps:\n'
                 '  wc:\n'
-                '    run: test/file_array.cwl\n'
+                '    run: cerise/test/file_array.cwl\n'
                 '    in:\n'
                 '      textfiles: files\n'
                 '    out:\n'
