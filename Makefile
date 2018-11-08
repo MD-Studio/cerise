@@ -13,4 +13,4 @@ test:
 	pytest --cov
 	coverage combine --append integration_test
 	coverage xml
-	coverage report
+	coverage report -m
