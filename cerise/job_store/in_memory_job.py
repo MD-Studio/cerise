@@ -47,6 +47,9 @@ class InMemoryJob:
         self.required_num_cores = 0
         """The number of cores to reserve for this workflow.
         If 0, use cluster default."""
+        self.time_limit = 0
+        """The time to reserve, in seconds.
+        If 0, use cluster default."""
 
         # Post-staging data
         self.remote_workdir_path = ''

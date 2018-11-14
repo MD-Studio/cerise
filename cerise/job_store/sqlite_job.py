@@ -110,6 +110,17 @@ class SQLiteJob:
     def required_num_cores(self, value):
         self._set_var('required_num_cores', value)
 
+    @property
+    def time_limit(self):
+        """The time to reserve, in seconds. If 0, use cluster default.
+        """
+        return self._get_var('time_limit')
+
+    @time_limit.setter
+    def time_limit(self, value):
+        self._set_var('time_limit', value)
+
+
     # Post-staging data
     @property
     def remote_workdir_path(self):
