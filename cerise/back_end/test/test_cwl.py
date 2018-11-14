@@ -96,6 +96,69 @@ def test_get_required_num_cores_default():
     assert cwl.get_required_num_cores(wf) == 0
 
 
+def test_get_time_limit():
+    wf = """
+        cwlVersion: v1.1.0-dev1
+        class: Workflow
+
+        inputs: []
+        outputs: []
+
+        steps: []
+
+        hints:
+            TimeLimit: 123
+        """
+    assert cwl.get_time_limit(wf) == 123
+
+
+def test_get_time_limit2():
+    wf = """
+        cwlVersion: v1.1.0-dev1
+        class: Workflow
+
+        inputs: []
+        outputs: []
+
+        steps: []
+
+        hints:
+            TimeLimit:
+                timeLimit: 321
+        """
+    assert cwl.get_time_limit(wf) == 321
+
+
+def test_no_time_limit():
+    wf = """
+        cwlVersion: v1.1.0-dev1
+        class: Workflow
+
+        inputs: []
+        outputs: []
+
+        steps: []
+
+        hints:
+            TimeLimit:
+                timeLmt: 321
+        """
+    assert cwl.get_time_limit(wf) == 0
+
+
+def test_no_time_limit2():
+    wf = """
+        cwlVersion: v1.1.0-dev1
+        class: Workflow
+
+        inputs: []
+        outputs: []
+
+        steps: []
+        """
+    assert cwl.get_time_limit(wf) == 0
+
+
 def test_get_files_from_binding():
     binding = {
             "input_1": 10,

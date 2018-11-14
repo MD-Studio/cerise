@@ -82,6 +82,40 @@ def get_required_num_cores(cwl_content):
     return 0
 
 
+def get_time_limit(cwl_content):
+    """Takes a CWL file contents and extracts cwl1.1-dev1 time limit.
+
+    Supports only two of three possible ways of writing this. Returns
+    0 if no value was specified, in which case the default should be
+    used.
+
+    Args:
+        cwl_content (bytes): The contents of a CWL file.
+
+    Returns:
+        int: Time to reserve in seconds.
+    """
+    workflow = yaml.safe_load(cwl_content)
+    hints = workflow.get('hints')
+    if hints is None:
+        return 0
+
+    time_limit = hints.get('TimeLimit')
+    if time_limit is None:
+        return 0
+
+    if isinstance(time_limit, int):
+        return time_limit
+
+    if isinstance(time_limit, dict):
+        limit = time_limit.get('timeLimit')
+        if limit is None:
+            return 0
+        return limit
+
+    return 0
+
+
 def get_secondary_files(secondary_files):
     """Parses a list of secondary files, recursively.
 
