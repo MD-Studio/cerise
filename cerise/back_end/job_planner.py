@@ -5,6 +5,10 @@ from .cwl import get_workflow_step_names, get_required_num_cores
 from cerise.job_store.job_state import JobState
 
 
+class InvalidJobError(RuntimeError):
+    pass
+
+
 class JobPlanner:
     """Handles workflow execution requirements.
 
@@ -49,8 +53,7 @@ class JobPlanner:
             for step in steps:
                 if step not in self._steps_requirements:
                     self._logger.info('Found invalid step {} in workflow'.format(step))
-                    job.state = JobState.PERMANENT_FAILURE
-                    return
+                    raise InvalidJobError()
 
             num_cores = [self._steps_requirements[step]['num_cores']
                          for step in steps]

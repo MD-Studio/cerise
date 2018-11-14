@@ -5,7 +5,7 @@ from .cwl import is_workflow
 from .local_files import LocalFiles
 from .remote_api_files import RemoteApiFiles
 from .remote_job_files import RemoteJobFiles
-from .job_planner import JobPlanner
+from .job_planner import InvalidJobError, JobPlanner
 from .job_runner import JobRunner
 
 import logging
@@ -106,12 +106,26 @@ class ExecutionManager:
             self._logger.debug('Job was cancelled while resolving input')
             return
 
-        self._job_planner.plan_job(job_id)
+        self._logger.debug('Resolved input, now planning {}'.format(job.state))
+        try:
+            self._job_planner.plan_job(job_id)
+        except InvalidJobError:
+            job.state = JobState.PERMANENT_FAILURE
+            return
+
+        if job.state == JobState.PERMANENT_FAILURE:
+            return
+
+        self._logger.debug('Planned job, now staging {}'.format(job.state))
         self._remote_job_files.stage_job(job_id, input_files)
+        self._logger.debug('Staged job, now starting {}'.format(job.state))
         self._job_runner.start_job(job_id)
+        self._logger.debug('Started job {}'.format(job.state))
 
         if not (job.try_transition(JobState.STAGING_IN, JobState.WAITING) or
                 job.try_transition(JobState.STAGING_IN_CR, JobState.WAITING_CR)):
+            self._logger.debug('Something odd happened while staging and starting')
+            self._logger.debug('State is now {}'.format(job.state))
             job.state = JobState.SYSTEM_ERROR
 
     def _destage_job(self, job_id, job):
