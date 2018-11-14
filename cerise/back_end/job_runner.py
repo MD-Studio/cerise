@@ -105,7 +105,10 @@ class JobRunner:
             jobdesc.arguments = [job.remote_workflow_path, job.remote_input_path]
             jobdesc.stdout_file = job.remote_stdout_path
             jobdesc.stderr_file = job.remote_stderr_path
-            jobdesc.time_reserved = 60 * 60
+
+            if job.time_limit > 0:
+                jobdesc.time_reserved = job.time_limit
+
             if job.required_num_cores > 0:
                 jobdesc.num_nodes = ceil(job.required_num_cores / self._cores_per_node)
 
