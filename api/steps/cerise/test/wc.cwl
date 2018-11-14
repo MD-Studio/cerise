@@ -14,3 +14,6 @@ outputs:
   output:
     type: File
     outputBinding: { glob: output.txt }
+
+hints:
+  TimeLimit: 60

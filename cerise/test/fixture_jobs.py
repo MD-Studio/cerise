@@ -10,10 +10,7 @@ class PassJob:
                 'class: CommandLineTool\n'
                 'baseCommand: echo\n'
                 'inputs: []\n'
-                'outputs: []\n'
-                'hints:\n'
-                '  ResourceRequirement:\n'
-                '    coresMin: 42', 'utf-8')
+                'outputs: []\n', 'utf-8')
 
     local_input = '{}'
 
@@ -41,7 +38,9 @@ class HostnameJob:
                 '  hostname:\n'
                 '    run: cerise/test/hostname.cwl\n'
                 '    out:\n'
-                '      [output]\n', 'utf-8')
+                '      [output]\n'
+                'hints:\n'
+                '  TimeLimit: 101\n', 'utf-8')
 
     local_input = '{}'
 
@@ -74,7 +73,11 @@ class WcJob:
                 '    in:\n'
                 '      textfile: file\n'
                 '    out:\n'
-                '      [output]\n', 'utf-8')
+                '      [output]\n'
+                '\n'
+                'hints:\n'
+                '  ResourceRequirement:\n'
+                '    coresMin: 3\n', 'utf-8')
 
     def local_input(local_baseurl):
         return '{ "file": { "class": "File", "location": "' + local_baseurl + '/input/hello_world.txt" } }'

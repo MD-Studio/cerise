@@ -43,8 +43,6 @@ def test_resolve_no_input(fixture):
     fixture['store'].add_test_job('test_resolve_no_input', 'pass', 'submitted')
     fixture['local-files'].resolve_input('test_resolve_no_input')
     assert fixture['store'].get_job('test_resolve_no_input').workflow_content == PassJob.workflow
-    print(PassJob.workflow)
-    assert fixture['store'].get_job('test_resolve_no_input').required_num_cores == 42
 
 def test_resolve_input(fixture):
     fixture['store'].add_test_job('test_resolve_input', 'wc', 'submitted')

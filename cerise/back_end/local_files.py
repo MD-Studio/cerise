@@ -1,4 +1,4 @@
-from .cwl import get_files_from_binding, get_required_num_cores
+from .cwl import get_files_from_binding
 from .input_file import InputFile
 
 from cerise.job_store.job_state import JobState
@@ -90,7 +90,6 @@ class LocalFiles:
             job = self._job_store.get_job(job_id)
 
             job.workflow_content = self._get_content_from_url(job.workflow)
-            job.required_num_cores = get_required_num_cores(job.workflow_content)
 
             inputs = json.loads(job.local_input)
             input_files = get_files_from_binding(inputs)
