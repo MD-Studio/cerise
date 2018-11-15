@@ -79,6 +79,17 @@ class ExecutionManager:
         self._shutting_down = True
 
     def _delete_job(self, job_id, job):
+        """Delete a job.
+
+        Deletes the job from the compute resource, and if it was
+        destaged, also from the local file store.
+
+        Prerequisite: the job is in a final state.
+
+        Args:
+            job_id: The id of the job
+            job: The job object
+        """
         self._logger.debug('Deleting job ' + job_id)
         self._remote_job_files.delete_job(job_id)
         if job.state == JobState.SUCCESS:
@@ -86,12 +97,36 @@ class ExecutionManager:
         self._job_store.delete_job(job_id)
 
     def _cancel_job(self, job_id, job):
+        """Cancel a job.
+
+        If the job is running, the cancellation request may take some
+        time to process by the compute resource. In this case, the job
+        will remain in RUNNING_CR. Otherwise, it will be cancelled
+        immediately, and be put in CANCELLED.
+
+        Precondition: Job is in a _CR state.
+        Postcondition: Job is in CANCELLED or RUNNING_CR.
+
+        Args:
+            job_id: The id of the job
+            job: The job object
+        """
         if self._job_runner.cancel_job(job_id):
             job.state = JobState.RUNNING_CR
         else:
             job.state = JobState.CANCELLED
 
     def _stage_and_start_job(self, job_id, job):
+        """Stages, plans and starts a job.
+
+        Precondition: Job is in STAGING_IN state
+        Postcondition: Job is in WAITING, PERMANENT_FAILURE, CANCELLED,
+                or WAITING_CR
+
+        Args:
+            job_id: The id of the job
+            job: The job object
+        """
         try:
             input_files = self._local_files.resolve_input(job_id)
         except FileNotFoundError:
@@ -129,6 +164,16 @@ class ExecutionManager:
             job.state = JobState.SYSTEM_ERROR
 
     def _destage_job(self, job_id, job):
+        """Get job results back from the compute resource.
+
+        Precondition: Job is in FINISHED
+        Postcondition: Job is in SUCCESS, TEMPORARY_FAILURE, PERMANENT_FAILURE
+                or CANCELLED
+
+        Args:
+            job_id: The job's id
+            job: The job object
+        """
         result = get_cwltool_result(job.log)
 
         if job.try_transition(JobState.FINISHED, JobState.STAGING_OUT):
@@ -183,6 +228,10 @@ class ExecutionManager:
 
     def execute_jobs(self):
         """Run the main backend execution loop.
+
+        This repeatedly processes jobs, but does not check the remote
+        compute resource more often than specified in the
+        remote_refresh configuration parameter.
         """
         with self._job_store:
             last_active = time.perf_counter() - self._remote_refresh - 1
