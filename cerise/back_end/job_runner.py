@@ -8,7 +8,7 @@ from cerise.job_store.job_state import JobState
 from time import sleep
 
 class JobRunner:
-    def __init__(self, job_store, config, api_files_path, api_install_script_path):
+    def __init__(self, job_store, config, api_files_path):
         """Create a JobRunner object.
 
         Args:
@@ -44,25 +44,6 @@ class JobRunner:
             self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_USERNAME', self._username)
 
         self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_API_FILES', str(self._api_files_path))
-
-        if api_install_script_path is not None:
-            self._run_api_install_script(config,
-                    self._api_files_path, api_install_script_path)
-
-    def _run_api_install_script(self, config, api_files_path, api_install_script_path):
-        sched = config.get_scheduler(run_on_head_node=True)
-        self._logger.warning('sched: {}'.format(dir(sched)))
-        jobdesc = cerulean.JobDescription()
-        jobdesc.working_directory= api_files_path
-        jobdesc.command = str(api_install_script_path)
-        jobdesc.arguments=[str(api_files_path)]
-        jobdesc.environment={'CERISE_API_FILES': str(api_files_path)}
-
-        self._logger.debug("Starting api install script {}".format(api_install_script_path))
-        job_id = sched.submit(jobdesc)
-        while sched.get_status(job_id) != cerulean.JobStatus.DONE:
-            time.sleep(1.0)
-        self._logger.debug("API install script done")
 
     def update_job(self, job_id):
         """Get status from compute resource and update store.

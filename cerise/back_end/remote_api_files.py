@@ -14,9 +14,9 @@ class RemoteApiFiles:
     This class manages the remote directories in which the CWL API is
     installed:
 
-    steps/
-    files/
-    install.sh
+    <project>/<api_major_version>/steps/
+    <project>/<api_major_version>/files/
+    <project>/<api_major_version>/install.sh
     """
 
     def __init__(self, config):
@@ -33,6 +33,8 @@ class RemoteApiFiles:
         """Cerulean.FileSystem: Cerulean object for the local file system."""
         self._fs = config.get_file_system()
         """cerulean.FileSystem: The Cerulean remote file system to stage to."""
+        self._sched = config.get_scheduler(run_on_head_node=True)
+        """cerulean.Scheduler: Scheduler for running install script."""
         self._username = config.get_username('files')
         """str: The remote user name to use, if any."""
         self._basedir = config.get_basedir()
@@ -60,9 +62,7 @@ class RemoteApiFiles:
                 directory to copy from
 
         Returns:
-            (str, str, str): The remote path to the api install script,
-                the remote path to the api steps/ directory, and the
-                remote path to the api files/ directory.
+            The remote path of the api files and steps directories
         """
         self._logger.info('Staging API from {} to {}'.format(local_api_dir, self._api_dir))
 
@@ -70,8 +70,8 @@ class RemoteApiFiles:
         self._stage_api_files(local_api_dir_path)
         self._stage_api_steps(local_api_dir_path)
         remote_api_script_path = self._stage_install_script(local_api_dir_path)
-
-        return remote_api_script_path, self._steps_dir, self._files_dir
+        self._run_install_script(remote_api_script_path)
+        return self._files_dir, self._steps_dir
 
     def _stage_api_steps(self, local_api_dir):
         """Copy the CWL steps forming the API to the remote compute
@@ -146,3 +146,16 @@ class RemoteApiFiles:
 
         remote_path.chmod(0o700)
         return remote_path
+
+    def _run_install_script(self, api_install_script_path):
+        jobdesc = cerulean.JobDescription()
+        jobdesc.working_directory = self._files_dir
+        jobdesc.command = str(api_install_script_path)
+        jobdesc.arguments=[str(self._files_dir)]
+        jobdesc.environment={'CERISE_API_FILES': str(self._files_dir)}
+
+        self._logger.debug("Starting api install script {}".format(api_install_script_path))
+        job_id = self._sched.submit(jobdesc)
+        while self._sched.get_status(job_id) != cerulean.JobStatus.DONE:
+            time.sleep(1.0)
+        self._logger.debug("API install script done")

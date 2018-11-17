@@ -56,8 +56,7 @@ def fixture(request, tmpdir):
 
     result['job-runner'] = JobRunner(
             result['store'], result['job-runner-config'],
-            result['remote-dir'] + '/api/files',
-            result['remote-dir'] + '/api/install.sh')
+            result['remote-dir'] + '/api/files')
     return result
 
 def _wait_for_state(fixture, job_id, state, timeout):
@@ -72,10 +71,6 @@ def _wait_for_state(fixture, job_id, state, timeout):
 
     assert total_time < timeout
     return job
-
-def test_stage_api_script_execution(fixture):
-    assert os.path.isfile(os.path.join(
-        fixture['remote-dir'], 'api', 'files', 'test', 'test_file.txt'))
 
 def test_start_job(fixture):
     fixture['store'].add_test_job('test_start_job', 'pass', 'staged')

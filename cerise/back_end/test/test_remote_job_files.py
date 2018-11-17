@@ -29,7 +29,7 @@ def fixture(request, tmpdir):
             result['remote-files-config'])
 
     local_api_dir = os.path.join(os.path.dirname(__file__), 'api')
-    api_script_path, api_steps_dir, api_files_dir = (
+    api_files_dir, api_steps_dir = (
             result['remote-api-files'].stage_api(local_api_dir))
 
     result['remote-job-files'] = RemoteJobFiles(

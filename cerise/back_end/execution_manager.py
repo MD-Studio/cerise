@@ -40,8 +40,7 @@ class ExecutionManager:
         """RemoteApiFiles: The remote API installer."""
         self._remote_refresh = config.get_remote_refresh()
 
-        api_install_script_path, api_steps_path, api_files_path = (
-                self._remote_api_files.stage_api(apidir))
+        api_files_path, api_steps_path = self._remote_api_files.stage_api(apidir)
 
         self._job_planner = JobPlanner(self._job_store, apidir)
         """JobPlanner: Determines required hardware resources."""
@@ -69,8 +68,7 @@ class ExecutionManager:
                 # send cancel request
 
         self._job_runner = JobRunner(
-                self._job_store, config,
-                api_files_path, api_install_script_path)
+                self._job_store, config, api_files_path)
         self._logger.info('Started back-end')
 
     def shutdown(self):
