@@ -3,7 +3,7 @@ from cerise.job_store.job_state import JobState
 from .cwl import get_cwltool_result
 from .cwl import is_workflow
 from .local_files import LocalFiles
-from .remote_api_files import RemoteApiFiles
+from .remote_api import RemoteApi
 from .remote_job_files import RemoteJobFiles
 from .job_planner import InvalidJobError, JobPlanner
 from .job_runner import JobRunner
@@ -36,11 +36,11 @@ class ExecutionManager:
         """SQLiteJobStore: The job store to use."""
         self._local_files = LocalFiles(self._job_store, config)
         """LocalFiles: The local files manager."""
-        self._remote_api_files = RemoteApiFiles(config)
+        self._remote_api = RemoteApi(config)
         """RemoteApiFiles: The remote API installer."""
         self._remote_refresh = config.get_remote_refresh()
 
-        api_files_path, api_steps_path = self._remote_api_files.stage_api(apidir)
+        api_files_path, api_steps_path = self._remote_api.install(apidir)
 
         self._job_planner = JobPlanner(self._job_store, apidir)
         """JobPlanner: Determines required hardware resources."""

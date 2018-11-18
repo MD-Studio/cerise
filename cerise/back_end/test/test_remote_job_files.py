@@ -1,7 +1,7 @@
 from .mock_store import MockStore
 from cerise.test.fixture_jobs import WcJob
 from cerise.back_end.remote_job_files import RemoteJobFiles
-from cerise.back_end.remote_api_files import RemoteApiFiles
+from cerise.back_end.remote_api import RemoteApi
 
 from cerise.back_end.test.conftest import MockConfig
 
@@ -23,14 +23,12 @@ def fixture(request, tmpdir):
         })
 
     result['remote-files-config'] = MockConfig(result['remote-dir'])
-    result['remote-api-files'] = RemoteApiFiles(
-            result['remote-files-config'])
-    result['remote-api-files'] = RemoteApiFiles(
+    result['remote-api'] = RemoteApi(
             result['remote-files-config'])
 
     local_api_dir = os.path.join(os.path.dirname(__file__), 'api')
     api_files_dir, api_steps_dir = (
-            result['remote-api-files'].stage_api(local_api_dir))
+            result['remote-api'].install(local_api_dir))
 
     result['remote-job-files'] = RemoteJobFiles(
             result['store'], api_steps_dir, result['remote-files-config'])

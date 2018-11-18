@@ -8,7 +8,7 @@ import yaml
 from .cwl import get_files_from_binding, get_required_num_cores
 
 
-class RemoteApiFiles:
+class RemoteApi:
     """Manages the remote API installation.
 
     This class manages the remote directories in which the CWL API is
@@ -53,9 +53,12 @@ class RemoteApiFiles:
         self._files_dir.mkdir(0o750, exists_ok=True)
         self._steps_dir.mkdir(0o750, exists_ok=True)
 
-    def stage_api(self, local_api_dir):
-        """Stage the API to the compute resource. Copies subdirectory
-        steps/ of the given local api dir to the compute resource.
+    def install(self, local_api_dir):
+        """Install the API onto the compute resource.
+
+        Copies subdirectories steps/ and files/ of the given local api
+        dir to the compute resource, copies files/ to the compute
+        resource, and runs the install script.
 
         Args:
             local_api_dir (str): The absolute local path of the api/
