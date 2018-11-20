@@ -150,7 +150,8 @@ class ExecutionManager:
             return
 
         self._logger.debug('Planned job, now staging {}'.format(job.state))
-        self._remote_job_files.stage_job(job_id, input_files)
+        workflow_content = self._remote_api.translate_workflow(job.workflow_content)
+        self._remote_job_files.stage_job(job_id, input_files, workflow_content)
         self._logger.debug('Staged job, now starting {}'.format(job.state))
         self._job_runner.start_job(job_id)
         self._logger.debug('Started job {}'.format(job.state))

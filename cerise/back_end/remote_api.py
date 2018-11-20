@@ -76,6 +76,29 @@ class RemoteApi:
         self._run_install_script(remote_api_script_path)
         return self._files_dir, self._steps_dir
 
+    def translate_workflow(self, workflow_content):
+        """Parse workflow content, check that it calls steps, and
+        insert the location of the steps on the remote resource so that
+        the remote runner can find them.
+
+        Also converts YAML to JSON, for cwltiny compatibility.
+
+        Args:
+            workflow_content (bytes): The raw workflow data
+
+        Returns:
+            bytes: The modified workflow data, serialised as JSON
+
+        """
+        workflow = yaml.safe_load(str(workflow_content, 'utf-8'))
+        if not 'steps' in workflow:
+            raise RuntimeError('Workflow contains no steps')
+        for _, step in workflow['steps'].items():
+            if not isinstance(step['run'], str):
+                raise RuntimeError('Invalid step in workflow')
+            step['run'] = str(self._steps_dir / step['run'])
+        return bytes(json.dumps(workflow), 'utf-8')
+
     def _stage_api_steps(self, local_api_dir):
         """Copy the CWL steps forming the API to the remote compute
         resource, replacing $CERISE_API_FILES at the start of a

@@ -54,13 +54,15 @@ class RemoteJobFiles:
         self._basedir.mkdir(0o750, parents=True, exists_ok=True)
         (self._basedir / 'jobs').mkdir(parents=True, exists_ok=True)
 
-    def stage_job(self, job_id, input_files):
+    def stage_job(self, job_id, input_files, workflow_content):
         """Stage a job. Copies any necessary files to
         the remote resource.
 
         Args:
             job_id (str): The id of the job to stage
             input_files ([InputFile]): A list of input files to stage.
+            workflow_content: Translated contents of the workflow to be
+                    run.
         """
         self._logger.debug('Staging job ' + job_id)
         with self._job_store:
@@ -75,8 +77,7 @@ class RemoteJobFiles:
             self._add_file_to_job(job_id, 'name.txt', job.name.encode('utf-8'))
 
             # stage workflow
-            remote_workflow_content = self._translate_workflow(job.workflow_content)
-            self._add_file_to_job(job_id, 'workflow.cwl', remote_workflow_content)
+            self._add_file_to_job(job_id, 'workflow.cwl', workflow_content)
             job.remote_workflow_path = str(self._abs_path(job_id, 'workflow.cwl'))
 
             # stage input files
@@ -160,25 +161,6 @@ class RemoteJobFiles:
                 job.log = log.decode()
                 self._logger.debug("Log:")
                 self._logger.debug(job.log)
-
-    def _translate_workflow(self, workflow_content):
-        """Parse workflow content, check that it calls steps, and
-        insert the location of the steps on the remote resource so that
-        the remote runner can find them.
-
-        Args:
-            workflow_content (bytes): The raw workflow data
-
-        Returns:
-            bytes: The modified workflow data, serialised as JSON
-
-        """
-        workflow = yaml.safe_load(str(workflow_content, 'utf-8'))
-        for _, step in workflow['steps'].items():
-            if not isinstance(step['run'], str):
-                raise RuntimeError('Invalid step in workflow')
-            step['run'] = str(self._api_steps_dir / step['run'])
-        return bytes(json.dumps(workflow), 'utf-8')
 
     def _stage_input_file(self, count, job_id, input_file, input_desc):
         """Stage an input file. Copies the file to the remote resource.

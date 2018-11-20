@@ -39,7 +39,7 @@ def fixture(request, tmpdir):
 def test_stage_job(fixture):
     fixture['store'].add_test_job('test_stage_job', 'wc', 'resolved')
     input_files = fixture['store'].get_input_files('wc')
-    fixture['remote-job-files'].stage_job('test_stage_job', input_files)
+    fixture['remote-job-files'].stage_job('test_stage_job', input_files, bytes())
 
     remote_file = os.path.join(fixture['remote-dir'], 'jobs',
             'test_stage_job', 'work', '01_input_hello_world.txt')
@@ -50,7 +50,7 @@ def test_stage_job(fixture):
 def test_stage_secondary_files(fixture):
     fixture['store'].add_test_job('test_stage_secondary_files', 'secondary_files', 'resolved')
     input_files = fixture['store'].get_input_files('secondary_files')
-    fixture['remote-job-files'].stage_job('test_stage_secondary_files', input_files)
+    fixture['remote-job-files'].stage_job('test_stage_secondary_files', input_files, bytes())
 
     remote_file = os.path.join(fixture['remote-dir'], 'jobs',
             'test_stage_secondary_files', 'work', '01_input_hello_world.txt')
@@ -67,7 +67,7 @@ def test_stage_secondary_files(fixture):
 def test_stage_file_array(fixture):
     fixture['store'].add_test_job('test_stage_file_array', 'file_array', 'resolved')
     input_files = fixture['store'].get_input_files('file_array')
-    fixture['remote-job-files'].stage_job('test_stage_file_array', input_files)
+    fixture['remote-job-files'].stage_job('test_stage_file_array', input_files, bytes())
 
     remote_file = os.path.join(fixture['remote-dir'], 'jobs',
             'test_stage_file_array', 'work', '01_input_hello_world.txt')
