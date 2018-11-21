@@ -3,8 +3,7 @@
 cwlVersion: v1.0
 
 class: CommandLineTool
-baseCommand: cat
-arguments: [$CERISE_API_FILES/test/test_install_script.txt]
+baseCommand: $CERISE_API_FILES/hostname.sh
 
 inputs: []
 

@@ -5,6 +5,7 @@ from .mock_store import MockStore
 
 import cerulean
 import os
+import pathlib
 import pytest
 import shutil
 import time
@@ -28,7 +29,7 @@ class MockConfig:
         return None
 
     def get_remote_cwl_runner(self):
-        return '$CERISE_API/files/cerise/cwltiny.py'
+        return '$CERISE_API/cerise/files/cwltiny.py'
 
 @pytest.fixture
 def fixture(request, tmpdir):
@@ -42,21 +43,16 @@ def fixture(request, tmpdir):
     result['job-runner-config'] = MockConfig()
 
     # stage api
-    base_api_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'api')
-    remote_api_dir = os.path.join(result['remote-dir'], 'api')
-    shutil.copytree(base_api_dir, remote_api_dir)
+    base_api_dir = pathlib.Path(__file__).parents[3] / 'api'
+    remote_api_dir = pathlib.Path(result['remote-dir']) / 'api'
+    shutil.copytree(str(base_api_dir), str(remote_api_dir))
 
-    test_steps_dir = os.path.join(os.path.dirname(__file__), 'api', 'steps', 'test')
-    remote_test_steps_dir = os.path.join(result['remote-dir'], 'api', 'steps', 'test')
-    shutil.copytree(test_steps_dir, remote_test_steps_dir)
-
-    test_install_script_dir = os.path.join(os.path.dirname(__file__), 'api', 'install.sh')
-    remote_install_script_dir = os.path.join(result['remote-dir'], 'api', 'install.sh')
-    shutil.copy2(test_install_script_dir, remote_install_script_dir)
+    test_api_dir = pathlib.Path(__file__).parent / 'api'
+    shutil.copytree(str(test_api_dir / 'test'), str(remote_api_dir / 'test'))
 
     result['job-runner'] = JobRunner(
             result['store'], result['job-runner-config'],
-            remote_api_dir + '/files/cerise/cwltiny.py')
+            str(remote_api_dir) + '/cerise/files/cwltiny.py')
     return result
 
 def _wait_for_state(fixture, job_id, state, timeout):

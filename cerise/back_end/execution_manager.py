@@ -37,7 +37,7 @@ class ExecutionManager:
         self._local_files = LocalFiles(self._job_store, config)
         """LocalFiles: The local files manager."""
         self._remote_api = RemoteApi(config)
-        """RemoteApiFiles: The remote API installer."""
+        """RemoteApi: The remote API manager."""
         self._remote_refresh = config.get_remote_refresh()
 
         self._remote_api.install(apidir)

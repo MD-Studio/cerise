@@ -185,7 +185,7 @@ class Config:
         Returns:
             (str): The path.
         """
-        default = '$CERISE_API/files/cerise/cwltiny.py'
+        default = '$CERISE_API/cerise/files/cwltiny.py'
         if 'jobs' not in self._cr_config:
             return default
         return self._cr_config['jobs'].get('cwl-runner', default)

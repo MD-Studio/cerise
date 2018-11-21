@@ -18,9 +18,8 @@ def test_install(tmpdir):
     remote_api_files.install(local_api_dir)
 
     # check that steps were staged
-    assert os.path.isfile(os.path.join(
-        str(tmpdir), 'api', 'steps', 'test', 'wc.cwl'))
+    assert (tmpdir / 'api' / 'test' / 'steps' / 'test' / 'wc.cwl').isfile()
 
     # check that install script was run
-    assert os.path.isfile(os.path.join(
-        str(tmpdir), 'api', 'files', 'test', 'test_file.txt'))
+    assert (tmpdir / 'api' / 'test' / 'files' / 'test' /
+            'test_file.txt').isfile()

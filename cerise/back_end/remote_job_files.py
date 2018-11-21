@@ -48,7 +48,7 @@ class RemoteJobFiles:
         """Cerulean.FileSystem: Cerulean object for the local file system."""
 
         # Create directories if they don't exist
-        print('basedir: {}'.format(self._basedir))
+        self._logger.debug('basedir: {}'.format(self._basedir))
         self._basedir.mkdir(0o750, parents=True, exists_ok=True)
         (self._basedir / 'jobs').mkdir(parents=True, exists_ok=True)
 
@@ -129,12 +129,14 @@ class RemoteJobFiles:
 
     def delete_job(self, job_id):
         """Remove the work directory for a job.
-        This will remove the directory and everything in it.
+        This will remove the directory and everything in it, if it exists.
 
         Args:
             job_id (str): The id of the job whose work directory to delete.
         """
-        self._abs_path(job_id, '').rmdir(recursive=True)
+        job_dir = self._abs_path(job_id, '')
+        if job_dir.exists():
+            job_dir.rmdir(recursive=True)
 
     def update_job(self, job_id):
         """Get status from remote resource and update store.

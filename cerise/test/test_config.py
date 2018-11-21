@@ -47,7 +47,7 @@ def config_1():
                     'protocol': 'ssh',
                     'location': 'example.com',
                     'scheduler': 'slurm',
-                    'cwl-runner': '$CERISE_API/files/myfiles/cwltool.sh',
+                    'cwl-runner': '$CERISE_API/myfiles/files/cwltool.sh',
                     'queue-name': 'test_queue',
                     'cores-per-node': 24,
                     'slots-per-node': 4
@@ -75,8 +75,8 @@ def test_get_username(config_0, config_1):
     assert config_1.get_username('jobs') == 'test_user'
 
 def test_get_remote_cwl_runner(config_0, config_1):
-    assert config_0.get_remote_cwl_runner() == '$CERISE_API/files/cerise/cwltiny.py'
-    assert config_1.get_remote_cwl_runner() == '$CERISE_API/files/myfiles/cwltool.sh'
+    assert config_0.get_remote_cwl_runner() == '$CERISE_API/cerise/files/cwltiny.py'
+    assert config_1.get_remote_cwl_runner() == '$CERISE_API/myfiles/files/cwltool.sh'
 
 def test_get_basedir(config_0, config_1):
     assert str(config_0.get_basedir()) == '/home/$CERISE_USERNAME/.cerise'

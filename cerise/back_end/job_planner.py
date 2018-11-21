@@ -35,7 +35,6 @@ class JobPlanner:
         """Requirements per step, keyed by step name and requirement
                 name.
         """
-
         self._get_steps_resource_requirements(local_api_dir)
 
     def plan_job(self, job_id):
@@ -74,19 +73,20 @@ class JobPlanner:
         Args:
             local_api_dir: The local directory with the API
         """
-        local_steps_dir = self._local_fs / local_api_dir / 'steps'
+        for project_dir in (self._local_fs / local_api_dir).iterdir():
+            local_steps_dir = project_dir / 'steps'
 
-        for this_dir, _, files in local_steps_dir.walk():
-            for filename in files:
-                if filename.endswith('.cwl'):
-                    self._logger.debug('Scanning file for requirements: {}'.format(this_dir / filename))
-                    rel_this_dir = this_dir.relative_to(str(local_steps_dir))
-                    step_name = str(rel_this_dir / filename)
-                    step_contents = (this_dir / filename).read_bytes()
-                    step_num_cores = get_required_num_cores(step_contents)
-                    step_time_limit = get_time_limit(step_contents)
-                    if not step_name in self._steps_requirements:
-                        self._steps_requirements[step_name] = dict()
-                    self._steps_requirements[step_name]['num_cores'] = step_num_cores
-                    self._steps_requirements[step_name]['time_limit'] = step_time_limit
-                    self._logger.debug('Step {} requires {} cores'.format(step_name, step_num_cores))
+            for this_dir, _, files in local_steps_dir.walk():
+                for filename in files:
+                    if filename.endswith('.cwl'):
+                        self._logger.debug('Scanning file for requirements: {}'.format(this_dir / filename))
+                        rel_this_dir = this_dir.relative_to(str(local_steps_dir))
+                        step_name = str(rel_this_dir / filename)
+                        step_contents = (this_dir / filename).read_bytes()
+                        step_num_cores = get_required_num_cores(step_contents)
+                        step_time_limit = get_time_limit(step_contents)
+                        if not step_name in self._steps_requirements:
+                            self._steps_requirements[step_name] = dict()
+                        self._steps_requirements[step_name]['num_cores'] = step_num_cores
+                        self._steps_requirements[step_name]['time_limit'] = step_time_limit
+                        self._logger.debug('Step {} requires {} cores'.format(step_name, step_num_cores))

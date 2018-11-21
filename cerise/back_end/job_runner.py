@@ -94,7 +94,6 @@ class JobRunner:
             if self._scheduler_options:
                 jobdesc.extra_scheduler_options = self._scheduler_options
 
-            print("Starting job: " + str(jobdesc))
             job.remote_job_id = self._sched.submit(jobdesc)
             self._logger.debug('Job submitted')
 
