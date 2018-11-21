@@ -45,7 +45,7 @@ class ExecutionManager:
         self._job_planner = JobPlanner(self._job_store, apidir)
         """JobPlanner: Determines required hardware resources."""
 
-        self._remote_job_files = RemoteJobFiles(self._job_store, api_steps_path, config)
+        self._remote_job_files = RemoteJobFiles(self._job_store, config)
         """RemoteJobFiles: The remote job files manager."""
 
 

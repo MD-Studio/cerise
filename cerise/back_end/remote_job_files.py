@@ -25,7 +25,7 @@ class RemoteJobFiles:
     - jobs/<job_id>/stderr.txt is the standard error of the CWL runner
     """
 
-    def __init__(self, job_store, api_steps_dir, config):
+    def __init__(self, job_store, config):
         """Create a RemoteJobFiles object.
         Sets up remote directory structure as well, but refuses to
         create the top-level directory.
@@ -44,8 +44,6 @@ class RemoteJobFiles:
         """str: The remote user name to use, if any."""
         self._basedir = config.get_basedir()
         """cerulean.Path: The remote path to the directory where the API files are."""
-        self._api_steps_dir = api_steps_dir
-        """cerulean.Path: The remote path to the directory where the API steps are."""
         self._local_fs = cerulean.LocalFileSystem()
         """Cerulean.FileSystem: Cerulean object for the local file system."""
 

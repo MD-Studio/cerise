@@ -31,7 +31,7 @@ def fixture(request, tmpdir):
             result['remote-api'].install(local_api_dir))
 
     result['remote-job-files'] = RemoteJobFiles(
-            result['store'], api_steps_dir, result['remote-files-config'])
+            result['store'], result['remote-files-config'])
 
     return result
 
