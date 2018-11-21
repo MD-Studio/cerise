@@ -63,9 +63,6 @@ class RemoteApi:
         Args:
             local_api_dir (str): The absolute local path of the api/
                 directory to copy from
-
-        Returns:
-            The remote path of the api files and steps directories
         """
         self._logger.info('Staging API from {} to {}'.format(local_api_dir, self._api_dir))
 
@@ -74,7 +71,22 @@ class RemoteApi:
         self._stage_api_steps(local_api_dir_path)
         remote_api_script_path = self._stage_install_script(local_api_dir_path)
         self._run_install_script(remote_api_script_path)
-        return self._files_dir, self._steps_dir
+
+    def translate_runner_location(self, runner_location):
+        """Perform macro substitution on CWL runner location.
+
+        This replaces $CERISE_API with the API base dir.
+
+        Args:
+            runner_location (str): Location of the runner as configured
+                    by the user.
+
+        Returns:
+            (str) A remote path with variables substituted.
+        """
+        return (runner_location
+                .replace('$CERISE_API', str(self._api_dir))
+                .replace('$CERISE_USERNAME', self._username))
 
     def translate_workflow(self, workflow_content):
         """Parse workflow content, check that it calls steps, and

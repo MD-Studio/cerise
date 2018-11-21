@@ -8,12 +8,13 @@ from cerise.job_store.job_state import JobState
 from time import sleep
 
 class JobRunner:
-    def __init__(self, job_store, config, api_files_path):
+    def __init__(self, job_store, config, remote_cwlrunner):
         """Create a JobRunner object.
 
         Args:
             job_store (JobStore): The job store to get jobs from.
             config (Config): The configuration.
+            remote_cwlrunner (str): The location of the CWL runner to use.
         """
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
@@ -21,9 +22,7 @@ class JobRunner:
         """The JobStore to obtain jobs from."""
         self._username = None
         """The remote user to connect as."""
-        self._api_files_path = api_files_path
-        """str: The remote path of the API files directory."""
-        self._remote_cwlrunner = None
+        self._remote_cwlrunner = remote_cwlrunner
         """str: The remote path to the cwl runner executable."""
         self._sched = config.get_scheduler()
         """The Cerulean scheduler to start jobs through."""
@@ -37,13 +36,6 @@ class JobRunner:
         """Number of cores per node on the configured machine/queue."""
 
         self._logger.debug('Slots per node set to ' + str(self._mpi_slots_per_node))
-
-        self._remote_cwlrunner = config.get_remote_cwl_runner()
-
-        if self._username is not None:
-            self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_USERNAME', self._username)
-
-        self._remote_cwlrunner = self._remote_cwlrunner.replace('$CERISE_API_FILES', str(self._api_files_path))
 
     def update_job(self, job_id):
         """Get status from compute resource and update store.

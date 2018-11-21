@@ -28,7 +28,7 @@ class MockConfig:
         return None
 
     def get_remote_cwl_runner(self):
-        return '$CERISE_API_FILES/cerise/cwltiny.py'
+        return '$CERISE_API/files/cerise/cwltiny.py'
 
 @pytest.fixture
 def fixture(request, tmpdir):
@@ -56,7 +56,7 @@ def fixture(request, tmpdir):
 
     result['job-runner'] = JobRunner(
             result['store'], result['job-runner-config'],
-            result['remote-dir'] + '/api/files')
+            remote_api_dir + '/files/cerise/cwltiny.py')
     return result
 
 def _wait_for_state(fixture, job_id, state, timeout):
