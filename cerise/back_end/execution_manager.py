@@ -20,29 +20,31 @@ class ExecutionManager:
     resource, ensuring that any remote state changes are propagated to
     the job store correctly.
     """
-    def __init__(self, config, apidir):
+    def __init__(self, config, local_api_dir):
         """Set up the execution manager.
 
         Args:
             config (Config): The configuration.
-            apidir (str): The remote path to the remote API directory.
+            local_api_dir (str): The path to the local API directory.
         """
         self._logger = logging.getLogger(__name__)
 
+        self._update_available = False
+        """bool: Whether the installed API is older than the local one."""
+
         self._shutting_down = False
+        """bool: True iff we're shutting down."""
 
         # _job_store = InMemoryJobStore()
         self._job_store = SQLiteJobStore(config.get_database_location())
         """SQLiteJobStore: The job store to use."""
         self._local_files = LocalFiles(self._job_store, config)
         """LocalFiles: The local files manager."""
-        self._remote_api = RemoteApi(config)
+        self._remote_api = RemoteApi(config, local_api_dir)
         """RemoteApi: The remote API manager."""
         self._remote_refresh = config.get_remote_refresh()
 
-        self._remote_api.install(apidir)
-
-        self._job_planner = JobPlanner(self._job_store, apidir)
+        self._job_planner = JobPlanner(self._job_store, local_api_dir)
         """JobPlanner: Determines required hardware resources."""
 
         self._remote_job_files = RemoteJobFiles(self._job_store, config)
@@ -71,6 +73,12 @@ class ExecutionManager:
                 config.get_remote_cwl_runner())
         self._job_runner = JobRunner(
                 self._job_store, config, remote_cwlrunner)
+
+        # Check for updates
+        self._update_available = self._remote_api.update_available()
+        if self._update_available:
+            self._logger.info('Specialisation update available')
+
         self._logger.info('Started back-end')
 
     def shutdown(self):
@@ -193,6 +201,10 @@ class ExecutionManager:
             check_remote (boolean): Whether to access the remote
                 compute resource to check on jobs.
         """
+        # If we don't check remote, assume that we have running jobs,
+        # so that we don't install updates while jobs are running.
+        have_running_jobs = not check_remote
+
         jobs = self._job_store.list_jobs()
         for job_id in [job.id for job in jobs]:
             if self._shutting_down:
@@ -207,13 +219,15 @@ class ExecutionManager:
                     self._job_runner.update_job(job_id)
                     self._remote_job_files.update_job(job_id)
                     job = self._job_store.get_job(job_id)
+                    have_running_jobs = have_running_jobs or JobState.is_remote(job.state)
 
                 if job.state == JobState.FINISHED:
                     self._destage_job(job_id, job)
 
-                if job.try_transition(JobState.SUBMITTED, JobState.STAGING_IN):
-                    self._stage_and_start_job(job_id, job)
-                    self._logger.debug('Staged and started job')
+                if not self._update_available:
+                    if job.try_transition(JobState.SUBMITTED, JobState.STAGING_IN):
+                        self._stage_and_start_job(job_id, job)
+                        self._logger.debug('Staged and started job')
 
                 if JobState.cancellation_active(job.state):
                     self._cancel_job(job_id, job)
@@ -226,6 +240,8 @@ class ExecutionManager:
                 job.state = JobState.SYSTEM_ERROR
                 self._logger.critical('An internal error occurred when processing job ' + job.id)
                 self._logger.critical(traceback.format_exc())
+
+        return have_running_jobs
 
     def execute_jobs(self):
         """Run the main backend execution loop.
@@ -243,7 +259,11 @@ class ExecutionManager:
                     now = time.perf_counter()
                     check_remote = now - last_active > self._remote_refresh
 
-                    self._process_jobs(check_remote)
+                    have_running_jobs = self._process_jobs(check_remote)
+                    if not have_running_jobs and self._update_available:
+                        self._remote_api.install()
+                        self._update_available = False
+
                     if check_remote:
                         last_active = time.perf_counter()
 

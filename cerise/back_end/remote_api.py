@@ -19,7 +19,7 @@ class RemoteApi:
     <project>/<api_major_version>/install.sh
     """
 
-    def __init__(self, config):
+    def __init__(self, config, local_api_dir):
         """Create a RemoteApiFiles object.
         Sets up remote directory structure as well, but refuses to
         create the top-level directory.
@@ -37,38 +37,41 @@ class RemoteApi:
         """cerulean.Scheduler: Scheduler for running install script."""
         self._username = config.get_username('files')
         """str: The remote user name to use, if any."""
+        self._local_api_dir = self._local_fs / local_api_dir.lstrip('/')
+        """cerulean.Path: The path to the local API dir."""
         self._basedir = config.get_basedir()
         """cerulean.Path: The remote path to the base directory where we store our stuff."""
-        self._api_dir = self._basedir / 'api'
+        self._remote_api_dir = self._basedir / 'api'
         """cerulean.Path: The remote path to the base directory where we store our stuff."""
         self._steps_requirements = dict()  # type: Dict[Dict[str, int]]
         """Resource requirements for each loaded step."""
 
-        self._api_dir.mkdir(0o750, parents=True, exists_ok=True)
+        self._remote_api_dir.mkdir(0o750, parents=True, exists_ok=True)
 
-    def install(self, local_api_dir):
+    def update_available(self):
+        """Returns whether the remote API is older than the local one.
+
+        Returns:
+            True iff an update is available/required.
+        """
+        return self._updatable_projects() != []
+
+    def install(self):
         """Install the API onto the compute resource.
 
         Copies subdirectories steps/ and files/ of the given local api
         dir to the compute resource, copies files/ to the compute
         resource, and runs the install script.
-
-        Args:
-            local_api_dir (str): The absolute local path of the api/
-                directory to copy from
         """
-        self._logger.info('Staging API from {} to {}'.format(local_api_dir, self._api_dir))
+        self._logger.info('Staging API from {} to {}'.format(self._local_api_dir, self._remote_api_dir))
 
-        local_api_dir_path = self._local_fs / local_api_dir.lstrip('/')
-
-        for local_project_dir in local_api_dir_path.iterdir():
-            if local_project_dir.is_dir():
-                project_name = str(local_project_dir.relative_to(local_api_dir))
-                remote_project_dir = self._make_remote_project(project_name)
-                self._stage_api_files(local_project_dir, remote_project_dir)
-                self._stage_api_steps(local_project_dir, remote_project_dir)
-                self._stage_install_script(local_project_dir, remote_project_dir)
-                self._run_install_script(remote_project_dir)
+        for project_name in self._updatable_projects():
+            local_project_dir = self._local_api_dir / project_name
+            remote_project_dir = self._make_remote_project(project_name)
+            self._stage_api_files(local_project_dir, remote_project_dir)
+            self._stage_api_steps(local_project_dir, remote_project_dir)
+            self._stage_install_script(local_project_dir, remote_project_dir)
+            self._run_install_script(remote_project_dir)
 
     def translate_runner_location(self, runner_location):
         """Perform macro substitution on CWL runner location.
@@ -83,7 +86,7 @@ class RemoteApi:
             (str) A remote path with variables substituted.
         """
         actual_location = runner_location.replace(
-                '$CERISE_API', str(self._api_dir))
+                '$CERISE_API', str(self._remote_api_dir))
         if self._username:
             actual_location = actual_location.replace(
                 '$CERISE_USERNAME', self._username)
@@ -111,12 +114,47 @@ class RemoteApi:
                 raise RuntimeError('Invalid step in workflow')
             step_parts = step['run'].split('/')
             project = step_parts[0]
-            steps_dir = self._api_dir / project / 'steps'
+            steps_dir = self._remote_api_dir / project / 'steps'
             step['run'] = str(steps_dir) + '/' + '/'.join(step_parts)
         return bytes(json.dumps(workflow), 'utf-8')
 
+    def _updatable_projects(self):
+        """Returns a list of names of projects that can be updated.
+
+        A project is updatable if its local version is larger than its
+        remote version, or if the local version ends with ``.dev``. The
+        latter is handy for development.
+
+        Returns:
+            list(str): A list of updatable project names.
+        """
+        updatable_projects = list()
+        for local_project_dir in self._local_api_dir.iterdir():
+            if local_project_dir.is_dir():
+                project_name = str(local_project_dir.relative_to(self._local_api_dir))
+
+                local_version_file = local_project_dir / 'version'
+                if not local_version_file.exists():
+                    raise RuntimeError('Project "{}" in local API definition'
+                                       ' is missing a "version" file.'.format(
+                                           project_name))
+                local_version = local_version_file.read_text().strip().split('.')
+
+                remote_version_file = self._remote_api_dir / project_name / 'version'
+                if not remote_version_file.exists():
+                    updatable_projects.append(project_name)
+                    continue
+                remote_version = remote_version_file.read_text().strip().split('.')
+
+                if local_version[-1] == 'dev' or local_version[:3] > remote_version[:3]:
+                    updatable_projects.append(project_name)
+
+        return updatable_projects
+
     def _make_remote_project(self, name):
         """Creates a remote directory for a given project.
+
+        If a directory already exists, removes it first.
 
         Args:
             name: Name of the project.
@@ -124,8 +162,10 @@ class RemoteApi:
         Returns:
             Path of the remote project directory.
         """
-        remote_project_dir = self._api_dir / name
-        remote_project_dir.mkdir(0o700, exists_ok=True)
+        remote_project_dir = self._remote_api_dir / name
+        if remote_project_dir.exists():
+            remote_project_dir.rmdir(recursive=True)
+        remote_project_dir.mkdir(0o700)
         return remote_project_dir
 
     def _stage_api_steps(self, local_project_dir, remote_project_dir):
@@ -182,6 +222,8 @@ class RemoteApi:
         return cwlfile
 
     def _stage_api_files(self, local_project_dir, remote_project_dir):
+        cerulean.copy(local_project_dir / 'version', remote_project_dir / 'version', overwrite='always')
+
         local_dir = local_project_dir / 'files'
         if not local_dir.exists():
             self._logger.debug('API files at {} not found, not'

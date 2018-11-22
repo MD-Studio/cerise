@@ -23,11 +23,11 @@ def fixture(request, tmpdir):
         })
 
     result['remote-files-config'] = MockConfig(result['remote-dir'])
-    result['remote-api'] = RemoteApi(
-            result['remote-files-config'])
-
     local_api_dir = os.path.join(os.path.dirname(__file__), 'api')
-    result['remote-api'].install(local_api_dir)
+    result['remote-api'] = RemoteApi(
+            result['remote-files-config'], local_api_dir)
+
+    result['remote-api'].install()
 
     result['remote-job-files'] = RemoteJobFiles(
             result['store'], result['remote-files-config'])
