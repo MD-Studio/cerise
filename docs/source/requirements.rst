@@ -31,7 +31,8 @@ User side functionality
 
     -   [M] A user can submit a CWL workflow for execution using the
         `Netherlands eScience Center version of the GA4GH workflow execution
-        schema`_ (the REST API).
+        schema <https://github.com/NLeSC/workflow-execution-schemas>`_
+        (the REST API).
 
     -   [M] Multiple workflows can be submitted and executing at the same time.
 
@@ -144,5 +145,3 @@ Deployment
         machine or resource, where the client can connect to the service, and the
         service can connect to the compute resource, but no other connections are
         possible.
-
-.. _`Netherlands eScience Center version of the GA4GH workflow execution schema`: https://github.com/NLeSC/workflow-execution-schemas
