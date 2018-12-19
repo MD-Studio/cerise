@@ -68,13 +68,20 @@ class RemoteApi:
         """
         self._logger.info('Staging API from {} to {}'.format(self._local_api_dir, self._remote_api_dir))
 
-        for project_name in self._updatable_projects():
-            local_project_dir = self._local_api_dir / project_name
-            remote_project_dir = self._make_remote_project(project_name)
-            self._stage_api_files(local_project_dir, remote_project_dir)
-            self._stage_api_steps(local_project_dir, remote_project_dir)
-            self._stage_install_script(local_project_dir, remote_project_dir)
-            self._run_install_script(remote_project_dir)
+        try:
+            for project_name in self._updatable_projects():
+                local_project_dir = self._local_api_dir / project_name
+                remote_project_dir = self._make_remote_project(project_name)
+                self._stage_api_files(local_project_dir, remote_project_dir)
+                self._stage_api_steps(local_project_dir, remote_project_dir)
+                self._stage_install_script(local_project_dir, remote_project_dir)
+                self._run_install_script(remote_project_dir)
+        except IOError as e:
+            self._logger.critical('An IO error occurred while uploading the'
+                                  ' API: {}. Please check that your network'
+                                  ' connection works, and that you have enough'
+                                  ' disk space or quota on the remote machine.'
+                                  ''.format(e))
 
     def translate_runner_location(self, runner_location):
         """Perform macro substitution on CWL runner location.

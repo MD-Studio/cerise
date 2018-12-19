@@ -161,7 +161,17 @@ class ExecutionManager:
 
         self._logger.debug('Planned job, now staging {}'.format(job.state))
         workflow_content = self._remote_api.translate_workflow(job.workflow_content)
-        self._remote_job_files.stage_job(job_id, input_files, workflow_content)
+        try:
+            self._remote_job_files.stage_job(job_id, input_files, workflow_content)
+        except IOError as e:
+            self._logger.error('An IO error occurred while uploading the job'
+                               ' input data: {}. Please check that your network'
+                               ' connection works, and that you have enough'
+                               ' disk space or quota on the remote machine.'
+                               ''.format(e))
+            job.state = JobState.SYSTEM_ERROR
+            return
+
         self._logger.debug('Staged job, now starting {}'.format(job.state))
         self._job_runner.start_job(job_id)
         self._logger.debug('Started job {}'.format(job.state))
