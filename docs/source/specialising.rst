@@ -293,15 +293,20 @@ concatenates two files together:
 
 
 Of course, you can put anything in here, including say compiled binaries for the
-machine you're specialising for. When uploading, Cerise will copy permissions
-along, so that executable files will remain executable and private files will
-remain private. Unfortunately, there is a permission issue with Docker: when
-copying your API into the Docker image, Docker will strip all permissions. In
-the Dockerfile for the example, we manually make `add_heading.sh` executable
-again, but for more complex sets of files this gets tedious to make and
-maintain. In that case, it's probably better to create an archive from the
-`api/` dir, and use the `ADD` command in the Dockerfile to extract it into the
-container.
+machine you're specialising for. A bit of experience: it seems to happen fairly
+often that you end up writing a shell script which is called from a step, and
+those shell scripts can have many parameters. If it's more than 9, make sure to
+use ${10} rather than $10, because the latter will take the first argument and
+append a 0.
+
+When uploading, Cerise will copy permissions along, so that executable files
+will remain executable and private files will remain private. Unfortunately,
+there is a permission issue with Docker: when copying your API into the Docker
+image, Docker will strip all permissions. In the Dockerfile for the example, we
+manually make `add_heading.sh` executable again, but for more complex sets of
+files this gets tedious to make and maintain. In that case, it's probably better
+to create an archive from the `api/` dir, and use the `ADD` command in the
+Dockerfile to extract it into the container.
 
 .. literalinclude:: ../examples/specialisation/Dockerfile
   :caption: ``docs/examples/specialisation/Dockerfile``
