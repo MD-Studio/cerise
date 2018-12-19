@@ -93,14 +93,14 @@ class JobState(Enum):
         state_to_cwl_string = {
             JobState.SUBMITTED: 'Waiting',
             JobState.STAGING_IN: 'Waiting',
-            JobState.WAITING: 'Waiting',
+            JobState.WAITING: 'Running',
             JobState.RUNNING: 'Running',
             JobState.FINISHED: 'Running',
             JobState.STAGING_OUT: 'Running',
             JobState.SUCCESS: 'Success',
 
             JobState.STAGING_IN_CR: 'Waiting',
-            JobState.WAITING_CR: 'Waiting',
+            JobState.WAITING_CR: 'Running',
             JobState.RUNNING_CR: 'Running',
             JobState.STAGING_OUT_CR: 'Running',
             JobState.CANCELLED: 'Cancelled',
