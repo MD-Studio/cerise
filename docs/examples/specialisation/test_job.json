@@ -1,0 +1,5 @@
+{
+    "name": "test_job",
+    "workflow": "http://localhost:29593/files/input/test_job/test_workflow.cwl",
+    "input": {}
+}

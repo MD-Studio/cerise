@@ -8,6 +8,7 @@ Cerise takes configuration information from various sources, with some
 overriding others. This page describes the configuration files and what can be
 configured in them.
 
+.. _main_configuration:
 
 Main configuration file
 -----------------------
@@ -83,6 +84,8 @@ world, this should be the IP address of the network adaptor to listen on, or
 Docker container needs to have ``0.0.0.0`` for it to be accessible from outside
 the container.
 
+.. _compute-resource-configuration:
+
 Compute resource configuration
 ------------------------------
 
@@ -93,6 +96,8 @@ users to use the same specialised Cerise installation (e.g. Docker image),
 credentials can be specified using environment variables. (Cerise Client uses
 the latter method.) If you are making a specialisation that is to be shared with
 others, do not put your credentials in this file!
+
+Note: this file is somewhat outdated, but well be updated prior to the 1.0 release.
 
 API configuration file
 ......................

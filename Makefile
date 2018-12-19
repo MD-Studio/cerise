@@ -10,7 +10,7 @@ docs:
 
 .PHONY: test
 test:
-	pytest --cov
+	pytest --cov --ignore=docs
 	coverage combine --append integration_test
 	coverage xml
 	coverage report -m
