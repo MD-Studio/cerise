@@ -4,7 +4,7 @@ cwlVersion: v1.0
 
 class: CommandLineTool
 baseCommand: cat
-arguments: [$CERISE_API_FILES/test_install_script.txt]
+arguments: [$CERISE_PROJECT_FILES/test_install_script.txt]
 
 inputs: []
 

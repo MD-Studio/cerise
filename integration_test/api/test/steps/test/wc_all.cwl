@@ -2,7 +2,7 @@
 
 cwlVersion: v1.0
 class: CommandLineTool
-baseCommand: $CERISE_API_FILES/wc_all.sh
+baseCommand: $CERISE_PROJECT_FILES/wc_all.sh
 stdout: output.txt
 inputs:
   file:

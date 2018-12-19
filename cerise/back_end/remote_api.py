@@ -12,11 +12,14 @@ class RemoteApi:
     """Manages the remote API installation.
 
     This class manages the remote directories in which the CWL API is
-    installed:
+    installed, which is <basedir>/api/
 
-    <project>/<api_major_version>/steps/
-    <project>/<api_major_version>/files/
-    <project>/<api_major_version>/install.sh
+    Within this, there is a directory per project, with entries
+
+    <project>/version
+    <project>/steps/...
+    <project>/files/...
+    <project>/install.sh
     """
 
     def __init__(self, config, local_api_dir):
@@ -170,7 +173,7 @@ class RemoteApi:
 
     def _stage_api_steps(self, local_project_dir, remote_project_dir):
         """Copy the CWL steps forming the API to the remote compute
-        resource, replacing $CERISE_API_FILES at the start of a
+        resource, replacing $CERISE_PROJECT_FILES at the start of a
         baseCommand and in arguments with the remote path to the files,
         and saving the result as JSON.
 
@@ -197,26 +200,34 @@ class RemoteApi:
                         rem_file, filename))
                     rem_file.write_text(json.dumps(cwlfile))
 
-    def _translate_api_step(self, workflow_path, remote_project_dir):
-        """Do CERISE_API_FILES macro substitution on an API step file.
+    def _translate_api_step(self, step_path, remote_project_dir):
+        """Do CERISE_PROJECT_FILES macro substitution on an API step file.
+
+        Args:
+            step_path: Path to the step file to translate
+            remote_project_dir: Remote path of the project directory,
+                    for substitution.
+
+        Returns:
+            The modified contents of the CWL file, as objects.
         """
         files_dir = remote_project_dir / 'files'
-        cwlfile = yaml.safe_load(workflow_path.read_text())
+        cwlfile = yaml.safe_load(step_path.read_text())
         if cwlfile.get('class') == 'CommandLineTool':
             if 'baseCommand' in cwlfile:
-                if cwlfile['baseCommand'].lstrip().startswith('$CERISE_API_FILES'):
+                if cwlfile['baseCommand'].lstrip().startswith('$CERISE_PROJECT_FILES'):
                     cwlfile['baseCommand'] = cwlfile['baseCommand'].replace(
-                            '$CERISE_API_FILES', str(files_dir), 1)
+                            '$CERISE_PROJECT_FILES', str(files_dir), 1)
 
             if 'arguments' in cwlfile:
                 if not isinstance(cwlfile['arguments'], list):
                     raise RuntimeError('Invalid step {}: arguments must be an array'.format(
-                        filename))
+                        step_path))
                 newargs = []
                 for i, argument in enumerate(cwlfile['arguments']):
                     self._logger.debug("Processing argument {}".format(argument))
                     newargs.append(argument.replace(
-                        '$CERISE_API_FILES', str(files_dir)))
+                        '$CERISE_PROJECT_FILES', str(files_dir)))
                     self._logger.debug("Done processing argument {}".format(cwlfile['arguments'][i]))
                 cwlfile['arguments'] = newargs
         return cwlfile
@@ -259,9 +270,9 @@ class RemoteApi:
         install_script = remote_project_dir / 'install.sh'
         if install_script.exists():
             jobdesc = cerulean.JobDescription()
-            jobdesc.command = str(remote_project_dir / 'install.sh')
+            jobdesc.command = str(install_script)
             jobdesc.arguments=[str(files_dir)]
-            jobdesc.environment={'CERISE_API_FILES': str(files_dir)}
+            jobdesc.environment['CERISE_PROJECT_FILES'] = str(files_dir)
 
             self._logger.debug("Starting api install script {}".format(jobdesc.command))
             job_id = self._sched.submit(jobdesc)

@@ -3,7 +3,7 @@
 cwlVersion: v1.0
 
 class: CommandLineTool
-baseCommand: $CERISE_API_FILES/partially_failing_program.sh
+baseCommand: $CERISE_PROJECT_FILES/partially_failing_program.sh
 
 inputs: []
 
