@@ -47,6 +47,8 @@ class SQLiteJobStore(JobStore):
                 workflow VARCHAR(255),
                 local_input TEXT,
                 state VARCHAR(17) DEFAULT 'SUBMITTED',
+                please_delete INTEGER DEFAULT 0,
+                resolve_retry_count INTEGER DEFAULT 0,
                 log TEXT DEFAULT '',
                 remote_output TEXT DEFAULT '',
                 workflow_content BLOB,
@@ -58,8 +60,7 @@ class SQLiteJobStore(JobStore):
                 remote_stdout_path VARCHAR(255) DEFAULT '',
                 remote_stderr_path VARCHAR(255) DEFAULT '',
                 remote_job_id VARCHAR(255),
-                local_output TEXT DEFAULT '',
-                please_delete INTEGER DEFAULT 0
+                local_output TEXT DEFAULT ''
                 )
                 """)
         conn.commit()

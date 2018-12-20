@@ -32,6 +32,8 @@ class InMemoryJob:
         # Current status
         self.state = JobState.SUBMITTED
         """JobState: Current state of the job."""
+        self.resolve_retry_count = 0
+        """int: Number of times we've tried to resolve inputs."""
         self.please_delete = False
         """bool: Whether deletion of the job has been requested."""
         self.log = ''

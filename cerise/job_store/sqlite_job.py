@@ -56,6 +56,16 @@ class SQLiteJob:
         self._set_var('state', value.name)
 
     @property
+    def resolve_retry_count(self):
+        """int: How many times we've tried to resolve.
+        """
+        return int(self._get_var('resolve_retry_count'))
+
+    @resolve_retry_count.setter
+    def resolve_retry_count(self):
+        self._set_var('resolve_retry_count', value)
+
+    @property
     def please_delete(self):
         """bool: Whether the job should be deleted.
         """

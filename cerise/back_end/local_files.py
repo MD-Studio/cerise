@@ -10,6 +10,10 @@ import requests
 import shutil
 import urllib
 
+
+ConnectionError = requests.exceptions.ConnectionError
+
+
 class LocalFiles:
     def __init__(self, job_store, config):
         """Create a LocalFiles object.

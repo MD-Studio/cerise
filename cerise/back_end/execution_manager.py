@@ -2,7 +2,7 @@ from cerise.job_store.sqlite_job_store import SQLiteJobStore
 from cerise.job_store.job_state import JobState
 from .cwl import get_cwltool_result
 from .cwl import is_workflow
-from .local_files import LocalFiles
+from .local_files import ConnectionError, LocalFiles
 from .remote_api import RemoteApi
 from .remote_job_files import RemoteJobFiles
 from .job_planner import InvalidJobError, JobPlanner
@@ -139,6 +139,11 @@ class ExecutionManager:
             input_files = self._local_files.resolve_input(job_id)
         except FileNotFoundError:
             job.state = JobState.PERMANENT_FAILURE
+            return
+        except ConnectionError:
+            job.resolve_retry_count += 1
+            if job.resolve_retry_count > 10:
+                job.state = JobState.TEMPORARY_FAILURE
             return
 
         if not is_workflow(job.workflow_content):
