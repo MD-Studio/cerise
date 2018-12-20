@@ -4,13 +4,13 @@ backend_pid_file='/home/cerise/run/cerise_backend.pid'
 gunicorn_pid_file='/home/cerise/run/gunicorn.pid'
 
 function stop_container {
-    service nginx stop
-
     backend_pid=$(cat $backend_pid_file)
     kill -TERM ${backend_pid}
 
     gunicorn_pid=$(cat $gunicorn_pid_file)
     kill -TERM ${gunicorn_pid}
+
+    service nginx stop
 }
 
 trap stop_container SIGTERM
