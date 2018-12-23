@@ -119,10 +119,12 @@ class ExecutionManager:
             job_id: The id of the job
             job: The job object
         """
+        job.info('Cancelling job')
         if self._job_runner.cancel_job(job_id):
             job.state = JobState.RUNNING_CR
         else:
             job.state = JobState.CANCELLED
+            job.info('Job cancelled')
 
     def _stage_and_start_job(self, job_id, job):
         """Stages, plans and starts a job.
@@ -136,55 +138,61 @@ class ExecutionManager:
             job: The job object
         """
         try:
+            job.info('Resolving inputs')
             input_files = self._local_files.resolve_input(job_id)
-        except FileNotFoundError:
+        except FileNotFoundError as e:
+            job.error('Input not found: {}'.format(e.strerror))
             job.state = JobState.PERMANENT_FAILURE
             return
         except ConnectionError:
             job.resolve_retry_count += 1
+            job.warning('Could not connect to input source, will retry')
             if job.resolve_retry_count > 10:
+                job.error('Could not connect to input source, giving up')
                 job.state = JobState.TEMPORARY_FAILURE
             return
 
         if not is_workflow(job.workflow_content):
+            job.error('Input is not a CWL workflow')
             job.state = JobState.PERMANENT_FAILURE
             return
 
         if job.try_transition(JobState.STAGING_IN_CR, JobState.CANCELLED):
-            self._logger.debug('Job was cancelled while resolving input')
+            job.info('Job was cancelled while resolving input')
             return
 
-        self._logger.debug('Resolved input, now planning {}'.format(job.state))
+        job.info('Resolved input, now planning')
         try:
             self._job_planner.plan_job(job_id)
         except InvalidJobError:
+            job.error('Job is invalid')
             job.state = JobState.PERMANENT_FAILURE
             return
 
         if job.state == JobState.PERMANENT_FAILURE:
             return
 
-        self._logger.debug('Planned job, now staging {}'.format(job.state))
+        job.info('Planned job, now staging in inputs')
         workflow_content = self._remote_api.translate_workflow(job.workflow_content)
         try:
             self._remote_job_files.stage_job(job_id, input_files, workflow_content)
         except IOError as e:
-            self._logger.error('An IO error occurred while uploading the job'
-                               ' input data: {}. Please check that your network'
-                               ' connection works, and that you have enough'
-                               ' disk space or quota on the remote machine.'
-                               ''.format(e))
+            job.error('An IO error occurred while uploading the job'
+                      ' input data: {}. Please check that your network'
+                      ' connection works, and that you have enough'
+                      ' disk space or quota on the remote machine.'
+                      ''.format(e))
             job.state = JobState.SYSTEM_ERROR
             return
 
-        self._logger.debug('Staged job, now starting {}'.format(job.state))
+        job.info('Staged job, now starting')
         self._job_runner.start_job(job_id)
-        self._logger.debug('Started job {}'.format(job.state))
+        job.info('Started job')
 
         if not (job.try_transition(JobState.STAGING_IN, JobState.WAITING) or
                 job.try_transition(JobState.STAGING_IN_CR, JobState.WAITING_CR)):
-            self._logger.debug('Something odd happened while staging and starting')
-            self._logger.debug('State is now {}'.format(job.state))
+            self._logger.critical('Something odd happened while staging and starting')
+            self._logger.critical('State is now {}'.format(job.state))
             job.state = JobState.SYSTEM_ERROR
 
     def _destage_job(self, job_id, job):
@@ -201,8 +209,10 @@ class ExecutionManager:
         result = get_cwltool_result(job.log)
 
         if job.try_transition(JobState.FINISHED, JobState.STAGING_OUT):
+            job.info('Starting destaging of results')
             output_files = self._remote_job_files.destage_job_output(job_id)
             self._local_files.publish_job_output(job_id, output_files)
+            job.info('Results downloaded and available')
 
             if not (job.try_transition(JobState.STAGING_OUT, result) or
                     job.try_transition(JobState.STAGING_OUT_CR, JobState.CANCELLED)):
