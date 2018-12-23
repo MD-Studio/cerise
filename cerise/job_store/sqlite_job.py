@@ -1,4 +1,8 @@
+import logging
+from time import asctime, localtime, time
+
 from .job_state import JobState
+
 
 class SQLiteJob:
     """This class provides the internal representation of a job. These
@@ -80,12 +84,20 @@ class SQLiteJob:
     def log(self):
         """str: Log output as of last update.
         """
-        return self._get_var('log')
+        result = ''
+        cursor = self._store._thread_local_data.conn.execute(
+            """
+            SELECT level, time, message FROM job_log
+            WHERE job_id = ? or job_id IS NULL
+            ORDER BY time ASC""",
+            (self.id,))
+        for row in cursor:
+            level_str = logging.getLevelName(row[0])
+            time_str = asctime(localtime(row[1]))
+            message = row[2]
+            result += '{} {}: {}\n'.format(time_str, level_str, message)
 
-    @log.setter
-    def log(self, value):
-        self._set_var('log', value)
-
+        return result
 
     @property
     def remote_output(self):
@@ -231,6 +243,59 @@ class SQLiteJob:
             (to_state.name, self.id, from_state.name))
         self._store._thread_local_data.conn.commit()
         return res.rowcount == 1
+
+    def add_log(self, level, message):
+        """Add a message to the job's log.
+
+        Args:
+            level (logging.LogLevel): Level of importance
+            message (str): The log message.
+        """
+        self._store._thread_local_data.conn.execute(
+            'INSERT INTO job_log (job_id, level, time, message)'
+            'VALUES (?, ?, ?, ?)',
+            (self.id, level, int(time()), message))
+        self._store._thread_local_data.conn.commit()
+
+    def debug(self, message):
+        """Add a message to the job's log at level DEBUG.
+
+        Args:
+            message (str): The log message.
+        """
+        self.add_log(logging.DEBUG, message)
+
+    def info(self, message):
+        """Add a message to the job's log at level INFO.
+
+        Args:
+            message (str): The log message.
+        """
+        self.add_log(logging.INFO, message)
+
+    def warning(self, message):
+        """Add a message to the job's log at level WARNING.
+
+        Args:
+            message (str): The log message.
+        """
+        self.add_log(logging.WARNING, message)
+
+    def error(self, message):
+        """Add a message to the job's log at level ERROR.
+
+        Args:
+            message (str): The log message.
+        """
+        self.add_log(logging.ERROR, message)
+
+    def critical(self, message):
+        """Add a message to the job's log at level CRITICAL.
+
+        Args:
+            message (str): The log message.
+        """
+        self.add_log(logging.CRITICAL, message)
 
     def _get_var(self, var):
         """Do NOT feed this user input for var. Static strings only."""

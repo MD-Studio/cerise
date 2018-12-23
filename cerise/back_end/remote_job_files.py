@@ -158,7 +158,7 @@ class RemoteJobFiles:
             # get log
             log = self._read_remote_file(job_id, 'stderr.txt')
             if len(log) > 0:
-                job.log = log.decode()
+                job.debug(log.decode())
                 self._logger.debug("Log:")
                 self._logger.debug(job.log)
 

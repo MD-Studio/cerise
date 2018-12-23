@@ -4,6 +4,7 @@ from cerise.job_store.job_state import JobState
 from cerise.test.fixture_jobs import PassJob
 from cerise.test.fixture_jobs import WcJob
 
+import logging
 import os
 import pytest
 import sqlite3
@@ -18,26 +19,34 @@ def empty_db(request, db_name):
 
 @pytest.fixture
 def inited_db(request, empty_db):
-    empty_db['conn'].execute("""
-        CREATE TABLE jobs(
-            job_id CHARACTER(32),
-            name VARCHAR(255),
-            workflow VARCHAR(255),
-            local_input TEXT,
-            state VARCHAR(17) DEFAULT 'Submitted',
-            log TEXT,
-            remote_output TEXT,
-            workflow_content BLOB,
-            remote_workdir_path VARCHAR(255),
-            remote_workflow_path VARCHAR(255),
-            remote_input_path VARCHAR(255),
-            remote_stdout_path VARCHAR(255),
-            remote_stderr_path VARCHAR(255),
-            remote_job_id VARCHAR(255),
-            local_output TEXT,
-            please_delete INTEGER DEFAULT 0
-            )
-            """)
+    empty_db['conn'].execute(
+            'CREATE TABLE jobs('
+            '    job_id CHARACTER(32),'
+            '    name VARCHAR(255),'
+            '    workflow VARCHAR(255),'
+            '    local_input TEXT,'
+            '    state VARCHAR(17) DEFAULT \'Submitted\','
+            '    please_delete INTEGER DEFAULT 0,'
+            '    resolve_retry_count INTEGER DEFAULT 0,'
+            '    remote_output TEXT,'
+            '    workflow_content BLOB,'
+            '    remote_workdir_path VARCHAR(255),'
+            '    remote_workflow_path VARCHAR(255),'
+            '    remote_input_path VARCHAR(255),'
+            '    remote_stdout_path VARCHAR(255),'
+            '    remote_stderr_path VARCHAR(255),'
+            '    remote_job_id VARCHAR(255),'
+            '    local_output TEXT'
+            '    )')
+
+    empty_db['conn'].execute(
+            'CREATE TABLE IF NOT EXISTS job_log('
+            '   job_id CHARACTER(32),'
+            '   level INTEGER,'
+            '   time INT8,'
+            '   message TEXT'
+            '   )')
+
     empty_db['conn'].commit()
     return empty_db
 
@@ -142,11 +151,27 @@ def test_state_transitions(job):
     assert job.state == JobState.STAGING_IN_CR
 
 def test_set_get_log(job):
-    test_log = """This is a test log
-        With newlines.
-        """
-    job.log = test_log
-    assert job.log == test_log
+    job.debug('debug message')
+    job.info('info message')
+    job.warning('warning message')
+    job.error('error message')
+    job.critical('critical message')
+    job.add_log(logging.WARNING, 'add_log message')
+
+    lines = job.log.splitlines()
+
+    assert 'DEBUG' in lines[0]
+    assert 'debug message' in lines[0]
+    assert 'INFO' in lines[1]
+    assert 'info message' in lines[1]
+    assert 'WARNING' in lines[2]
+    assert 'warning message' in lines[2]
+    assert 'ERROR' in lines[3]
+    assert 'error message' in lines[3]
+    assert 'CRITICAL' in lines[4]
+    assert 'critical message' in lines[4]
+    assert 'WARNING' in lines[5]
+    assert 'add_log message' in lines[5]
 
 def test_set_get_output(job):
     test_output = WcJob.remote_output('')

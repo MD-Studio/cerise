@@ -6,6 +6,7 @@ import sqlite3
 import threading
 from uuid import uuid4
 
+
 class SQLiteJobStore(JobStore):
     """A JobStore that stores jobs in a SQLite database.
     You must acquire the store to do anything with it or
@@ -49,7 +50,6 @@ class SQLiteJobStore(JobStore):
                 state VARCHAR(17) DEFAULT 'SUBMITTED',
                 please_delete INTEGER DEFAULT 0,
                 resolve_retry_count INTEGER DEFAULT 0,
-                log TEXT DEFAULT '',
                 remote_output TEXT DEFAULT '',
                 workflow_content BLOB,
                 required_num_cores INTEGER DEFAULT 0,
@@ -61,6 +61,13 @@ class SQLiteJobStore(JobStore):
                 remote_stderr_path VARCHAR(255) DEFAULT '',
                 remote_job_id VARCHAR(255),
                 local_output TEXT DEFAULT ''
+                )
+                """)
+        conn.execute("""CREATE TABLE IF NOT EXISTS job_log(
+                job_id CHARACTER(32),
+                level INTEGER,
+                time INT8,
+                message TEXT
                 )
                 """)
         conn.commit()
@@ -170,5 +177,8 @@ class SQLiteJobStore(JobStore):
         """
         self._thread_local_data.conn.execute("""
                 DELETE FROM jobs WHERE job_id = ?""",
+                (job_id,))
+        self._thread_local_data.conn.execute(
+                'DELETE FROM job_log WHERE job_id = ?',
                 (job_id,))
         self._thread_local_data.conn.commit()

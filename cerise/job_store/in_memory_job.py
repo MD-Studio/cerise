@@ -1,4 +1,8 @@
+import logging
+from time import time
+
 from .job_state import JobState
+
 
 class InMemoryJob:
     """This class provides the internal representation of a job. These
@@ -75,6 +79,10 @@ class InMemoryJob:
         self.remote_job_id = None
         """str: The id the remote scheduler gave to this job."""
 
+        # Logging
+        self.__log = list()
+        """list: The job's execution log: [(level, time, msg)]."""
+
     def try_transition(self, from_state, to_state):
         """Attempts to transition the job's state to a new one.
 
@@ -93,3 +101,52 @@ class InMemoryJob:
             self.state = to_state
             return True
         return False
+
+    def add_log(self, level, message):
+        """Add a message to the job's log.
+
+        Args:
+            level (logging.LogLevel): Level of importance
+            message (str): The log message.
+        """
+        self.__log.append((level, time(), message))
+
+    def debug(self, message):
+        """Add a message to the job's log at level DEBUG.
+
+        Args:
+            message (str): The log message.
+        """
+        self.add_log(logging.DEBUG, message)
+
+    def info(self, message):
+        """Add a message to the job's log at level INFO.
+
+        Args:
+            message (str): The log message.
+        """
+        self.add_log(logging.INFO, message)
+
+    def warning(self, message):
+        """Add a message to the job's log at level WARNING.
+
+        Args:
+            message (str): The log message.
+        """
+        self.add_log(logging.WARNING, message)
+
+    def error(self, message):
+        """Add a message to the job's log at level ERROR.
+
+        Args:
+            message (str): The log message.
+        """
+        self.add_log(logging.ERROR, message)
+
+    def critical(self, message):
+        """Add a message to the job's log at level CRITICAL.
+
+        Args:
+            message (str): The log message.
+        """
+        self.add_log(logging.CRITICAL, message)
