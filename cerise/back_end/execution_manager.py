@@ -205,7 +205,7 @@ class ExecutionManager:
             job_id: The job's id
             job: The job object
         """
-        result = get_cwltool_result(job.log)
+        result = get_cwltool_result(job.remote_error)
 
         if job.try_transition(JobState.FINISHED, JobState.STAGING_OUT):
             job.info('Starting destaging of results')
