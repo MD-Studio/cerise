@@ -110,6 +110,16 @@ class SQLiteJob:
     def remote_output(self, value):
         self._set_var('remote_output', value)
 
+    @property
+    def remote_error(self):
+        """str: cwl-runner stderr output as of last update.
+        """
+        return self._get_var('remote_error')
+
+    @remote_error.setter
+    def remote_error(self, value):
+        self._set_var('remote_error', value)
+
     # Post-resolving data
     @property
     def workflow_content(self):

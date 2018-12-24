@@ -44,6 +44,8 @@ class InMemoryJob:
         """str: Log output as of last update."""
         self.remote_output = ''
         """str: cwl-runner output as of last update."""
+        self.remote_error = ''
+        """str: cwl-runner stderr output as of last update."""
 
         # Post-resolving data
         self.workflow_content = None

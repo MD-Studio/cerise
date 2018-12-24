@@ -158,9 +158,12 @@ class RemoteJobFiles:
             # get log
             log = self._read_remote_file(job_id, 'stderr.txt')
             if len(log) > 0:
-                job.debug(log.decode())
-                self._logger.debug("Log:")
-                self._logger.debug(job.log)
+                lines = log.decode().splitlines()
+                last_lines = job.remote_error.splitlines()
+                first_new_line = len(last_lines)
+                for line in lines[first_new_line:]:
+                    job.debug(line)
+                job.remote_error = log.decode()
 
     def _stage_input_file(self, count, job_id, input_file, input_desc):
         """Stage an input file. Copies the file to the remote resource.

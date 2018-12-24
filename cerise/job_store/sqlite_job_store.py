@@ -51,6 +51,7 @@ class SQLiteJobStore(JobStore):
                 please_delete INTEGER DEFAULT 0,
                 resolve_retry_count INTEGER DEFAULT 0,
                 remote_output TEXT DEFAULT '',
+                remote_error TEXT DEFAULT '',
                 workflow_content BLOB,
                 required_num_cores INTEGER DEFAULT 0,
                 time_limit INTEGER DEFAULT 0,
