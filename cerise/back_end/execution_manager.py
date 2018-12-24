@@ -186,6 +186,9 @@ class ExecutionManager:
             return
 
         job.info('Staged job, now starting')
+        job.info('API versions:')
+        for project_version in self._remote_api.get_projects():
+            job.info('  {}'.format(project_version))
         self._job_runner.start_job(job_id)
         job.info('Started job')
 

@@ -83,6 +83,23 @@ class RemoteApi:
                                   ' disk space or quota on the remote machine.'
                                   ''.format(e))
 
+    def get_projects(self):
+        """Return names and versions of the installed projects.
+
+        Returns:
+            A list of strings, one for each project, with name and
+                    version.
+        """
+        projects_versions = list()
+        for project_dir in self._local_api_dir.iterdir():
+            if project_dir.is_dir():
+                project_name = str(project_dir.relative_to(self._local_api_dir))
+                version_file = project_dir / 'version'
+                version = version_file.read_text().strip()
+                projects_versions.append('{} {}'.format(project_name, version))
+
+        return projects_versions
+
     def translate_runner_location(self, runner_location):
         """Perform macro substitution on CWL runner location.
 
