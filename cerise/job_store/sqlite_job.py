@@ -96,6 +96,7 @@ class SQLiteJob:
             time_str = asctime(localtime(row[1]))
             message = row[2]
             result += '{} {}: {}\n'.format(time_str, level_str, message)
+        cursor.close()
 
         return result
 
@@ -108,7 +109,6 @@ class SQLiteJob:
     @remote_output.setter
     def remote_output(self, value):
         self._set_var('remote_output', value)
-
 
     # Post-resolving data
     @property
@@ -251,11 +251,11 @@ class SQLiteJob:
             level (logging.LogLevel): Level of importance
             message (str): The log message.
         """
-        self._store._thread_local_data.conn.execute(
+        cursor = self._store._thread_local_data.conn.execute(
             'INSERT INTO job_log (job_id, level, time, message)'
             'VALUES (?, ?, ?, ?)',
             (self.id, level, int(time()), message))
-        self._store._thread_local_data.conn.commit()
+        cursor.close()
 
     def debug(self, message):
         """Add a message to the job's log at level DEBUG.
@@ -299,14 +299,17 @@ class SQLiteJob:
 
     def _get_var(self, var):
         """Do NOT feed this user input for var. Static strings only."""
-        res = self._store._thread_local_data.conn.execute("""
+        cursor = self._store._thread_local_data.conn.execute("""
             SELECT %s FROM jobs WHERE job_id = ?""" % var,
             (self.id,))
-        return res.fetchone()[0]
+        value = cursor.fetchone()[0]
+        cursor.close()
+        return value
 
     def _set_var(self, var, value):
         """Do NOT feed this user input for var. Static strings only."""
-        self._store._thread_local_data.conn.execute("""
+        cursor = self._store._thread_local_data.conn.execute("""
             UPDATE jobs SET %s = ? WHERE job_id = ?""" % var,
             (value, self.id))
+        cursor.close()
         self._store._thread_local_data.conn.commit()
