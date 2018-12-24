@@ -51,7 +51,7 @@ class ExecutionManager:
         """RemoteJobFiles: The remote job files manager."""
 
 
-        # TODO: recover database from crash
+        # recover database from crash
         with self._job_store:
             for job in self._job_store.list_jobs():
                 if job.state == JobState.STAGING_IN:
@@ -60,14 +60,10 @@ class ExecutionManager:
                 if job.state == JobState.STAGING_OUT:
                     self._local_files.delete_output_dir(job.id)
                     job.state = JobState.FINISHED
-
-        # if job is in WAITING, it may never have been started
-        # should check somehow whether a job in WAITING actually
-        # was submitted to the compute resource
-
-        # for each job in WAITING_CR or RUNNING_CR
-            # if it's running
-                # send cancel request
+                if job.state == JobState.WAITING_CR:
+                    self._job_runner.cancel_job(job.id)
+                if job.state == JobState.RUNNING_CR:
+                    self._job_runner.cancel_job(job.id)
 
         remote_cwlrunner = self._remote_api.translate_runner_location(
                 config.get_remote_cwl_runner())
