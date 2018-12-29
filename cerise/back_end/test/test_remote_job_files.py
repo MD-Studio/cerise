@@ -39,7 +39,7 @@ def test_stage_job(fixture):
     fixture['remote-job-files'].stage_job('test_stage_job', input_files, bytes())
 
     remote_file = os.path.join(fixture['remote-dir'], 'jobs',
-            'test_stage_job', 'work', '01_input_hello_world.txt')
+            'test_stage_job', 'work', '01_input_test_job_hello_world.txt')
     with open(remote_file, 'rb') as f:
         content = f.read()
         assert content == input_files[0].content
@@ -50,13 +50,13 @@ def test_stage_secondary_files(fixture):
     fixture['remote-job-files'].stage_job('test_stage_secondary_files', input_files, bytes())
 
     remote_file = os.path.join(fixture['remote-dir'], 'jobs',
-            'test_stage_secondary_files', 'work', '01_input_hello_world.txt')
+            'test_stage_secondary_files', 'work', '01_input_test_job_hello_world.txt')
     with open(remote_file, 'rb') as f:
         content = f.read()
         assert content == input_files[0].content
 
     remote_file = os.path.join(fixture['remote-dir'], 'jobs',
-            'test_stage_secondary_files', 'work', '02_input_hello_world.2nd')
+            'test_stage_secondary_files', 'work', '02_input_test_job_hello_world.2nd')
     with open(remote_file, 'rb') as f:
         content = f.read()
         assert content == input_files[0].secondary_files[0].content
@@ -67,13 +67,13 @@ def test_stage_file_array(fixture):
     fixture['remote-job-files'].stage_job('test_stage_file_array', input_files, bytes())
 
     remote_file = os.path.join(fixture['remote-dir'], 'jobs',
-            'test_stage_file_array', 'work', '01_input_hello_world.txt')
+            'test_stage_file_array', 'work', '01_input_test_job_hello_world.txt')
     with open(remote_file, 'rb') as f:
         content = f.read()
         assert content == input_files[0].content
 
     remote_file = os.path.join(fixture['remote-dir'], 'jobs',
-            'test_stage_file_array', 'work', '02_input_hello_world.2nd')
+            'test_stage_file_array', 'work', '02_input_test_job_hello_world.2nd')
     with open(remote_file, 'rb') as f:
         content = f.read()
         assert content == input_files[1].content

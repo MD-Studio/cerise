@@ -31,31 +31,34 @@ def fixture(request, mock_config):
 def test_init(fixture):
     pass
 
-def test_resolve_no_input(fixture):
-    fixture['store'].add_test_job('test_resolve_no_input', 'pass', 'submitted')
-    fixture['local-files'].resolve_input('test_resolve_no_input')
-    assert fixture['store'].get_job('test_resolve_no_input').workflow_content == PassJob.workflow
 
-def test_resolve_input(fixture):
-    fixture['store'].add_test_job('test_resolve_input', 'wc', 'submitted')
-    input_files = fixture['local-files'].resolve_input('test_resolve_input')
-    assert fixture['store'].get_job('test_resolve_input').workflow_content == WcJob.workflow
-    assert input_files[0].name == WcJob.local_input_files[0].name
-    assert input_files[0].content == WcJob.local_input_files[0].content
+def _local_files_are_equal(input_file, reference_input_file, prefix):
+    if input_file.name != reference_input_file.name:
+        return False
+    if input_file.index != reference_input_file.index:
+        return False
+    if input_file.location != (prefix + reference_input_file.location):
+        return False
+    if input_file.content != reference_input_file.content:
+        return False
+    for i, secondary_file in enumerate(input_file.secondary_files):
+        return _local_files_are_equal(secondary_file, reference_input_file.secondary_files[i], prefix)
+    return True
 
-def test_resolve_missing_input(fixture):
-    fixture['store'].add_test_job('test_missing_input', 'missing_input', 'submitted')
-    with pytest.raises(FileNotFoundError):
-        fixture['local-files'].resolve_input('test_missing_input')
 
-def test_resolve_secondary_files(fixture):
-    fixture['store'].add_test_job('test_resolve_secondary_files', 'secondary_files', 'submitted')
-    input_files = fixture['local-files'].resolve_input('test_resolve_secondary_files')
-    assert fixture['store'].get_job('test_resolve_secondary_files').workflow_content == SecondaryFilesJob.workflow
-    assert input_files[0].name == SecondaryFilesJob.local_input_files[0].name
-    assert input_files[0].content == SecondaryFilesJob.local_input_files[0].content
-    assert input_files[0].secondary_files[0].content == \
-            SecondaryFilesJob.local_input_files[0].secondary_files[0].content
+def test_resolve_input(mock_config, mock_store_submitted):
+    store, job_fixture = mock_store_submitted
+
+    local_files = LocalFiles(store, mock_config)
+    input_files = local_files.resolve_input('test_job')
+
+    assert store.get_job('test_job').workflow_content == job_fixture.workflow
+
+    for i, input_file in enumerate(input_files):
+        assert _local_files_are_equal(
+                input_file, job_fixture.local_input_files[i],
+                mock_config.get_store_location_service())
+
 
 def test_create_output_dir(fixture):
     fixture['local-files'].create_output_dir('test_create_output_dir')

@@ -14,6 +14,10 @@ class PassJob:
                 'outputs: []\n', 'utf-8')
 
     def local_input(local_baseurl):
+        """Argument is local input dir for this job.
+
+        That's normally local_exchange / input / job_name.
+        """
         return '{}'
 
     local_input_files = []
@@ -23,6 +27,8 @@ class PassJob:
     remote_input_files = []
 
     def remote_output(job_remote_workdir):
+        """Argument is remote work dir for this job.
+        """
         return '{}\n'
 
     output_files = []
@@ -101,17 +107,18 @@ class WcJob:
                 '    coresMin: 3\n', 'utf-8')
 
     def local_input(local_baseurl):
-        return '{ "file": { "class": "File", "location": "' + local_baseurl + '/input/hello_world.txt" } }'
+        return ('{ "file": { "class": "File", "location":'
+                '"%sinput/test_job/hello_world.txt" } }') % local_baseurl
 
-    local_input_files = [InputFile('file', 'input/hello_world.txt', bytes(
+    local_input_files = [InputFile('file', 'input/test_job/hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'
                 '\n', 'utf-8'), [])]
 
-    remote_input = '{ "file": { "class": "File", "location": "work/01_input_hello_world.txt" } }'
+    remote_input = '{ "file": { "class": "File", "location": "work/01_input_test_job_hello_world.txt" } }'
 
-    remote_input_files = [('file', '01_input_hello_world.txt', bytes(
+    remote_input_files = [('file', '01_input_test_job_hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'
@@ -156,7 +163,7 @@ class SlowJob:
     remote_input_files = []
 
     def remote_output(job_remote_workdir):
-        return '{ "output": { "class": "File", "location": "{}/output.txt" } }\n'
+        return '{ "output": { "class": "File", "location": "{}/output.txt" } }\n'.format(job_remote_workdir)
 
     output_files = [
             ('output', 'output.txt', bytes('', 'utf-8'))]
@@ -193,23 +200,22 @@ class SecondaryFilesJob:
         return '''{{
             "file": {{
                 "class": "File",
-                "location": "{0}/input/hello_world.txt",
+                "location": "{0}input/test_job/hello_world.txt",
                 "secondaryFiles": [{{
                     "class": "File",
-                    "location": "{0}/input/hello_world.2nd"
+                    "location": "{0}input/test_job/hello_world.2nd"
                     }}]
                 }}
             }}'''.format(local_baseurl)
 
-
     def _make_local_input_files():
-        input_file = InputFile('file', 'input/hello_world.txt', bytes(
+        input_file = InputFile('file', 'input/test_job/hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'
                 '\n', 'utf-8'), [])
         input_file.secondary_files = [
-            InputFile('file', 'input/hello_world.2nd', bytes(
+            InputFile(None, 'input/test_job/hello_world.2nd', bytes(
                 'Hello, secondaryFiles!', 'utf-8'), [])]
         return [input_file]
 
@@ -218,26 +224,26 @@ class SecondaryFilesJob:
     remote_input = '''{
             "file": {
                 "class": "File",
-                "location": "work/01_input_hello_world.txt",
+                "location": "work/01_input_test_job_hello_world.txt",
                 "secondaryFiles": [{
                     "class": "File",
-                    "location": "work/02_input_hello_world.2nd"
+                    "location": "work/02_input_test_job_hello_world.2nd"
                     }]
                 }
             }'''
 
     remote_input_files = [
-            ('file', '01_input_hello_world.txt', bytes(
+            ('file', '01_input_test_job_hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'
                 '\n', 'utf-8')),
-            ('file', '02_input_hello_world.2nd', bytes(
+            ('file', '02_input_test_job_hello_world.2nd', bytes(
                 'Hello, secondaryFiles!', 'utf-8'))
             ]
 
     def remote_output(job_remote_workdir):
-        return '{ "counts": { "class": "File", "location": "{}/output.txt" } }\n'
+        return '{ "counts": { "class": "File", "location": "{}/output.txt" } }\n'.format(job_remote_workdir)
 
     output_files = [
                 ('counts', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
@@ -276,22 +282,22 @@ class FileArrayJob:
             "files": [
                 {{
                     "class": "File",
-                    "location": "{0}/input/hello_world.txt"
+                    "location": "{0}input/test_job/hello_world.txt"
                     }},
                 {{
                     "class": "File",
-                    "location": "{0}/input/hello_world.2nd"
+                    "location": "{0}input/test_job/hello_world.2nd"
                 }}]
             }}'''.format(local_baseurl)
 
     def _make_local_input_files():
-        input_file_1 = InputFile('files', 'input/hello_world.txt', bytes(
+        input_file_1 = InputFile('files', 'input/test_job/hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'
                 '\n', 'utf-8'), [], 0)
-        input_file_2 = InputFile('files', 'input/hello_world.2nd', bytes(
-                'Hello, file arrays!', 'utf-8'), [], 0)
+        input_file_2 = InputFile('files', 'input/test_job/hello_world.2nd', bytes(
+                'Hello, file arrays!', 'utf-8'), [], 1)
         return [input_file_1, input_file_2]
 
     local_input_files = _make_local_input_files()
@@ -299,26 +305,26 @@ class FileArrayJob:
     remote_input = '''{
             "files": [{
                     "class": "File",
-                    "location": "work/01_input_hello_world.txt"
+                    "location": "work/01_input_test_job_hello_world.txt"
                 },
                 {
                     "class": "File",
-                    "location": "work/02_input_hello_world.2nd"
+                    "location": "work/02_input_test_job_hello_world.2nd"
                 }]
             }'''
 
     remote_input_files = [
-            ('files', '01_input_hello_world.txt', bytes(
+            ('files', '01_input_test_job_hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'
                 '\n', 'utf-8')),
-            ('files', '02_input_hello_world.2nd', bytes(
+            ('files', '02_input_test_job_hello_world.2nd', bytes(
                 'Hello, file arrays!', 'utf-8'))
             ]
 
     def remote_output(job_remote_workdir):
-        return '{ "counts": { "class": "File", "location": "{}/output.txt" } }\n'
+        return '{ "counts": { "class": "File", "location": "{}/output.txt" } }\n'.format(job_remote_workdir)
 
     output_files = [
                 ('counts', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
@@ -349,7 +355,7 @@ class MissingInputJob:
                 '    outputBinding: { glob: output.txt }\n', 'utf-8')
 
     def local_input(local_baseurl):
-        return '{ "file": { "class": "File", "location": "' + local_baseurl + 'input/non_existing_file.txt" } }'
+        return '{ "file": { "class": "File", "location": "' + local_baseurl + 'non_existing_file.txt" } }'
 
     input_files = []
 
