@@ -43,6 +43,10 @@ def test_new_stage_job(mock_config, mock_store_resolved):
 
     remote_base = mock_config.get_basedir()
     jobdir = remote_base / 'jobs' / 'test_job'
+
+    workflow_file = jobdir / 'workflow.cwl'
+    assert workflow_file.read_bytes() == job_fixture.workflow
+
     for _, path, content in job_fixture.remote_input_files:
         staged_file = jobdir / 'work' / path
         assert staged_file.read_bytes() == content
