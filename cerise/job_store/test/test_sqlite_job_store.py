@@ -1,9 +1,6 @@
 from cerise.job_store.sqlite_job_store import SQLiteJobStore
 from cerise.job_store.job_state import JobState
 
-from cerise.test.fixture_jobs import PassJob
-from cerise.test.fixture_jobs import WcJob
-
 import logging
 import os
 import pytest
@@ -51,7 +48,17 @@ def inited_db(request, empty_db):
     return empty_db
 
 @pytest.fixture
-def onejob_db(request, inited_db):
+def workflow_content():
+    return ('CWL\n'
+            'Not a real workflow, just testing\n')
+
+@pytest.fixture
+def local_input():
+    return ('Input binding\n'
+            'Not a real one, just testing\n')
+
+@pytest.fixture
+def onejob_db(request, inited_db, workflow_content, local_input):
     inited_db['conn'].execute("""
         INSERT INTO jobs (job_id, name, workflow, local_input, state) VALUES (
             '258685677b034756b55bbad161b2b89b',
@@ -59,7 +66,7 @@ def onejob_db(request, inited_db):
             ?,
             ?,
             ?);
-        """, (PassJob.workflow, PassJob.local_input, JobState.SUBMITTED.name))
+        """, (workflow_content, local_input, JobState.SUBMITTED.name))
     inited_db['conn'].commit()
     return inited_db
 
@@ -123,11 +130,11 @@ def test_delete_job(onejob_store):
 def test_reading_name(job):
     assert job.name == 'test_sqlite_job_store'
 
-def test_reading_workflow(job):
-    assert job.workflow == PassJob.workflow
+def test_reading_workflow(job, workflow_content):
+    assert job.workflow == workflow_content
 
-def test_reading_local_input(job):
-    assert job.local_input == PassJob.local_input
+def test_reading_local_input(job, local_input):
+    assert job.local_input == local_input
 
 def test_reading_state(job):
     assert job.state == JobState.SUBMITTED
@@ -174,13 +181,13 @@ def test_set_get_log(job):
     assert 'add_log message' in lines[5]
 
 def test_set_get_output(job):
-    test_output = WcJob.remote_output('')
+    test_output = '{Testing remote output\nnot real JSON}'
     job.output = test_output
     assert job.output == test_output
 
-def test_set_get_workflow_content(job):
-    job.workflow_content = WcJob.workflow
-    assert job.workflow_content == WcJob.workflow
+def test_set_get_workflow_content(job, workflow_content):
+    job.workflow_content = workflow_content
+    assert job.workflow_content == workflow_content
 
 def test_set_get_remote_workdir_path(job):
     job.remote_workdir_path = '/test_set_get'
@@ -203,8 +210,9 @@ def test_set_get_remote_stderr_path(job):
     assert job.remote_stderr_path == '/test_set_get'
 
 def test_set_get_local_output(job):
-    job.local_output = WcJob.local_output
-    assert job.local_output == WcJob.local_output
+    local_output = '{Local output\n Not really}'
+    job.local_output = local_output
+    assert job.local_output == local_output
 
 def test_set_get_remote_job_id(job):
     job.remote_job_id = 'slurm.00042'
