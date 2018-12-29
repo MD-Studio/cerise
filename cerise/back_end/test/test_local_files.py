@@ -1,9 +1,8 @@
 from cerise.back_end.local_files import LocalFiles
 from .mock_store import MockStore
 
-from cerise.back_end.test.fixture_jobs import PassJob
 from cerise.back_end.test.fixture_jobs import WcJob
-from cerise.back_end.test.fixture_jobs import SecondaryFilesJob
+from cerise.back_end.test.fixture_jobs import MissingInputJob
 
 import os
 import pytest
@@ -50,14 +49,18 @@ def test_resolve_input(mock_config, mock_store_submitted):
     store, job_fixture = mock_store_submitted
 
     local_files = LocalFiles(store, mock_config)
-    input_files = local_files.resolve_input('test_job')
+    if job_fixture == MissingInputJob:
+        with pytest.raises(FileNotFoundError):
+            local_files.resolve_input('test_job')
+    else:
+        input_files = local_files.resolve_input('test_job')
 
-    assert store.get_job('test_job').workflow_content == job_fixture.workflow
+        assert store.get_job('test_job').workflow_content == job_fixture.workflow
 
-    for i, input_file in enumerate(input_files):
-        assert _local_files_are_equal(
-                input_file, job_fixture.local_input_files[i],
-                mock_config.get_store_location_service())
+        for i, input_file in enumerate(input_files):
+            assert _local_files_are_equal(
+                    input_file, job_fixture.local_input_files[i],
+                    mock_config.get_store_location_service())
 
 
 def test_create_output_dir(fixture):

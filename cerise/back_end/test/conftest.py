@@ -4,7 +4,8 @@ import cerulean
 import pytest
 
 from cerise.job_store.in_memory_job import InMemoryJob
-from cerise.back_end.test.fixture_jobs import PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob
+from cerise.back_end.test.fixture_jobs import (PassJob, HostnameJob, WcJob,
+        SlowJob, SecondaryFilesJob, FileArrayJob, MissingInputJob)
 
 
 class MockConfig:
@@ -84,8 +85,9 @@ class MockStore:
                 [job for job in self._jobs if job.id == job_id])
 
 
-
-@pytest.fixture(params=[PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob])
+@pytest.fixture(params=[
+        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
+        MissingInputJob])
 def mock_store_submitted(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param

@@ -357,7 +357,7 @@ class MissingInputJob:
     def local_input(local_baseurl):
         return '{ "file": { "class": "File", "location": "' + local_baseurl + 'non_existing_file.txt" } }'
 
-    input_files = []
+    local_input_files = []
 
 
 class BrokenJob:
@@ -374,6 +374,13 @@ class BrokenJob:
 
     local_input = '{}'
 
+    local_input_files = []
+
     remote_input = '{}'
 
-    output = ''
+    remote_input_files = []
+
+    def remote_output(job_remote_workdir):
+        return ''
+
+    output_files = []
