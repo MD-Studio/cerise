@@ -372,7 +372,8 @@ class BrokenJob:
                 'inputs: []\n'
                 'outputs: []\n', 'utf-8')
 
-    local_input = '{}'
+    def local_input(local_base_url):
+        return '{}'
 
     local_input_files = []
 

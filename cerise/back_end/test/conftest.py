@@ -3,9 +3,10 @@ from pathlib import Path
 import cerulean
 import pytest
 
+from cerise.job_store.job_state import JobState
 from cerise.job_store.in_memory_job import InMemoryJob
 from cerise.back_end.test.fixture_jobs import (PassJob, HostnameJob, WcJob,
-        SlowJob, SecondaryFilesJob, FileArrayJob, MissingInputJob)
+        SlowJob, SecondaryFilesJob, FileArrayJob, MissingInputJob, BrokenJob)
 
 
 class MockConfig:
@@ -87,7 +88,7 @@ class MockStore:
 
 @pytest.fixture(params=[
         PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        MissingInputJob])
+        MissingInputJob, BrokenJob])
 def mock_store_submitted(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param
@@ -116,7 +117,26 @@ def mock_store_submitted(request, mock_config):
 
     job = InMemoryJob('test_job', 'test_job', 'client://' + str(wf_path),
                       job_fixture.local_input('file://' + str(exchange_dir) + '/'))
+    job.state = JobState.SUBMITTED
+    store.add_job(job)
 
-    store._jobs = [job]
+    return store, job_fixture
+
+
+@pytest.fixture(params=[
+        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
+        BrokenJob])
+def mock_store_resolved(request, mock_config):
+    store = MockStore(mock_config)
+    job_fixture = request.param
+
+    exchange_dir = Path(mock_config.get_store_location_service()[7:])
+    local_input = job_fixture.local_input('file://' + str(exchange_dir) + '/')
+
+    job = InMemoryJob('test_job', 'test_job', None, local_input)
+    job.workflow_content = job_fixture.workflow
+    job.state = JobState.STAGING_IN
+
+    store.add_job(job)
 
     return store, job_fixture

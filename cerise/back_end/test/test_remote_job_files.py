@@ -33,50 +33,20 @@ def fixture(request, mock_config):
     return result
 
 
-def test_stage_job(fixture):
-    fixture['store'].add_test_job('test_stage_job', 'wc', 'resolved')
-    input_files = fixture['store'].get_input_files('wc')
-    fixture['remote-job-files'].stage_job('test_stage_job', input_files, bytes())
+def test_new_stage_job(mock_config, mock_store_resolved):
+    store, job_fixture = mock_store_resolved
 
-    remote_file = os.path.join(fixture['remote-dir'], 'jobs',
-            'test_stage_job', 'work', '01_input_test_job_hello_world.txt')
-    with open(remote_file, 'rb') as f:
-        content = f.read()
-        assert content == input_files[0].content
+    remote_job_files = RemoteJobFiles(store, mock_config)
 
-def test_stage_secondary_files(fixture):
-    fixture['store'].add_test_job('test_stage_secondary_files', 'secondary_files', 'resolved')
-    input_files = fixture['store'].get_input_files('secondary_files')
-    fixture['remote-job-files'].stage_job('test_stage_secondary_files', input_files, bytes())
+    input_files = job_fixture.local_input_files
+    remote_job_files.stage_job('test_job', input_files, job_fixture.workflow)
 
-    remote_file = os.path.join(fixture['remote-dir'], 'jobs',
-            'test_stage_secondary_files', 'work', '01_input_test_job_hello_world.txt')
-    with open(remote_file, 'rb') as f:
-        content = f.read()
-        assert content == input_files[0].content
+    remote_base = mock_config.get_basedir()
+    jobdir = remote_base / 'jobs' / 'test_job'
+    for _, path, content in job_fixture.remote_input_files:
+        staged_file = jobdir / 'work' / path
+        assert staged_file.read_bytes() == content
 
-    remote_file = os.path.join(fixture['remote-dir'], 'jobs',
-            'test_stage_secondary_files', 'work', '02_input_test_job_hello_world.2nd')
-    with open(remote_file, 'rb') as f:
-        content = f.read()
-        assert content == input_files[0].secondary_files[0].content
-
-def test_stage_file_array(fixture):
-    fixture['store'].add_test_job('test_stage_file_array', 'file_array', 'resolved')
-    input_files = fixture['store'].get_input_files('file_array')
-    fixture['remote-job-files'].stage_job('test_stage_file_array', input_files, bytes())
-
-    remote_file = os.path.join(fixture['remote-dir'], 'jobs',
-            'test_stage_file_array', 'work', '01_input_test_job_hello_world.txt')
-    with open(remote_file, 'rb') as f:
-        content = f.read()
-        assert content == input_files[0].content
-
-    remote_file = os.path.join(fixture['remote-dir'], 'jobs',
-            'test_stage_file_array', 'work', '02_input_test_job_hello_world.2nd')
-    with open(remote_file, 'rb') as f:
-        content = f.read()
-        assert content == input_files[1].content
 
 def test_destage_job_no_output(fixture):
     fixture['store'].add_test_job('test_destage_job_no_output', 'pass', 'run_and_updated')
