@@ -1,5 +1,6 @@
 from cerise.back_end.input_file import InputFile
 
+
 class PassJob:
     """A simple job with no inputs or outputs.
     """
@@ -12,13 +13,22 @@ class PassJob:
                 'inputs: []\n'
                 'outputs: []\n', 'utf-8')
 
-    local_input = '{}'
+    def local_input(local_baseurl):
+        return '{}'
+
+    local_input_files = []
 
     remote_input = '{}'
 
-    remote_output = '{}\n'
+    remote_input_files = []
+
+    def remote_output(job_remote_workdir):
+        return '{}\n'
+
+    output_files = []
 
     local_output = '{}'
+
 
 class HostnameJob:
     """A simple job with no inputs and one output.
@@ -42,13 +52,24 @@ class HostnameJob:
                 'hints:\n'
                 '  TimeLimit: 101\n', 'utf-8')
 
-    local_input = '{}'
+    def local_input(local_baseurl):
+        return '{}'
+
+    local_input_files = []
 
     remote_input = '{}'
 
-    remote_output = '{}\n'
+    remote_input_files = []
 
-    local_output = '{}'
+    def remote_output(job_remote_workdir):
+        return '{ "host": { "class": "File", "location:" "{}/output.txt" } }\n'.format(
+                job_remote_workdir)
+
+    output_files = [
+            ('host', 'output.txt', bytes('hostname', 'utf-8'))]
+
+    local_output = '{ "host": { "class": "File", "location": "output.txt" } }\n'
+
 
 class WcJob:
     """A simple job with an input file and an output file.
@@ -96,7 +117,6 @@ class WcJob:
                 'Here is a test file for the staging test.\n'
                 '\n', 'utf-8'))]
 
-
     def remote_output(job_remote_workdir):
         return '{ "output": { "class": "File", "location": "' + job_remote_workdir + '/output.txt" } }\n'
 
@@ -106,32 +126,6 @@ class WcJob:
 
     local_output = '{ "output": { "class": "File", "location": "output.txt" } }\n'
 
-
-class MissingInputJob:
-    """A broken job that references an input file that doesn't exist.
-    """
-    workflow = bytes(
-                '#!/usr/bin/env cwl-runner\n'
-                '\n'
-                'cwlVersion: v1.0\n'
-                'class: CommandLineTool\n'
-                'baseCommand: wc\n'
-                'stdout: output.txt\n'
-                'inputs:\n'
-                '  file:\n'
-                '    type: File\n'
-                '    inputBinding:\n'
-                '      position: 1\n'
-                '\n'
-                'outputs:\n'
-                '  output:\n'
-                '    type: File\n'
-                '    outputBinding: { glob: output.txt }\n', 'utf-8')
-
-    def local_input(local_baseurl):
-        return '{ "file": { "class": "File", "location": "' + local_baseurl + 'input/non_existing_file.txt" } }'
-
-    input_files = []
 
 class SlowJob:
     workflow = bytes(
@@ -152,27 +146,22 @@ class SlowJob:
             '    type: File\n'
             '    outputBinding: { glob: output.txt }\n', 'utf-8')
 
-    local_input = '{}'
+    def local_input(local_baseurl):
+        return '{}'
+
+    local_input_files = []
 
     remote_input = '{}'
 
-class BrokenJob:
-    """A simple job with no inputs or outputs, and an invalid command.
-    """
-    workflow = bytes(
-                '#!/usr/bin/env cwl-runner\n'
-                '\n'
-                'cwlVersion: v1.0\n'
-                'class: CommandLineTool\n'
-                'baseCommand: this_comamnd_does_not_exist\n'
-                'inputs: []\n'
-                'outputs: []\n', 'utf-8')
+    remote_input_files = []
 
-    local_input = '{}'
+    def remote_output(job_remote_workdir):
+        return '{ "output": { "class": "File", "location": "{}/output.txt" } }\n'
 
-    remote_input = '{}'
+    output_files = [
+            ('output', 'output.txt', bytes('', 'utf-8'))]
 
-    output = ''
+    local_output = '{ "output": { "class": "File", "location": "output.txt" } }\n'
 
 
 class SecondaryFilesJob:
@@ -212,7 +201,8 @@ class SecondaryFilesJob:
                 }}
             }}'''.format(local_baseurl)
 
-    def local_input_files():
+
+    def _make_local_input_files():
         input_file = InputFile('file', 'input/hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
@@ -222,6 +212,8 @@ class SecondaryFilesJob:
             InputFile('file', 'input/hello_world.2nd', bytes(
                 'Hello, secondaryFiles!', 'utf-8'), [])]
         return [input_file]
+
+    local_input_files = _make_local_input_files()
 
     remote_input = '''{
             "file": {
@@ -243,6 +235,15 @@ class SecondaryFilesJob:
             ('file', '02_input_hello_world.2nd', bytes(
                 'Hello, secondaryFiles!', 'utf-8'))
             ]
+
+    def remote_output(job_remote_workdir):
+        return '{ "counts": { "class": "File", "location": "{}/output.txt" } }\n'
+
+    output_files = [
+                ('counts', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
+                ]
+
+    local_output = '{ "counts": { "class": "File", "location": "output.txt" } }\n'
 
 
 class FileArrayJob:
@@ -283,7 +284,7 @@ class FileArrayJob:
                 }}]
             }}'''.format(local_baseurl)
 
-    def local_input_files():
+    def _make_local_input_files():
         input_file_1 = InputFile('files', 'input/hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
@@ -292,6 +293,8 @@ class FileArrayJob:
         input_file_2 = InputFile('files', 'input/hello_world.2nd', bytes(
                 'Hello, file arrays!', 'utf-8'), [], 0)
         return [input_file_1, input_file_2]
+
+    local_input_files = _make_local_input_files()
 
     remote_input = '''{
             "files": [{
@@ -313,3 +316,58 @@ class FileArrayJob:
             ('files', '02_input_hello_world.2nd', bytes(
                 'Hello, file arrays!', 'utf-8'))
             ]
+
+    def remote_output(job_remote_workdir):
+        return '{ "counts": { "class": "File", "location": "{}/output.txt" } }\n'
+
+    output_files = [
+                ('counts', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
+                ]
+
+    local_output = '{ "counts": { "class": "File", "location": "output.txt" } }\n'
+
+
+class MissingInputJob:
+    """A broken job that references an input file that doesn't exist.
+    """
+    workflow = bytes(
+                '#!/usr/bin/env cwl-runner\n'
+                '\n'
+                'cwlVersion: v1.0\n'
+                'class: CommandLineTool\n'
+                'baseCommand: wc\n'
+                'stdout: output.txt\n'
+                'inputs:\n'
+                '  file:\n'
+                '    type: File\n'
+                '    inputBinding:\n'
+                '      position: 1\n'
+                '\n'
+                'outputs:\n'
+                '  output:\n'
+                '    type: File\n'
+                '    outputBinding: { glob: output.txt }\n', 'utf-8')
+
+    def local_input(local_baseurl):
+        return '{ "file": { "class": "File", "location": "' + local_baseurl + 'input/non_existing_file.txt" } }'
+
+    input_files = []
+
+
+class BrokenJob:
+    """A simple job with no inputs or outputs, and an invalid command.
+    """
+    workflow = bytes(
+                '#!/usr/bin/env cwl-runner\n'
+                '\n'
+                'cwlVersion: v1.0\n'
+                'class: CommandLineTool\n'
+                'baseCommand: this_comamnd_does_not_exist\n'
+                'inputs: []\n'
+                'outputs: []\n', 'utf-8')
+
+    local_input = '{}'
+
+    remote_input = '{}'
+
+    output = ''

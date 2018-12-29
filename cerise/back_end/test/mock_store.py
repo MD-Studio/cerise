@@ -80,9 +80,9 @@ class MockStore:
         elif test_job_type == "wc":
             return WcJob.local_input_files
         elif test_job_type == "secondary_files":
-            return SecondaryFilesJob.local_input_files()
+            return SecondaryFilesJob.local_input_files
         elif test_job_type == "file_array":
-            return FileArrayJob.local_input_files()
+            return FileArrayJob.local_input_files
         raise NotImplementedError
 
     def get_output_files(self, test_job_type):
@@ -141,11 +141,11 @@ class MockStore:
             os.makedirs(pass_output_dir)
 
             with open(os.path.join(pass_job_dir, 'stdout.txt'), 'wb') as f:
-                f.write(PassJob.remote_output.encode('utf-8'))
+                f.write(PassJob.remote_output(self._remote_base_path).encode('utf-8'))
             job.state = JobState.FINISHED
 
             if stage == 'run_and_updated':
-                job.remote_output = PassJob.remote_output
+                job.remote_output = PassJob.remote_output(self._remote_base_path)
                 job.state = JobState.STAGING_OUT
             return job
 
@@ -338,7 +338,7 @@ class MockStore:
             with open(sf_wf_path, 'wb') as f:
                 f.write(SecondaryFilesJob.workflow)
 
-            for input_file in SecondaryFilesJob.local_input_files():
+            for input_file in SecondaryFilesJob.local_input_files:
                 sf_input_path = os.path.join(self._local_base_path, input_file.location)
                 with open(sf_input_path, 'wb') as f:
                     f.write(input_file.content)
@@ -364,7 +364,7 @@ class MockStore:
             with open(fa_wf_path, 'wb') as f:
                 f.write(FileArrayJob.workflow)
 
-            for input_file in FileArrayJob.local_input_files():
+            for input_file in FileArrayJob.local_input_files:
                 fa_input_path = os.path.join(self._local_base_path, input_file.location)
                 with open(fa_input_path, 'wb') as f:
                     f.write(input_file.content)

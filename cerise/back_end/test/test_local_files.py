@@ -52,10 +52,10 @@ def test_resolve_secondary_files(fixture):
     fixture['store'].add_test_job('test_resolve_secondary_files', 'secondary_files', 'submitted')
     input_files = fixture['local-files'].resolve_input('test_resolve_secondary_files')
     assert fixture['store'].get_job('test_resolve_secondary_files').workflow_content == SecondaryFilesJob.workflow
-    assert input_files[0].name == SecondaryFilesJob.local_input_files()[0].name
-    assert input_files[0].content == SecondaryFilesJob.local_input_files()[0].content
+    assert input_files[0].name == SecondaryFilesJob.local_input_files[0].name
+    assert input_files[0].content == SecondaryFilesJob.local_input_files[0].content
     assert input_files[0].secondary_files[0].content == \
-            SecondaryFilesJob.local_input_files()[0].secondary_files[0].content
+            SecondaryFilesJob.local_input_files[0].secondary_files[0].content
 
 def test_create_output_dir(fixture):
     fixture['local-files'].create_output_dir('test_create_output_dir')
