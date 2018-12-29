@@ -1,9 +1,9 @@
 from cerise.back_end.local_files import LocalFiles
 from .mock_store import MockStore
 
-from cerise.test.fixture_jobs import PassJob
-from cerise.test.fixture_jobs import WcJob
-from cerise.test.fixture_jobs import SecondaryFilesJob
+from cerise.back_end.test.fixture_jobs import PassJob
+from cerise.back_end.test.fixture_jobs import WcJob
+from cerise.back_end.test.fixture_jobs import SecondaryFilesJob
 
 import os
 import pytest

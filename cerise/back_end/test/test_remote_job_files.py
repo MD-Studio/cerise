@@ -1,5 +1,5 @@
 from .mock_store import MockStore
-from cerise.test.fixture_jobs import WcJob
+from cerise.back_end.test.fixture_jobs import WcJob
 from cerise.back_end.remote_job_files import RemoteJobFiles
 from cerise.back_end.remote_api import RemoteApi
 
