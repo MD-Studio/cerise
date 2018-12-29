@@ -14,3 +14,9 @@ test:
 	coverage combine --append integration_test
 	coverage xml
 	coverage report -m
+
+
+.PHONY: fast_test
+fast_test:
+	pytest --cov --ignore=docs --ignore=integration_test -x
+	coverage report -m

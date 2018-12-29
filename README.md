@@ -92,9 +92,11 @@ Cerise follows the Google Python style guide, with Sphinxdoc docstrings for modu
 contribute to the project please fork it, create a branch including your addition, and create a pull request.
 
 The tests use relative imports and can be run directly after making
-changes to the code. To run all tests use `pytest` in the main directory.
+changes to the code. To run all tests use `make test` in the main directory.
 This will also run the integration tests, which take several minutes to complete
 as a bunch of Docker containers is built, started, and stopped.
+While developing, you may want to run `make fast_test` to skip the expensive
+integration test.
 
 Before creating a pull request please ensure the following:
 * You have written unit tests to test your additions
