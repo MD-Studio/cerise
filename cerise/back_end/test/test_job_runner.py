@@ -11,36 +11,16 @@ import shutil
 import time
 
 
-class MockConfig:
-    def get_scheduler(self, run_on_head_node=False):
-        term = cerulean.LocalTerminal()
-        return cerulean.DirectGnuScheduler(term)
-
-    def get_queue_name(self):
-        return None
-
-    def get_slots_per_node(self):
-        return 1
-
-    def get_cores_per_node(self):
-        return 16
-
-    def get_scheduler_options(self):
-        return None
-
-    def get_remote_cwl_runner(self):
-        return '$CERISE_API/cerise/files/cwltiny.py'
-
 @pytest.fixture
-def fixture(request, tmpdir):
+def fixture(request, mock_config):
     result = {}
 
-    result['remote-dir'] = str(tmpdir)
+    result['job-runner-config'] = mock_config
+    result['remote-dir'] = str(mock_config.get_basedir())
     result['store'] = MockStore({
         'local-base-path': '',
         'remote-base-path': result['remote-dir']
         })
-    result['job-runner-config'] = MockConfig()
 
     # stage api
     base_api_dir = pathlib.Path(__file__).parents[3] / 'api'

@@ -3,8 +3,6 @@ from cerise.test.fixture_jobs import WcJob
 from cerise.back_end.remote_job_files import RemoteJobFiles
 from cerise.back_end.remote_api import RemoteApi
 
-from cerise.back_end.test.conftest import MockConfig
-
 import cerulean
 
 import os
@@ -12,17 +10,17 @@ import pytest
 
 
 @pytest.fixture
-def fixture(request, tmpdir):
+def fixture(request, mock_config):
     result = {}
 
-    result['remote-dir'] = str(tmpdir)
+    result['remote-files-config'] = mock_config
+    result['remote-dir'] = str(mock_config.get_basedir())
 
     result['store'] = MockStore({
         'local-base-path': '',
         'remote-base-path': result['remote-dir']
         })
 
-    result['remote-files-config'] = MockConfig(result['remote-dir'])
     local_api_dir = os.path.join(os.path.dirname(__file__), 'api')
     result['remote-api'] = RemoteApi(
             result['remote-files-config'], local_api_dir)
