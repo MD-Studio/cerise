@@ -177,3 +177,32 @@ def mock_store_staged(request, mock_config):
 
     store.add_job(job)
     return store, job_fixture
+
+
+@pytest.fixture(params=[PassJob])
+def mock_store_run(request, mock_config):
+    store = MockStore(mock_config)
+    job_fixture = request.param
+
+    remote_base = mock_config.get_basedir()
+    job_dir = remote_base / 'jobs' / 'test_job'
+    work_dir = job_dir / 'work'
+    work_dir.mkdir(parents=True)
+
+    (job_dir / 'stdout.txt').write_text(job_fixture.remote_output(work_dir))
+    (job_dir / 'stderr.txt').write_text('Test log output\nAnother line\n')
+
+    for _, name, content in job_fixture.output_files:
+        (work_dir / name).write_bytes(content)
+
+    job = InMemoryJob('test_job', 'test_job', None, None)
+    job.workflow_content = job_fixture.workflow
+    job.remote_workdir_path = str(work_dir)
+    job.remote_workflow_path = str(job_dir / 'workflow.cwl')
+    job.remote_input_path = str(job_dir / 'input.json')
+    job.remote_stdout_path = str(job_dir / 'stdout.txt')
+    job.remote_stderr_path = str(job_dir / 'stderr.txt')
+    job.state = JobState.STAGING_IN
+
+    store.add_job(job)
+    return store, job_fixture

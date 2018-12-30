@@ -33,7 +33,7 @@ def fixture(request, mock_config):
     return result
 
 
-def test_new_stage_job(mock_config, mock_store_resolved):
+def test_stage_job(mock_config, mock_store_resolved):
     store, job_fixture = mock_store_resolved
 
     remote_job_files = RemoteJobFiles(store, mock_config)
@@ -52,6 +52,18 @@ def test_new_stage_job(mock_config, mock_store_resolved):
         assert staged_file.read_bytes() == content
 
 
+def test_update_job(mock_config, mock_store_run):
+    store, job_fixture = mock_store_run
+
+    remote_job_files = RemoteJobFiles(store, mock_config)
+    work_dir = mock_config.get_basedir() / 'jobs' / 'test_job' / 'work'
+
+    remote_job_files.update_job('test_job')
+    job = store.get_job('test_job')
+    assert job.remote_output == job_fixture.remote_output('file://{}'.format(work_dir))
+    assert job.remote_error == 'Test log output\nAnother line\n'
+
+
 def test_destage_job_no_output(fixture):
     fixture['store'].add_test_job('test_destage_job_no_output', 'pass', 'run_and_updated')
     output_files = fixture['remote-job-files'].destage_job_output('test_destage_job_no_output')
@@ -68,10 +80,3 @@ def test_delete_job(fixture):
     os.makedirs(work_dir)
     fixture['remote-job-files'].delete_job('test_delete_job')
     assert not os.path.exists(job_dir)
-
-def test_update_job(fixture):
-    fixture['store'].add_test_job('test_update_job', 'wc', 'run')
-    fixture['remote-job-files'].update_job('test_update_job')
-    wc_remote_workdir = os.path.join(fixture['remote-dir'], 'jobs', 'test_update_job', 'work')
-    assert fixture['store'].get_job('test_update_job').remote_output == WcJob.remote_output('file://' + wc_remote_workdir)
-    # check that we have the log?
