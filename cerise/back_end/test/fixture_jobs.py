@@ -68,7 +68,7 @@ class HostnameJob:
     remote_input_files = []
 
     def remote_output(job_remote_workdir):
-        return '{ "host": { "class": "File", "location:" "{}/output.txt" } }\n'.format(
+        return '{{ "host": {{ "class": "File", "location:" "{}/output.txt" }} }}\n'.format(
                 job_remote_workdir)
 
     output_files = [
@@ -125,7 +125,8 @@ class WcJob:
                 '\n', 'utf-8'))]
 
     def remote_output(job_remote_workdir):
-        return '{ "output": { "class": "File", "location": "' + job_remote_workdir + '/output.txt" } }\n'
+        return '{{ "output": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(
+                job_remote_workdir)
 
     output_files = [
                 ('output', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
@@ -163,7 +164,7 @@ class SlowJob:
     remote_input_files = []
 
     def remote_output(job_remote_workdir):
-        return '{ "output": { "class": "File", "location": "{}/output.txt" } }\n'.format(job_remote_workdir)
+        return '{{ "output": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(job_remote_workdir)
 
     output_files = [
             ('output', 'output.txt', bytes('', 'utf-8'))]
@@ -243,7 +244,7 @@ class SecondaryFilesJob:
             ]
 
     def remote_output(job_remote_workdir):
-        return '{ "counts": { "class": "File", "location": "{}/output.txt" } }\n'.format(job_remote_workdir)
+        return '{{ "counts": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(job_remote_workdir)
 
     output_files = [
                 ('counts', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
@@ -324,13 +325,13 @@ class FileArrayJob:
             ]
 
     def remote_output(job_remote_workdir):
-        return '{ "counts": { "class": "File", "location": "{}/output.txt" } }\n'.format(job_remote_workdir)
+        return '{{ "counts": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(job_remote_workdir)
 
     output_files = [
                 ('counts', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
                 ]
 
-    local_output = '{ "counts": { "class": "File", "location": "output.txt" } }\n'
+    local_output = '{{ "counts": {{ "class": "File", "location": "output.txt" }} }}\n'
 
 
 class MissingInputJob:
@@ -355,7 +356,8 @@ class MissingInputJob:
                 '    outputBinding: { glob: output.txt }\n', 'utf-8')
 
     def local_input(local_baseurl):
-        return '{ "file": { "class": "File", "location": "' + local_baseurl + 'non_existing_file.txt" } }'
+        return '{{ "file": {{ "class": "File", "location": "{}non_existing_file.txt" }} }}'.format(
+                local_baseurl)
 
     local_input_files = []
 
