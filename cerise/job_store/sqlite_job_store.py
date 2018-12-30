@@ -1,5 +1,4 @@
 from .sqlite_job import SQLiteJob
-from .job_store import JobStore
 from .job_state import JobState
 
 import sqlite3
@@ -7,7 +6,7 @@ import threading
 from uuid import uuid4
 
 
-class SQLiteJobStore(JobStore):
+class SQLiteJobStore:
     """A JobStore that stores jobs in a SQLite database.
     You must acquire the store to do anything with it or
     the jobs stored in it. It's a context manager, so
