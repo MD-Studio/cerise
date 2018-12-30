@@ -1,15 +1,14 @@
 import logging
 from time import time
 
-from .job_state import JobState
+from cerise.job_store.job_state import JobState
 
 
-class InMemoryJob:
-    """This class provides the internal representation of a job. These
-    are stored inside the service. Note that there is also a JobDescription,
-    which is defined in the Swagger definition and part of the REST API,
-    and a Cerulean JobDescription class, which describes a job to start on
-    a remote compute resource.
+class MockJob:
+    """This class provides an in-memory implementation of a job.
+
+    It's used for testing, so that we don't need to bother with a
+    database there.
     """
     # Attributes:
     def __init__(self, job_id, name, workflow, job_input):

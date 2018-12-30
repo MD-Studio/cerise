@@ -7,7 +7,7 @@ from cerise.back_end.test.fixture_jobs import BrokenJob
 from cerise.back_end.test.fixture_jobs import SecondaryFilesJob
 from cerise.back_end.test.fixture_jobs import FileArrayJob
 
-from cerise.job_store.in_memory_job import InMemoryJob
+from cerise.back_end.test.mock_job import MockJob
 from cerise.job_store.job_state import JobState
 
 import json
@@ -103,7 +103,7 @@ class MockStore:
 
     def _create_pass_job(self, job_id, stage):
         pass_wf_path = os.path.join(self._local_base_path, 'input', 'pass_workflow.cwl')
-        job = InMemoryJob(job_id, job_id, 'file://' + pass_wf_path, "{}")
+        job = MockJob(job_id, job_id, 'file://' + pass_wf_path, "{}")
 
         if stage == 'submitted':
             with open(pass_wf_path, 'wb') as f:
@@ -159,7 +159,7 @@ class MockStore:
 
     def _create_hostname_job(self, job_id, stage):
         hostname_wf_path = os.path.join(self._local_base_path, 'input', 'hostname_workflow.cwl')
-        job = InMemoryJob(job_id, job_id, 'file://' + hostname_wf_path, "{}")
+        job = MockJob(job_id, job_id, 'file://' + hostname_wf_path, "{}")
 
         if stage == "resolved":
             job.workflow_content = HostnameJob.workflow
@@ -170,7 +170,7 @@ class MockStore:
     def _create_wc_job(self, job_id, stage):
         # Create
         wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
-        job = InMemoryJob(job_id, job_id, 'file://' + wc_wf_path, WcJob.local_input(self._local_base_url))
+        job = MockJob(job_id, job_id, 'file://' + wc_wf_path, WcJob.local_input(self._local_base_url))
 
         if stage == 'submitted':
             with open(wc_wf_path, 'wb') as f:
@@ -243,7 +243,7 @@ class MockStore:
     def _create_missing_input_job(self, job_id, stage):
         # Create
         wc_wf_path = os.path.join(self._local_base_path, 'input', 'wc_workflow.cwl')
-        job = InMemoryJob(job_id, job_id, 'file://' + wc_wf_path, MissingInputJob.local_input(self._local_base_url))
+        job = MockJob(job_id, job_id, 'file://' + wc_wf_path, MissingInputJob.local_input(self._local_base_url))
 
         if stage == 'submitted':
             with open(wc_wf_path, 'wb') as f:
@@ -254,7 +254,7 @@ class MockStore:
         return ValueError('Invalid stage in _create_missing_input_job')
 
     def _create_slow_job(self, job_id, stage):
-        job = InMemoryJob(job_id, job_id, "input/slow_workflow.cwl", "{}")
+        job = MockJob(job_id, job_id, "input/slow_workflow.cwl", "{}")
 
         if stage == "staged":
             slow_jobdir = os.path.join(self._remote_base_path, 'jobs', job_id)
@@ -278,7 +278,7 @@ class MockStore:
         raise ValueError('Invalid stage in _create_slow_job')
 
     def _create_broken_job(self, job_id, stage):
-        job = InMemoryJob(job_id, job_id, "input/broken_workflow.cwl", "{}")
+        job = MockJob(job_id, job_id, "input/broken_workflow.cwl", "{}")
 
         if stage == 'submitted':
             pass_wf_path = os.path.join(self._local_base_path, 'input', 'broken_workflow.cwl')
@@ -331,7 +331,7 @@ class MockStore:
     def _create_secondary_files_job(self, job_id, stage):
         # Create
         sf_wf_path = os.path.join(self._local_base_path, 'input', 'sf_workflow.cwl')
-        job = InMemoryJob(job_id, job_id, 'file://' + sf_wf_path,
+        job = MockJob(job_id, job_id, 'file://' + sf_wf_path,
                 SecondaryFilesJob.local_input(self._local_base_url))
 
         if stage == 'submitted':
@@ -357,7 +357,7 @@ class MockStore:
 
     def _create_file_array_job(self, job_id, stage):
         fa_wf_path = os.path.join(self._local_base_path, 'input', 'sf_workflow.cwl')
-        job = InMemoryJob(job_id, job_id, 'file://' + fa_wf_path,
+        job = MockJob(job_id, job_id, 'file://' + fa_wf_path,
                 FileArrayJob.local_input(self._local_base_url))
 
         if stage == 'submitted':

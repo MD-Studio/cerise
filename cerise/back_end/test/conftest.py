@@ -6,7 +6,7 @@ import pytest
 import yaml
 
 from cerise.job_store.job_state import JobState
-from cerise.job_store.in_memory_job import InMemoryJob
+from cerise.back_end.test.mock_job import MockJob
 from cerise.back_end.test.fixture_jobs import (PassJob, HostnameJob, WcJob,
         SlowJob, SecondaryFilesJob, FileArrayJob, MissingInputJob, BrokenJob)
 
@@ -122,7 +122,7 @@ def mock_store_submitted(request, mock_config):
                 f.write(secondary_file.content)
 
 
-    job = InMemoryJob('test_job', 'test_job', 'client://' + str(wf_path),
+    job = MockJob('test_job', 'test_job', 'client://' + str(wf_path),
                       job_fixture.local_input('file://' + str(exchange_dir) + '/'))
     job.state = JobState.SUBMITTED
 
@@ -140,7 +140,7 @@ def mock_store_resolved(request, mock_config):
     exchange_dir = Path(mock_config.get_store_location_service()[7:])
     local_input = job_fixture.local_input('file://' + str(exchange_dir) + '/')
 
-    job = InMemoryJob('test_job', 'test_job', None, local_input)
+    job = MockJob('test_job', 'test_job', None, local_input)
     job.workflow_content = job_fixture.workflow
     job.state = JobState.STAGING_IN
 
@@ -166,7 +166,7 @@ def mock_store_staged(request, mock_config):
     for _, name, content in job_fixture.remote_input_files:
         (work_dir / name).write_bytes(content)
 
-    job = InMemoryJob('test_job', 'test_job', None, None)
+    job = MockJob('test_job', 'test_job', None, None)
     job.workflow_content = job_fixture.workflow
     job.remote_workdir_path = str(work_dir)
     job.remote_workflow_path = str(job_dir / 'workflow.cwl')
@@ -197,7 +197,7 @@ def mock_store_run(request, mock_config):
     for _, name, content in job_fixture.output_files:
         (work_dir / name).write_bytes(content)
 
-    job = InMemoryJob('test_job', 'test_job', None, None)
+    job = MockJob('test_job', 'test_job', None, None)
     job.remote_workdir_path = str(work_dir)
     job.remote_stdout_path = str(job_dir / 'stdout.txt')
     job.remote_stderr_path = str(job_dir / 'stderr.txt')
@@ -228,7 +228,7 @@ def mock_store_destaged(request, mock_config):
 
     work_dir = mock_config.get_basedir() / 'jobs' / 'test_job' / 'work'
 
-    job = InMemoryJob('test_job', 'test_job', None, None)
+    job = MockJob('test_job', 'test_job', None, None)
     job.remote_output = job_fixture.remote_output('file://{}'.format(work_dir))
 
     store.add_job(job)
