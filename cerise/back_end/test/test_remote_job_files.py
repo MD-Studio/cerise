@@ -64,15 +64,13 @@ def test_update_job(mock_config, mock_store_run):
     assert job.remote_error == 'Test log output\nAnother line\n'
 
 
-def test_destage_job_no_output(fixture):
-    fixture['store'].add_test_job('test_destage_job_no_output', 'pass', 'run_and_updated')
-    output_files = fixture['remote-job-files'].destage_job_output('test_destage_job_no_output')
-    assert output_files == []
+def test_destage_job(mock_config, mock_store_run_and_updated):
+    store, job_fixture = mock_store_run_and_updated
 
-def test_destage_job_output(fixture):
-    fixture['store'].add_test_job('test_destage_job_output', 'wc', 'run_and_updated')
-    output_files = fixture['remote-job-files'].destage_job_output('test_destage_job_output')
-    assert output_files == WcJob.output_files
+    remote_job_files = RemoteJobFiles(store, mock_config)
+    output_files = remote_job_files.destage_job_output('test_job')
+    assert output_files == job_fixture.output_files
+
 
 def test_delete_job(fixture):
     job_dir = os.path.join(fixture['remote-dir'], 'jobs', 'test_delete_job')

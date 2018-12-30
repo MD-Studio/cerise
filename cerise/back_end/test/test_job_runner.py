@@ -41,7 +41,6 @@ def _wait_for_state(store, job_runner, state, timeout):
         job = store.get_job('test_job')
         total_time += 0.01
 
-    print(job.state)
     assert total_time < timeout
     return job
 

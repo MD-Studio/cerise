@@ -68,7 +68,7 @@ class HostnameJob:
     remote_input_files = []
 
     def remote_output(job_remote_workdir):
-        return '{{ "host": {{ "class": "File", "location:" "{}/output.txt" }} }}\n'.format(
+        return '{{ "host": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(
                 job_remote_workdir)
 
     output_files = [

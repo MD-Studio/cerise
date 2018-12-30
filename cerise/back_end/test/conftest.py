@@ -205,3 +205,15 @@ def mock_store_run(request, mock_config):
 
     store.add_job(job)
     return store, job_fixture
+
+
+@pytest.fixture
+def mock_store_run_and_updated(mock_config, mock_store_run):
+    store, job_fixture = mock_store_run
+
+    work_dir = mock_config.get_basedir() / 'jobs' / 'test_job' / 'work'
+
+    job = store.get_job('test_job')
+    job.remote_output = job_fixture.remote_output('file://{}'.format(work_dir))
+
+    return store, job_fixture
