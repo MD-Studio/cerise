@@ -1,36 +1,7 @@
-from .mock_store import MockStore
-from cerise.back_end.test.fixture_jobs import WcJob
 from cerise.back_end.remote_job_files import RemoteJobFiles
-from cerise.back_end.remote_api import RemoteApi
 
-import cerulean
 
-import os
 import pytest
-
-
-@pytest.fixture
-def fixture(request, mock_config):
-    result = {}
-
-    result['remote-files-config'] = mock_config
-    result['remote-dir'] = str(mock_config.get_basedir())
-
-    result['store'] = MockStore({
-        'local-base-path': '',
-        'remote-base-path': result['remote-dir']
-        })
-
-    local_api_dir = os.path.join(os.path.dirname(__file__), 'api')
-    result['remote-api'] = RemoteApi(
-            result['remote-files-config'], local_api_dir)
-
-    result['remote-api'].install()
-
-    result['remote-job-files'] = RemoteJobFiles(
-            result['store'], result['remote-files-config'])
-
-    return result
 
 
 def test_stage_job(mock_config, mock_store_resolved):
@@ -72,9 +43,12 @@ def test_destage_job(mock_config, mock_store_run_and_updated):
     assert output_files == job_fixture.output_files
 
 
-def test_delete_job(fixture):
-    job_dir = os.path.join(fixture['remote-dir'], 'jobs', 'test_delete_job')
-    work_dir = os.path.join(job_dir, 'work')
-    os.makedirs(work_dir)
-    fixture['remote-job-files'].delete_job('test_delete_job')
-    assert not os.path.exists(job_dir)
+def test_delete_job(mock_config, mock_store_run_and_updated):
+    store, job_fixture = mock_store_run_and_updated
+
+    remote_job_files = RemoteJobFiles(store, mock_config)
+
+    job_dir = mock_config.get_basedir() / 'jobs' / 'test_job'
+    assert job_dir.exists()
+    remote_job_files.delete_job('test_job')
+    assert not job_dir.exists()
