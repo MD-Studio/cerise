@@ -1,10 +1,6 @@
 from cerise.back_end.job_runner import JobRunner
 from cerise.job_store.job_state import JobState
 
-from .mock_store import MockStore
-
-import cerulean
-import os
 import pathlib
 import pytest
 import shutil
@@ -21,6 +17,19 @@ def _stage_test_api(remote_api_dir):
     shutil.copytree(str(test_api_dir / 'test'), str(remote_api_dir / 'test'))
 
 
+@pytest.fixture
+def runner_store(mock_config, mock_store_staged):
+    store, job_fixture = mock_store_staged
+
+    remote_api_dir = mock_config.get_basedir() / 'api'
+    _stage_test_api(remote_api_dir)
+
+    runner_path = remote_api_dir / 'cerise' / 'files' / 'cwltiny.py'
+    job_runner = JobRunner(store, mock_config, str(runner_path))
+
+    return job_runner, store
+
+
 def _wait_for_state(store, job_runner, state, timeout):
     """Waits for the job to be in the given state.
     """
@@ -35,19 +44,6 @@ def _wait_for_state(store, job_runner, state, timeout):
     print(job.state)
     assert total_time < timeout
     return job
-
-
-@pytest.fixture
-def runner_store(mock_config, mock_store_staged):
-    store, job_fixture = mock_store_staged
-
-    remote_api_dir = mock_config.get_basedir() / 'api'
-    _stage_test_api(remote_api_dir)
-
-    runner_path = remote_api_dir / 'cerise' / 'files' / 'cwltiny.py'
-    job_runner = JobRunner(store, mock_config, str(runner_path))
-
-    return job_runner, store
 
 
 def test_start_job(runner_store):
