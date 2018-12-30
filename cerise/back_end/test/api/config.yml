@@ -1,0 +1,9 @@
+compute-resource:
+  refresh: 0.1
+
+  files:
+    protocol: local
+    path: /tmp/cerise
+
+  jobs:
+    protocol: local

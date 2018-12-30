@@ -10,11 +10,11 @@ import time
 def _stage_test_api(remote_api_dir):
     """Copies an API to the mock remote dir for testing.
     """
-    base_api_dir = pathlib.Path(__file__).parents[3] / 'api'
-    shutil.copytree(str(base_api_dir), str(remote_api_dir))
-
     test_api_dir = pathlib.Path(__file__).parent / 'api'
-    shutil.copytree(str(test_api_dir / 'test'), str(remote_api_dir / 'test'))
+    shutil.copytree(str(test_api_dir), str(remote_api_dir))
+
+    cwltiny = pathlib.Path(__file__).parents[3] / 'api' / 'cerise' / 'files' / 'cwltiny.py'
+    shutil.copy(str(cwltiny), str(remote_api_dir / 'cerise' / 'files' / 'cwltiny.py'))
 
 
 @pytest.fixture

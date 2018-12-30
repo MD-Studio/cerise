@@ -22,6 +22,10 @@ class PassJob:
 
     local_input_files = []
 
+    required_num_cores = 0
+
+    time_limit = 0
+
     remote_input = '{}'
 
     remote_input_files = []
@@ -62,6 +66,10 @@ class HostnameJob:
         return '{}'
 
     local_input_files = []
+
+    required_num_cores = 2
+
+    time_limit = 101
 
     remote_input = '{}'
 
@@ -116,6 +124,10 @@ class WcJob:
                 'Here is a test file for the staging test.\n'
                 '\n', 'utf-8'), [])]
 
+    required_num_cores = 3
+
+    time_limit = 60
+
     remote_input = '{ "file": { "class": "File", "location": "work/01_input_test_job_hello_world.txt" } }'
 
     remote_input_files = [('file', '01_input_test_job_hello_world.txt', bytes(
@@ -159,6 +171,10 @@ class SlowJob:
 
     local_input_files = []
 
+    required_num_cores = 0
+
+    time_limit = 0
+
     remote_input = '{}'
 
     remote_input_files = []
@@ -191,7 +207,7 @@ class SecondaryFilesJob:
                 '\n'
                 'steps:\n'
                 '  wc:\n'
-                '    run: cerise/test/secondary_files.cwl\n'
+                '    run: test/secondary_files.cwl\n'
                 '    in:\n'
                 '      textfile: file\n'
                 '    out:\n'
@@ -221,6 +237,10 @@ class SecondaryFilesJob:
         return [input_file]
 
     local_input_files = _make_local_input_files()
+
+    required_num_cores = 0
+
+    time_limit = 0
 
     remote_input = '''{
             "file": {
@@ -272,7 +292,7 @@ class FileArrayJob:
                 '\n'
                 'steps:\n'
                 '  wc:\n'
-                '    run: cerise/test/file_array.cwl\n'
+                '    run: test/wc.cwl\n'
                 '    in:\n'
                 '      textfiles: files\n'
                 '    out:\n'
@@ -302,6 +322,10 @@ class FileArrayJob:
         return [input_file_1, input_file_2]
 
     local_input_files = _make_local_input_files()
+
+    required_num_cores = 0
+
+    time_limit = 0
 
     remote_input = '''{
             "files": [{
@@ -378,6 +402,10 @@ class BrokenJob:
         return '{}'
 
     local_input_files = []
+
+    required_num_cores = 0
+
+    time_limit = 0
 
     remote_input = '{}'
 

@@ -66,6 +66,11 @@ def mock_config(tmpdir):
     return MockConfig(tmpdir)
 
 
+@pytest.fixture
+def local_api_dir():
+    return Path(__file__).parent / 'api'
+
+
 class MockStore:
     def __init__(self, config):
         self._config = config
