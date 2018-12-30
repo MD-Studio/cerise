@@ -36,11 +36,9 @@ def get_workflow_step_names(workflow_content):
     """
     workflow = yaml.safe_load(workflow_content)
     if not 'class' in workflow or workflow['class'] != 'Workflow':
-        if steps is None:
-            raise RuntimeError('Invalid workflow file')
+        raise RuntimeError('Invalid workflow file')
     if not 'steps' in workflow:
-        if steps is None:
-            raise RuntimeError('Invalid workflow file')
+        raise RuntimeError('Invalid workflow file')
 
     steps = None
     if isinstance(workflow['steps'], dict):
