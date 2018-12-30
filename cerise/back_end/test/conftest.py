@@ -217,3 +217,20 @@ def mock_store_run_and_updated(mock_config, mock_store_run):
     job.remote_output = job_fixture.remote_output('file://{}'.format(work_dir))
 
     return store, job_fixture
+
+
+@pytest.fixture(params=[
+        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
+        BrokenJob])
+def mock_store_destaged(request, mock_config):
+    store = MockStore(mock_config)
+    job_fixture = request.param
+
+    work_dir = mock_config.get_basedir() / 'jobs' / 'test_job' / 'work'
+
+    job = InMemoryJob('test_job', 'test_job', None, None)
+    job.remote_output = job_fixture.remote_output('file://{}'.format(work_dir))
+
+    store.add_job(job)
+
+    return store, job_fixture

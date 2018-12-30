@@ -1,34 +1,9 @@
 from cerise.back_end.local_files import LocalFiles
-from .mock_store import MockStore
-
-from cerise.back_end.test.fixture_jobs import WcJob
 from cerise.back_end.test.fixture_jobs import MissingInputJob
 
-import os
+from pathlib import Path
+
 import pytest
-
-
-@pytest.fixture
-def fixture(request, mock_config):
-    result = {}
-
-    result['local-files-config'] = mock_config
-
-    # strip off the file:// prefix
-    basedir = mock_config.get_store_location_service()[7:]
-
-    result['output-dir'] = os.path.join(basedir, 'output')
-
-    result['store'] = MockStore({
-        'local-base-path': basedir
-        })
-
-    result['local-files'] = LocalFiles(result['store'], result['local-files-config'])
-
-    return result
-
-def test_init(fixture):
-    pass
 
 
 def _local_files_are_equal(input_file, reference_input_file, prefix):
@@ -63,32 +38,43 @@ def test_resolve_input(mock_config, mock_store_submitted):
                     mock_config.get_store_location_service())
 
 
-def test_create_output_dir(fixture):
-    fixture['local-files'].create_output_dir('test_create_output_dir')
-    output_dir_ref = os.path.join(fixture['output-dir'], 'test_create_output_dir')
-    assert os.path.isdir(output_dir_ref)
+def test_create_output_dir(mock_config, mock_store_destaged):
+    store, job_fixture = mock_store_destaged
 
-def test_delete_output_dir(fixture):
-    output_dir = os.path.join(fixture['output-dir'], 'test_delete_output_dir')
-    os.mkdir(output_dir)
-    fixture['local-files'].delete_output_dir('test_delete_output_dir')
-    assert not os.path.exists(output_dir)
+    local_files = LocalFiles(store, mock_config)
 
-def test_publish_no_output(fixture):
-    fixture['store'].add_test_job('test_publish_no_output', 'pass', 'destaged')
-    output_dir = os.path.join(fixture['output-dir'], 'test_publish_no_output')
-    os.mkdir(output_dir)
-    fixture['local-files'].publish_job_output('test_publish_no_output', None)
-    assert os.listdir(output_dir) == []
+    exchange_dir = Path(mock_config.get_store_location_service()[7:])
+    output_dir = exchange_dir / 'output' / 'test_job'
 
-def test_publish_output(fixture):
-    fixture['store'].add_test_job('test_publish_output', 'wc', 'destaged')
-    output_files = fixture['store'].get_output_files('wc')
+    assert not output_dir.exists()
+    local_files.create_output_dir('test_job')
+    assert output_dir.exists()
 
-    fixture['local-files'].publish_job_output('test_publish_output', output_files)
 
-    output_path = os.path.join(fixture['output-dir'], 'test_publish_output', 'output.txt')
-    assert os.path.exists(output_path)
-    with open(output_path, 'rb') as f:
-        contents = f.read()
-        assert contents == WcJob.output_files[0][2]
+def test_delete_output_dir(mock_config, mock_store_destaged):
+    store, job_fixture = mock_store_destaged
+
+    local_files = LocalFiles(store, mock_config)
+
+    exchange_dir = Path(mock_config.get_store_location_service()[7:])
+    output_dir = exchange_dir / 'output' / 'test_job'
+
+    output_dir.mkdir()
+    (output_dir / 'output.txt').write_text('Test output')
+
+    local_files.delete_output_dir('test_job')
+    assert not output_dir.exists()
+
+
+def test_publish_output(mock_config, mock_store_destaged):
+    store, job_fixture = mock_store_destaged
+
+    local_files = LocalFiles(store, mock_config)
+
+    exchange_dir = Path(mock_config.get_store_location_service()[7:])
+    output_dir = exchange_dir / 'output' / 'test_job'
+
+    local_files.publish_job_output('test_job', job_fixture.output_files)
+
+    for _, name, content in job_fixture.output_files:
+        assert (output_dir / name).read_bytes() == content
