@@ -1,12 +1,19 @@
+import json
 from pathlib import Path
 
 import cerulean
 import pytest
+import yaml
 
 from cerise.job_store.job_state import JobState
 from cerise.job_store.in_memory_job import InMemoryJob
 from cerise.back_end.test.fixture_jobs import (PassJob, HostnameJob, WcJob,
         SlowJob, SecondaryFilesJob, FileArrayJob, MissingInputJob, BrokenJob)
+
+
+def yaml_to_json(yaml_string):
+    dict_form = yaml.safe_load(str(yaml_string, 'utf-8'))
+    return bytes(json.dumps(dict_form), 'utf-8')
 
 
 class MockConfig:
@@ -118,8 +125,8 @@ def mock_store_submitted(request, mock_config):
     job = InMemoryJob('test_job', 'test_job', 'client://' + str(wf_path),
                       job_fixture.local_input('file://' + str(exchange_dir) + '/'))
     job.state = JobState.SUBMITTED
-    store.add_job(job)
 
+    store.add_job(job)
     return store, job_fixture
 
 
@@ -138,5 +145,35 @@ def mock_store_resolved(request, mock_config):
     job.state = JobState.STAGING_IN
 
     store.add_job(job)
+    return store, job_fixture
 
+
+@pytest.fixture(params=[
+        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
+        BrokenJob])
+def mock_store_staged(request, mock_config):
+    store = MockStore(mock_config)
+    job_fixture = request.param
+
+    remote_base = mock_config.get_basedir()
+    job_dir = remote_base / 'jobs' / 'test_job'
+    work_dir = job_dir / 'work'
+    work_dir.mkdir(parents=True)
+
+    (job_dir / 'workflow.cwl').write_bytes(yaml_to_json(job_fixture.workflow))
+    (job_dir / 'input.json').write_bytes(job_fixture.remote_input.encode('utf-8'))
+
+    for _, name, content in job_fixture.remote_input_files:
+        (work_dir / name).write_bytes(content)
+
+    job = InMemoryJob('test_job', 'test_job', None, None)
+    job.workflow_content = job_fixture.workflow
+    job.remote_workdir_path = str(work_dir)
+    job.remote_workflow_path = str(job_dir / 'workflow.cwl')
+    job.remote_input_path = str(job_dir / 'input.json')
+    job.remote_stdout_path = str(job_dir / 'stdout.txt')
+    job.remote_stderr_path = str(job_dir / 'stderr.txt')
+    job.state = JobState.STAGING_IN
+
+    store.add_job(job)
     return store, job_fixture

@@ -143,7 +143,7 @@ class SlowJob:
             'baseCommand: bash\n'
             'arguments:\n'
             '  - \'-c\'\n'
-            '  - \'sleep 4\''
+            '  - \'sleep 1\''
             '\n'
             'inputs: []\n'
             '\n'

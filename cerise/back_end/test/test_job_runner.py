@@ -11,84 +11,92 @@ import shutil
 import time
 
 
-@pytest.fixture
-def fixture(request, mock_config):
-    result = {}
-
-    result['job-runner-config'] = mock_config
-    result['remote-dir'] = str(mock_config.get_basedir())
-    result['store'] = MockStore({
-        'local-base-path': '',
-        'remote-base-path': result['remote-dir']
-        })
-
-    # stage api
+def _stage_test_api(remote_api_dir):
+    """Copies an API to the mock remote dir for testing.
+    """
     base_api_dir = pathlib.Path(__file__).parents[3] / 'api'
-    remote_api_dir = pathlib.Path(result['remote-dir']) / 'api'
     shutil.copytree(str(base_api_dir), str(remote_api_dir))
 
     test_api_dir = pathlib.Path(__file__).parent / 'api'
     shutil.copytree(str(test_api_dir / 'test'), str(remote_api_dir / 'test'))
 
-    result['job-runner'] = JobRunner(
-            result['store'], result['job-runner-config'],
-            str(remote_api_dir) + '/cerise/files/cwltiny.py')
-    return result
 
-def _wait_for_state(fixture, job_id, state, timeout):
-    """Waits for the job to be in the given state."""
-    job = fixture['store'].get_job(job_id)
+def _wait_for_state(store, job_runner, state, timeout):
+    """Waits for the job to be in the given state.
+    """
+    job = store.get_job('test_job')
     total_time = 0.0
     while job.state != state and total_time < timeout:
-        time.sleep(0.1)
-        fixture['job-runner'].update_job(job_id)
-        job = fixture['store'].get_job(job_id)
-        total_time += 0.1
+        time.sleep(0.01)
+        job_runner.update_job('test_job')
+        job = store.get_job('test_job')
+        total_time += 0.01
 
+    print(job.state)
     assert total_time < timeout
     return job
 
-def test_start_job(fixture):
-    fixture['store'].add_test_job('test_start_job', 'pass', 'staged')
-    fixture['job-runner'].start_job('test_start_job')
-    fixture['store'].get_job('test_start_job').state = JobState.WAITING
 
-    updated_job = _wait_for_state(fixture, 'test_start_job', JobState.FINISHED, 1.0)
-    assert updated_job.remote_job_id != ''
+@pytest.fixture
+def runner_store(mock_config, mock_store_staged):
+    store, job_fixture = mock_store_staged
 
-def test_start_staging_job(fixture):
-    fixture['store'].add_test_job('test_start_staging_job', 'wc', 'staged')
-    fixture['job-runner'].start_job('test_start_staging_job')
-    fixture['store'].get_job('test_start_staging_job').state = JobState.WAITING
+    remote_api_dir = mock_config.get_basedir() / 'api'
+    _stage_test_api(remote_api_dir)
 
-    updated_job = _wait_for_state(fixture, 'test_start_staging_job', JobState.FINISHED, 2.0)
-    assert updated_job.remote_job_id != ''
+    runner_path = remote_api_dir / 'cerise' / 'files' / 'cwltiny.py'
+    job_runner = JobRunner(store, mock_config, str(runner_path))
 
-def test_start_broken_job(fixture):
-    fixture['store'].add_test_job('test_start_broken_job', 'broken', 'staged')
-    fixture['job-runner'].start_job('test_start_broken_job')
-    fixture['store'].get_job('test_start_broken_job').state = JobState.WAITING
+    return job_runner, store
 
-    updated_job = _wait_for_state(fixture, 'test_start_broken_job', JobState.FINISHED, 1.0)
-    assert updated_job.remote_job_id != ''
-    assert updated_job.remote_output == ''
 
-def test_update(fixture):
-    fixture['store'].add_test_job('test_update', 'slow', 'staged')
-    fixture['job-runner'].start_job('test_update')
-    fixture['store'].get_job('test_update').state = JobState.WAITING
+def test_start_job(runner_store):
+    job_runner, store = runner_store
 
-    updated_job = _wait_for_state(fixture, 'test_update', JobState.RUNNING, 2.0)
-    updated_job = _wait_for_state(fixture, 'test_update', JobState.FINISHED, 6.0)
+    job_runner.start_job('test_job')
+    store.get_job('test_job').state = JobState.WAITING
 
-def test_cancel(fixture):
-    fixture['store'].add_test_job('test_cancel', 'slow', 'staged')
-    fixture['job-runner'].start_job('test_cancel')
-    fixture['store'].get_job('test_cancel').state = JobState.WAITING
+    _wait_for_state(store, job_runner, JobState.FINISHED, 5.0)
 
-    updated_job = _wait_for_state(fixture, 'test_cancel', JobState.RUNNING, 2.0)
-    is_running = fixture['job-runner'].cancel_job('test_cancel')
+
+def test_update(runner_store):
+    job_runner, store = runner_store
+
+    job_runner.start_job('test_job')
+    store.get_job('test_job').state = JobState.WAITING
+
+    job = store.get_job('test_job')
+    cur_state = JobState.WAITING
+    states = [cur_state]
+    while cur_state != JobState.FINISHED:
+        job_runner.update_job('test_job')
+        job = store.get_job('test_job')
+        if job.state != cur_state:
+            cur_state = job.state
+            states.append(cur_state)
+
+    i = 0
+    if states[i] == JobState.WAITING:
+        i += 1
+    if states[i] == JobState.RUNNING:
+        i += 1
+    if states[i] == JobState.FINISHED:
+        i += 1
+    assert i == len(states)
+
+
+def test_cancel(runner_store):
+    job_runner, store = runner_store
+
+    job_runner.start_job('test_job')
+    store.get_job('test_job').state = JobState.WAITING
+
+    updated_job = _wait_for_state(store, job_runner, JobState.RUNNING, 2.0)
+
+    is_running = job_runner.cancel_job('test_job')
     assert is_running == False
+    assert store.get_job('test_job').state == JobState.RUNNING
 
-    is_running = fixture['job-runner'].cancel_job('test_cancel')
+    is_running = job_runner.cancel_job('test_job')
     assert is_running == False
+    assert store.get_job('test_job').state == JobState.RUNNING
