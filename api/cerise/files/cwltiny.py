@@ -232,7 +232,7 @@ def create_argument(parameter, input_dict):
                 value = list(map(str, value))
 
             if item_separator:
-                value = [item_separator.join(value_strings)]
+                value = [item_separator.join(value)]
         else:
             if par_type == 'File':
                 value = [value['path']]
