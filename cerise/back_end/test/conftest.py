@@ -129,18 +129,18 @@ def mock_store_submitted(request, mock_config):
         f.write(job_fixture.workflow)
 
     for input_file in job_fixture.local_input_files:
-        input_path = exchange_dir / input_file.location
+        input_path = exchange_job_input_dir / input_file.location
         with input_path.open('wb') as f:
             f.write(input_file.content)
 
         for secondary_file in input_file.secondary_files:
-            sf_path = exchange_dir / secondary_file.location
+            sf_path = exchange_job_input_dir / secondary_file.location
             with sf_path.open('wb') as f:
                 f.write(secondary_file.content)
 
 
     job = MockJob('test_job', 'test_job', 'client://' + str(wf_path),
-                      job_fixture.local_input('file://' + str(exchange_dir) + '/'))
+                      job_fixture.local_input('file://' + str(exchange_job_input_dir) + '/'))
     job.state = JobState.SUBMITTED
 
     store.add_job(job)
@@ -155,7 +155,8 @@ def mock_store_resolved(request, mock_config):
     job_fixture = request.param
 
     exchange_dir = Path(mock_config.get_store_location_service()[7:])
-    local_input = job_fixture.local_input('file://' + str(exchange_dir) + '/')
+    exchange_job_input_dir = exchange_dir / 'input' / 'test_job'
+    local_input = job_fixture.local_input('file://' + str(exchange_job_input_dir) + '/')
 
     job = MockJob('test_job', 'test_job', None, local_input)
     job.workflow_content = job_fixture.workflow

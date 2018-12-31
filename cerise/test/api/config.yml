@@ -1,9 +1,18 @@
 compute-resource:
   refresh: 0.1
-
   files:
-    protocol: local
-    path: /tmp/cerise
+    protocol: sftp
+    location: cerise-test-slurm:22
+    credentials:
+      username: cerulean
+      password: kingfisher
+    path: /home/cerulean/.cerise
 
   jobs:
-    protocol: local
+    protocol: ssh
+    location: cerise-test-slurm:22
+    credentials:
+      username: cerulean
+      password: kingfisher
+    scheduler: slurm
+    scheduler-options: --comment='testing'

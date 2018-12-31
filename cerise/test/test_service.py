@@ -3,11 +3,18 @@ from bravado.exception import HTTPBadGateway, HTTPNotFound
 from bravado_core.formatter import SwaggerFormat
 import docker
 import io
+import json
 from pathlib import Path
 import pytest
 import tarfile
 import time
+import webdav.client as wc
+import webdav.urn as wu
 
+
+from cerise.test.fixture_jobs import (
+        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
+        MissingInputJob, BrokenJob)
 
 
 def clear_old_container(client, name):
@@ -26,7 +33,7 @@ def wait_for_container(client, container):
         container.reload()
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def cerise_service():
     client = docker.from_env()
 
@@ -64,7 +71,6 @@ def cerise_service():
             with archive.extractfile('.coverage') as cov_data:
                 with coverage_file.open('wb') as cov_file:
                     cov_file.write(cov_data.read())
-        print(coverage_file)
     except docker.errors.NotFound:
         print('Error: No coverage data found inside service container')
         pass
@@ -75,36 +81,8 @@ def cerise_service():
 
 
 @pytest.fixture
-def debug_output(tmpdir):
-    yield
-
-    client = docker.from_env()
-    service = client.containers.get('cerise-test-service')
-    slurm = client.containers.get('cerise-test-slurm')
-
-    # Collect logs for debugging
-    archive_file = tmpdir / 'docker_logs.tar'
-    stream, _ = service.get_archive('/var/log')
-    with archive_file.open('wb') as f:
-        f.write(stream.read())
-
-    # Collect run dir for debugging
-    archive_file = tmpdir / 'docker_run.tar'
-    stream, _ = service.get_archive('/home/cerise/run')
-    with archive_file.open('wb') as f:
-        f.write(stream.read())
-
-    # Collect jobs dir for debugging
-    archive_file = tmpdir / 'docker_jobs.tar'
-    stream, _ = slurm.get_archive('/home/xenon/.cerise/jobs')
-    with archive_file.open('wb') as f:
-        f.write(stream.read())
-
-    # Collect API dir for debugging
-    archive_file = tmpdir / 'docker_api.tar'
-    stream, _ = slurm.get_archive('/home/xenon/.cerise/api')
-    with archive_file.open('wb') as f:
-        f.write(stream.read())
+def webdav_client():
+    return wc.Client({'webdav_hostname': 'http://localhost:29593'})
 
 
 @pytest.fixture
@@ -147,11 +125,88 @@ def cerise_client():
     return service
 
 
-def test_get_jobs(cerise_service, cerise_client):
-    """
-    Test case for get_jobs
+@pytest.fixture(params=[
+        HostnameJob, WcJob, SecondaryFilesJob, FileArrayJob])
+def job_fixture(request):
+    return request.param
 
-    list of jobs
-    """
+
+@pytest.fixture
+def debug_output(request, tmpdir, cerise_client):
+    yield
+
+    client = docker.from_env()
+    service = client.containers.get('cerise-test-service')
+    slurm = client.containers.get('cerise-test-slurm')
+
+    # Collect logs for debugging
+    archive_file = tmpdir / 'docker_logs.tar'
+    stream, _ = service.get_archive('/var/log')
+    with archive_file.open('wb') as f:
+        f.write(stream.read())
+
+    # Collect run dir for debugging
+    archive_file = tmpdir / 'docker_run.tar'
+    stream, _ = service.get_archive('/home/cerise/run')
+    with archive_file.open('wb') as f:
+        f.write(stream.read())
+
+    # Collect jobs dir for debugging
+    archive_file = tmpdir / 'docker_jobs.tar'
+    stream, _ = slurm.get_archive('/home/cerulean/.cerise/jobs')
+    with archive_file.open('wb') as f:
+        f.write(stream.read())
+
+    # Collect API dir for debugging
+    archive_file = tmpdir / 'docker_api.tar'
+    stream, _ = slurm.get_archive('/home/cerulean/.cerise/api')
+    with archive_file.open('wb') as f:
+        f.write(stream.read())
+
+
+def test_get_jobs(cerise_service, cerise_client):
     (jobs, response) = cerise_client.jobs.get_jobs().result()
     assert response.status_code == 200
+
+
+def test_run_job(cerise_service, cerise_client, webdav_client, job_fixture, debug_output):
+    test_name = 'test_post_' + job_fixture.__name__
+
+    input_dir = '/files/input/{}'.format(test_name)
+    webdav_client.mkdir(input_dir)
+
+    workflow_file = input_dir + '/workflow.cwl'
+    workflow_res = wc.Resource(webdav_client, wu.Urn(workflow_file))
+    workflow_res.read_from(io.BytesIO(job_fixture.workflow))
+
+    for input_file in job_fixture.local_input_files:
+        input_path = '{}/{}'.format(input_dir, input_file.location)
+        input_res = wc.Resource(webdav_client, wu.Urn(input_path))
+        input_res.read_from(io.BytesIO(input_file.content))
+
+        for secondary_file in input_file.secondary_files:
+            input_path = '{}/{}'.format(input_dir, secondary_file.location)
+            input_res = wc.Resource(webdav_client, wu.Urn(input_path))
+            input_res.read_from(io.BytesIO(secondary_file.content))
+
+    input_dir_url = 'http://localhost:29593{}/'.format(input_dir)
+    input_text = job_fixture.local_input(input_dir_url)
+    input_data = json.loads(input_text)
+
+    JobDescription = cerise_client.get_model('job-description')
+    job_desc = JobDescription(
+        name=test_name,
+        workflow='http://localhost:29593' + workflow_file,
+        input=input_data
+    )
+
+    job, response = cerise_client.jobs.post_job(body=job_desc).result()
+
+    print(str(response))
+    assert response.status_code == 201
+    assert job.state == 'Waiting'
+
+    while job.state == 'Waiting' or job.state == 'Running':
+        job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+
+    assert job.state == 'Success'

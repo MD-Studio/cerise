@@ -35,7 +35,6 @@ class ExecutionManager:
         self._shutting_down = False
         """bool: True iff we're shutting down."""
 
-        # _job_store = InMemoryJobStore()
         self._job_store = SQLiteJobStore(config.get_database_location())
         """SQLiteJobStore: The job store to use."""
         self._local_files = LocalFiles(self._job_store, config)
@@ -137,7 +136,7 @@ class ExecutionManager:
             job.info('Resolving inputs')
             input_files = self._local_files.resolve_input(job_id)
         except FileNotFoundError as e:
-            job.error('Input not found: {}'.format(e.strerror))
+            job.error('Input not found: {}'.format(e.args[0]))
             job.state = JobState.PERMANENT_FAILURE
             return
         except ConnectionError:
