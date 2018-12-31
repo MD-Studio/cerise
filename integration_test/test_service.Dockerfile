@@ -16,5 +16,5 @@ COPY conf/known_hosts /home/cerise/.ssh/
 RUN chown -R cerise:cerise /home/cerise/.ssh/known_hosts
 
 # Copy API
-COPY api/test /home/cerise/api/test
+COPY api /home/cerise/api
 
