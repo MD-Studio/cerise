@@ -1,0 +1,16 @@
+client-file-exchange:
+  store-location-service: file:///home/webdav/files
+  store-location-client: http://localhost:29593/files
+
+database:
+  file: /home/cerise/run/cerise.db
+
+logging:
+  file: /var/log/cerise/cerise_backend.log
+  level: DEBUG
+
+pidfile: /home/cerise/run/cerise_backend.pid
+
+rest-service:
+  hostname: 127.0.0.1
+  port: 29594
