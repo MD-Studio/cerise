@@ -110,8 +110,8 @@ class RemoteJobFiles:
         output_files = []
         with self._job_store:
             job = self._job_store.get_job(job_id)
+            self._logger.debug("Remote output" + job.remote_output)
             if job.remote_output != '':
-                self._logger.debug("Remote output" + job.remote_output)
                 outputs = json.loads(job.remote_output)
                 for output_file in get_files_from_binding(outputs):
                     self._logger.debug('Destage path = {} for output {}'.format(
@@ -122,6 +122,8 @@ class RemoteJobFiles:
                     rel_path = output_file.location[len(prefix):]
                     content = self._read_remote_file(job_id, 'work/' + rel_path)
                     output_files.append((output_file.name, rel_path, content))
+            else:
+                self._logger.error('CWL runner did not produce any output for job {}!'.format(job_id))
 
         # output_name and rel_path are (immutable) str's, while content
         # does not come from the store, so we're not leaking here
