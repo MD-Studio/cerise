@@ -226,11 +226,12 @@ def create_argument(parameter, input_dict):
 
         # produce argument
         if is_array:
+            if par_type == 'File':
+                value = list(map(lambda x: x['path'], value))
+            else:
+                value = list(map(str, value))
+
             if item_separator:
-                if par_type == 'File':
-                    value_strings = list(map(lambda x: x['path'], value))
-                else:
-                    value_strings = list(map(lambda x: str(x), value))
                 value = [item_separator.join(value_strings)]
         else:
             if par_type == 'File':
@@ -297,16 +298,16 @@ def execute_clt(workdir_path, in_out, base_command, command_line):
     if base_command is not None:
         command_line.insert(0, base_command)
 
-    stdin_file = None
+    stdin_file = subprocess.DEVNULL
     if in_out['stdin'] is not None:
         stdin_path = os.path.join(workdir_path, in_out['stdin'])
         stdin_file = open(stdin_path, 'rb')
-    stdout_file = None
+    stdout_file = subprocess.DEVNULL
     if in_out['stdout'] is not None:
         stdout_path = os.path.join(workdir_path, in_out['stdout'])
         log("Writing stdout to " + stdout_path)
         stdout_file = open(stdout_path, 'wb')
-    stderr_file = None
+    stderr_file = subprocess.DEVNULL
     if in_out['stderr'] is not None:
         stderr_path = os.path.join(workdir_path, in_out['stderr'])
         stderr_file = open(stderr_path, 'wb')
@@ -527,16 +528,17 @@ def resolve_step_inputs(step, workflow_dict, input_dict):
     if 'cwltiny_input_values' not in step:
         step['cwltiny_input_values'] = {}
 
-    for step_input in step['in']:
-        value = None
-        if 'source' in step_input:
-            value, ready = resolve_output_reference(step_input['source'], workflow_dict, input_dict)
+    if 'in' in step:
+        for step_input in step['in']:
+            value = None
+            if 'source' in step_input:
+                value, ready = resolve_output_reference(step_input['source'], workflow_dict, input_dict)
 
-        log("Resolved step '{}' input '{}' to {}".format(step['id'], step_input['id'], json.dumps(value, indent=4)))
+            log("Resolved step '{}' input '{}' to {}".format(step['id'], step_input['id'], json.dumps(value, indent=4)))
 
-        step['cwltiny_input_values'][step_input['id']] = value
-        if not ready:
-            all_bound = False
+            step['cwltiny_input_values'][step_input['id']] = value
+            if not ready:
+                all_bound = False
 
     return all_bound
 
@@ -600,6 +602,7 @@ def run_workflow(workdir_path, workflow_dict, input_dict):
     """
     normalise_workflow(workflow_dict)
     log("Normalised workflow: " + json.dumps(workflow_dict, indent=4))
+    log("Input: " + json.dumps(input_dict, indent=4))
     has_error = False
     while has_unexecuted_steps(workflow_dict) and not has_error:
         for step in workflow_dict['steps']:
@@ -615,7 +618,7 @@ def run_workflow(workdir_path, workflow_dict, input_dict):
     return has_error, get_workflow_outputs(workflow_dict, input_dict)
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Process a CWL workflow')
     parser.add_argument('cwlfile', type=str, help='A CWL file in JSON format')
     parser.add_argument('inputfile', type=str, help='An input file in JSON format')
@@ -650,3 +653,6 @@ if __name__ == '__main__':
     log('CWLTiny ending run')
     log('====================')
     exit_success()
+
+if __name__ == '__main__':
+    main()
