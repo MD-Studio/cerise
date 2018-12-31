@@ -1,5 +1,5 @@
 from cerise.back_end.job_planner import JobPlanner
-from cerise.back_end.test.fixture_jobs import PassJob, SlowJob, BrokenJob
+from cerise.test.fixture_jobs import PassJob, SlowJob, BrokenJob
 
 import pytest
 

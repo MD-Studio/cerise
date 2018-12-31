@@ -1,4 +1,4 @@
-from cerise.back_end.test.fixture_jobs import WcJob
+from cerise.test.fixture_jobs import WcJob
 from cerise.back_end.remote_api import RemoteApi
 
 import cerulean
@@ -41,8 +41,7 @@ def test_update(installed_api_dir, mock_config):
     assert (test_files_dir / 'test' / 'test_file2.txt').exists()
 
 
-def test_dev_update(installed_api_dir, mock_config):
-    local_api_dir = Path(__file__).parent / 'api'
+def test_dev_update(installed_api_dir, mock_config, local_api_dir):
     remote_api_files = RemoteApi(mock_config, str(local_api_dir))
 
     assert remote_api_files.update_available()

@@ -1,5 +1,5 @@
 from cerise.back_end.local_files import LocalFiles
-from cerise.back_end.test.fixture_jobs import MissingInputJob
+from cerise.test.fixture_jobs import MissingInputJob
 
 from pathlib import Path
 

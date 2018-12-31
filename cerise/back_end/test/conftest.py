@@ -7,8 +7,9 @@ import yaml
 
 from cerise.job_store.job_state import JobState
 from cerise.back_end.test.mock_job import MockJob
-from cerise.back_end.test.fixture_jobs import (PassJob, HostnameJob, WcJob,
-        SlowJob, SecondaryFilesJob, FileArrayJob, MissingInputJob, BrokenJob)
+from cerise.test.fixture_jobs import (
+        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
+        MissingInputJob, BrokenJob)
 
 
 def workflow_to_json(yaml_string, test_steps_dir):
@@ -79,7 +80,7 @@ def mock_config(tmpdir):
 
 @pytest.fixture
 def local_api_dir():
-    return Path(__file__).parent / 'api'
+    return Path(__file__).parents[2] / 'test' / 'api'
 
 
 class MockStore:

@@ -1,7 +1,7 @@
 from cerise.back_end.job_runner import JobRunner
 from cerise.job_store.job_state import JobState
 
-from cerise.back_end.test.fixture_jobs import BrokenJob
+from cerise.test.fixture_jobs import BrokenJob
 
 import json
 import pathlib
@@ -11,11 +11,10 @@ import time
 import yaml
 
 
-def _stage_test_api(remote_api_dir):
+def _stage_test_api(local_api_dir, remote_api_dir):
     """Copies an API to the mock remote dir for testing.
     """
-    test_api_dir = pathlib.Path(__file__).parent / 'api'
-    shutil.copytree(str(test_api_dir), str(remote_api_dir))
+    shutil.copytree(str(local_api_dir), str(remote_api_dir))
 
     for step in (remote_api_dir / 'test' / 'steps' / 'test').iterdir():
         if step.suffix == '.cwl':
@@ -27,11 +26,11 @@ def _stage_test_api(remote_api_dir):
 
 
 @pytest.fixture
-def runner_store(mock_config, mock_store_staged):
+def runner_store(mock_config, mock_store_staged, local_api_dir):
     store, job_fixture = mock_store_staged
 
     remote_api_dir = mock_config.get_basedir() / 'api'
-    _stage_test_api(remote_api_dir)
+    _stage_test_api(local_api_dir, remote_api_dir)
 
     runner_path = remote_api_dir / 'cerise' / 'files' / 'cwltiny.py'
     job_runner = JobRunner(store, mock_config, str(runner_path))
