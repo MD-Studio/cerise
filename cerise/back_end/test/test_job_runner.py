@@ -1,10 +1,14 @@
 from cerise.back_end.job_runner import JobRunner
 from cerise.job_store.job_state import JobState
 
+from cerise.back_end.test.fixture_jobs import BrokenJob
+
+import json
 import pathlib
 import pytest
 import shutil
 import time
+import yaml
 
 
 def _stage_test_api(remote_api_dir):
@@ -12,6 +16,11 @@ def _stage_test_api(remote_api_dir):
     """
     test_api_dir = pathlib.Path(__file__).parent / 'api'
     shutil.copytree(str(test_api_dir), str(remote_api_dir))
+
+    for step in (remote_api_dir / 'test' / 'steps' / 'test').iterdir():
+        if step.suffix == '.cwl':
+            step_dict = yaml.safe_load(step.read_text())
+            step.write_text(json.dumps(step_dict))
 
     cwltiny = pathlib.Path(__file__).parents[3] / 'api' / 'cerise' / 'files' / 'cwltiny.py'
     shutil.copy(str(cwltiny), str(remote_api_dir / 'cerise' / 'files' / 'cwltiny.py'))
@@ -27,7 +36,7 @@ def runner_store(mock_config, mock_store_staged):
     runner_path = remote_api_dir / 'cerise' / 'files' / 'cwltiny.py'
     job_runner = JobRunner(store, mock_config, str(runner_path))
 
-    return job_runner, store
+    return job_runner, store, job_fixture
 
 
 def _wait_for_state(store, job_runner, state, timeout):
@@ -45,17 +54,21 @@ def _wait_for_state(store, job_runner, state, timeout):
     return job
 
 
-def test_start_job(runner_store):
-    job_runner, store = runner_store
+def test_start_job(runner_store, mock_config):
+    job_runner, store, job_fixture = runner_store
 
     job_runner.start_job('test_job')
     store.get_job('test_job').state = JobState.WAITING
 
     _wait_for_state(store, job_runner, JobState.FINISHED, 5.0)
 
+    logfile = mock_config.get_basedir() / 'jobs' / 'test_job' / 'stderr.txt'
+    if job_fixture is not BrokenJob:
+        assert 'Final process status is success' in logfile.read_text()
+
 
 def test_update(runner_store):
-    job_runner, store = runner_store
+    job_runner, store, _ = runner_store
 
     job_runner.start_job('test_job')
     store.get_job('test_job').state = JobState.WAITING
@@ -81,7 +94,7 @@ def test_update(runner_store):
 
 
 def test_cancel(runner_store):
-    job_runner, store = runner_store
+    job_runner, store, _  = runner_store
 
     job_runner.start_job('test_job')
     store.get_job('test_job').state = JobState.WAITING

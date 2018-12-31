@@ -56,7 +56,7 @@ class HostnameJob:
                 '\n'
                 'steps:\n'
                 '  hostname:\n'
-                '    run: cerise/test/hostname.cwl\n'
+                '    run: test/hostname.cwl\n'
                 '    out:\n'
                 '      [output]\n'
                 'hints:\n'
@@ -104,9 +104,9 @@ class WcJob:
                 '\n'
                 'steps:\n'
                 '  wc:\n'
-                '    run: cerise/test/wc.cwl\n'
+                '    run: test/wc.cwl\n'
                 '    in:\n'
-                '      textfile: file\n'
+                '      file: file\n'
                 '    out:\n'
                 '      [output]\n'
                 '\n'
@@ -128,7 +128,7 @@ class WcJob:
 
     time_limit = 60
 
-    remote_input = '{ "file": { "class": "File", "location": "work/01_input_test_job_hello_world.txt" } }'
+    remote_input = '{ "file": { "class": "File", "location": "01_input_test_job_hello_world.txt" } }'
 
     remote_input_files = [('file', '01_input_test_job_hello_world.txt', bytes(
                 'Hello, World!\n'
@@ -245,10 +245,10 @@ class SecondaryFilesJob:
     remote_input = '''{
             "file": {
                 "class": "File",
-                "location": "work/01_input_test_job_hello_world.txt",
+                "location": "01_input_test_job_hello_world.txt",
                 "secondaryFiles": [{
                     "class": "File",
-                    "location": "work/02_input_test_job_hello_world.2nd"
+                    "location": "02_input_test_job_hello_world.2nd"
                     }]
                 }
             }'''
@@ -292,9 +292,9 @@ class FileArrayJob:
                 '\n'
                 'steps:\n'
                 '  wc:\n'
-                '    run: test/wc.cwl\n'
+                '    run: test/file_array.cwl\n'
                 '    in:\n'
-                '      textfiles: files\n'
+                '      files: files\n'
                 '    out:\n'
                 '      [output]\n', 'utf-8')
 
@@ -325,16 +325,16 @@ class FileArrayJob:
 
     required_num_cores = 0
 
-    time_limit = 0
+    time_limit = 60
 
     remote_input = '''{
             "files": [{
                     "class": "File",
-                    "location": "work/01_input_test_job_hello_world.txt"
+                    "location": "01_input_test_job_hello_world.txt"
                 },
                 {
                     "class": "File",
-                    "location": "work/02_input_test_job_hello_world.2nd"
+                    "location": "02_input_test_job_hello_world.2nd"
                 }]
             }'''
 

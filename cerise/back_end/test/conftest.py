@@ -11,8 +11,19 @@ from cerise.back_end.test.fixture_jobs import (PassJob, HostnameJob, WcJob,
         SlowJob, SecondaryFilesJob, FileArrayJob, MissingInputJob, BrokenJob)
 
 
-def yaml_to_json(yaml_string):
+def workflow_to_json(yaml_string, test_steps_dir):
     dict_form = yaml.safe_load(str(yaml_string, 'utf-8'))
+    if dict_form['class'] == 'Workflow':
+        if 'steps' in dict_form:
+            steps = dict_form['steps']
+            if isinstance(steps, list):
+                for step in steps:
+                    if 'run' in step:
+                        step['run'] = '{}/{}'.format(test_steps_dir, step['run'])
+            elif isinstance(steps, dict):
+                for _, step in steps.items():
+                    if 'run' in step:
+                        step['run'] = '{}/{}'.format(test_steps_dir, step['run'])
     return bytes(json.dumps(dict_form), 'utf-8')
 
 
@@ -165,10 +176,14 @@ def mock_store_staged(request, mock_config):
     work_dir = job_dir / 'work'
     work_dir.mkdir(parents=True)
 
-    (job_dir / 'workflow.cwl').write_bytes(yaml_to_json(job_fixture.workflow))
-    (job_dir / 'input.json').write_bytes(job_fixture.remote_input.encode('utf-8'))
+    test_steps_dir = mock_config.get_basedir() / 'api' / 'test' / 'steps'
+
+    (job_dir / 'workflow.cwl').write_bytes(workflow_to_json(
+            job_fixture.workflow, test_steps_dir))
+    (job_dir / 'input.json').write_text(job_fixture.remote_input)
 
     for _, name, content in job_fixture.remote_input_files:
+        print('staging {} with {}'.format((work_dir / name), content))
         (work_dir / name).write_bytes(content)
 
     job = MockJob('test_job', 'test_job', None, None)

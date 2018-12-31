@@ -10,18 +10,18 @@ def test_job_planner_init(mock_config, mock_store_resolved, local_api_dir):
     planner = JobPlanner(store, str(local_api_dir))
 
     requirements = planner._steps_requirements
-    assert requirements['cerise/test/wc.cwl']['num_cores'] == 0
-    assert requirements['cerise/test/hostname.cwl']['num_cores'] == 2
-    assert requirements['cerise/test/echo.cwl']['num_cores'] == 0
-    assert requirements['cerise/test/sleep.cwl']['num_cores'] == 0
+    assert requirements['test/wc.cwl']['num_cores'] == 0
+    assert requirements['test/hostname.cwl']['num_cores'] == 2
+    assert requirements['test/echo.cwl']['num_cores'] == 0
+    assert requirements['test/sleep.cwl']['num_cores'] == 0
 
-    assert requirements['cerise/test/wc.cwl']['time_limit'] == 60
-    assert requirements['cerise/test/hostname.cwl']['time_limit'] == 0
-    assert requirements['cerise/test/echo.cwl']['time_limit'] == 0
-    assert requirements['cerise/test/sleep.cwl']['time_limit'] == 0
+    assert requirements['test/wc.cwl']['time_limit'] == 60
+    assert requirements['test/hostname.cwl']['time_limit'] == 0
+    assert requirements['test/echo.cwl']['time_limit'] == 0
+    assert requirements['test/sleep.cwl']['time_limit'] == 0
 
 
-def test_plan_job_new(mock_config, mock_store_resolved, local_api_dir):
+def test_plan_job(mock_config, mock_store_resolved, local_api_dir):
     store, job_fixture = mock_store_resolved
 
     planner = JobPlanner(store, str(local_api_dir))

@@ -5,6 +5,7 @@ cwlVersion: v1.0
 class: CommandLineTool
 baseCommand: bash
 arguments: ["-c", "wc *"]
+stdout: output.txt
 
 inputs:
   textfile:
@@ -12,4 +13,5 @@ inputs:
 
 outputs:
   output:
-    type: stdout
+    type: File
+    outputBinding: { glob: output.txt }

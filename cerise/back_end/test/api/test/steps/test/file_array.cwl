@@ -5,8 +5,8 @@ class: CommandLineTool
 baseCommand: wc
 stdout: output.txt
 inputs:
-  file:
-    type: File
+  files:
+    type: File[]
     inputBinding:
       position: 1
 
