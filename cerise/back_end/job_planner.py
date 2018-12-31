@@ -54,7 +54,7 @@ class JobPlanner:
             for step in steps:
                 if step not in self._steps_requirements:
                     job.error('Found invalid step {} in workflow'.format(step))
-                    raise InvalidJobError()
+                    raise InvalidJobError('Invalid step in workflow')
 
             job.required_num_cores = get_required_num_cores(job.workflow_content)
             num_cores_steps = [self._steps_requirements[step]['num_cores']
