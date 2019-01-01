@@ -292,3 +292,46 @@ def test_cancel_running_job(cerise_service, cerise_client, webdav_client):
 
     assert job.state == 'Cancelled'
     assert time.perf_counter() < start_time + 10.0
+
+
+def test_delete_job(cerise_service, cerise_client, webdav_client):
+    job = _start_job(cerise_client, webdav_client, WcJob, 'test_delete_job')
+
+    while job.state != 'Success':
+        time.sleep(0.1)
+        job, _ = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+
+    _, response = cerise_client.jobs.delete_job_by_id(jobId=job.id).result()
+    assert response.status_code == 204
+
+    start_time = time.perf_counter()
+    job_gone = False
+    while not job_gone and time.perf_counter() < start_time + 5.0:
+        try:
+            cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+            time.sleep(0.1)
+        except HTTPNotFound:
+            job_gone = True
+    assert job_gone
+
+
+def test_delete_running_job(cerise_service, cerise_client, webdav_client):
+    start_time = time.perf_counter()
+    job = _start_job(cerise_client, webdav_client, LongRunningJob,
+                     'test_delete_running_job')
+
+    while job.state != 'Running':
+        time.sleep(0.1)
+        job, _ = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+
+    _, response = cerise_client.jobs.delete_job_by_id(jobId=job.id).result()
+    assert response.status_code == 204
+
+    job_gone = False
+    while not job_gone and time.perf_counter() < start_time + 5.0:
+        try:
+            cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+            time.sleep(0.1)
+        except HTTPNotFound:
+            job_gone = True
+    assert job_gone
