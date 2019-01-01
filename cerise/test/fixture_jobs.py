@@ -415,3 +415,27 @@ class BrokenJob:
         return ''
 
     output_files = []
+
+
+class NoWorkflowJob:
+    """A job without a workflow.
+    """
+    workflow = None
+
+    def local_input(local_base_url):
+        return '{}'
+
+    local_input_files = []
+
+    required_num_cores = 0
+
+    time_limit = 0
+
+    remote_input = '{}'
+
+    remote_input_files = []
+
+    def remote_output(job_remote_workdir):
+        return ''
+
+    output_files = []

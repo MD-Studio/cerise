@@ -14,7 +14,10 @@ def is_workflow(workflow_content):
         bool: True iff the top-level Process in this CWL file is an
                 instance of Workflow.
     """
-    workflow = yaml.safe_load(workflow_content)
+    try:
+        workflow = yaml.safe_load(workflow_content)
+    except yaml.scanner.ScannerError:
+        return False
     process_class = workflow.get('class')
     return process_class == 'Workflow'
 

@@ -14,7 +14,7 @@ import webdav.urn as wu
 
 from cerise.test.fixture_jobs import (
         PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        MissingInputJob, BrokenJob)
+        MissingInputJob, BrokenJob, NoWorkflowJob)
 
 
 def clear_old_container(client, name):
@@ -131,7 +131,7 @@ def job_fixture_success(request):
     return request.param
 
 
-@pytest.fixture(params=[MissingInputJob, BrokenJob])
+@pytest.fixture(params=[MissingInputJob, BrokenJob, NoWorkflowJob])
 def job_fixture_permfail(request):
     return request.param
 
@@ -175,9 +175,12 @@ def _start_job(cerise_client, webdav_client, job_fixture):
     input_dir = '/files/input/{}'.format(test_name)
     webdav_client.mkdir(input_dir)
 
-    workflow_file = input_dir + '/workflow.cwl'
-    workflow_res = wc.Resource(webdav_client, wu.Urn(workflow_file))
-    workflow_res.read_from(io.BytesIO(job_fixture.workflow))
+    if job_fixture.workflow is not None:
+        workflow_file = input_dir + '/workflow.cwl'
+        workflow_res = wc.Resource(webdav_client, wu.Urn(workflow_file))
+        workflow_res.read_from(io.BytesIO(job_fixture.workflow))
+    else:
+        workflow_file = ''
 
     for input_file in job_fixture.local_input_files:
         input_path = '{}/{}'.format(input_dir, input_file.location)
@@ -213,7 +216,7 @@ def test_get_jobs(cerise_service, cerise_client):
 
 
 def test_run_job(cerise_service, cerise_client, webdav_client,
-                 job_fixture_success, debug_output):
+                 job_fixture_success):
     job = _start_job(cerise_client, webdav_client, job_fixture_success)
     assert job.state == 'Waiting'
 
@@ -224,7 +227,7 @@ def test_run_job(cerise_service, cerise_client, webdav_client,
 
 
 def test_run_broken_job(cerise_service, cerise_client, webdav_client,
-                        job_fixture_permfail):
+                        job_fixture_permfail, debug_output):
 
     job = _start_job(cerise_client, webdav_client, job_fixture_permfail)
     assert job.state == 'Waiting'
