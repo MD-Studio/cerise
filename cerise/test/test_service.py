@@ -127,7 +127,12 @@ def cerise_client():
 
 @pytest.fixture(params=[
         HostnameJob, WcJob, SecondaryFilesJob, FileArrayJob])
-def job_fixture(request):
+def job_fixture_success(request):
+    return request.param
+
+
+@pytest.fixture(params=[MissingInputJob, BrokenJob])
+def job_fixture_permfail(request):
     return request.param
 
 
@@ -164,12 +169,7 @@ def debug_output(request, tmpdir, cerise_client):
         f.write(stream.read())
 
 
-def test_get_jobs(cerise_service, cerise_client):
-    (jobs, response) = cerise_client.jobs.get_jobs().result()
-    assert response.status_code == 200
-
-
-def test_run_job(cerise_service, cerise_client, webdav_client, job_fixture, debug_output):
+def _start_job(cerise_client, webdav_client, job_fixture):
     test_name = 'test_post_' + job_fixture.__name__
 
     input_dir = '/files/input/{}'.format(test_name)
@@ -204,9 +204,32 @@ def test_run_job(cerise_service, cerise_client, webdav_client, job_fixture, debu
 
     print(str(response))
     assert response.status_code == 201
+    return job
+
+
+def test_get_jobs(cerise_service, cerise_client):
+    (jobs, response) = cerise_client.jobs.get_jobs().result()
+    assert response.status_code == 200
+
+
+def test_run_job(cerise_service, cerise_client, webdav_client,
+                 job_fixture_success, debug_output):
+    job = _start_job(cerise_client, webdav_client, job_fixture_success)
     assert job.state == 'Waiting'
 
     while job.state == 'Waiting' or job.state == 'Running':
         job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
 
     assert job.state == 'Success'
+
+
+def test_run_broken_job(cerise_service, cerise_client, webdav_client,
+                        job_fixture_permfail):
+
+    job = _start_job(cerise_client, webdav_client, job_fixture_permfail)
+    assert job.state == 'Waiting'
+
+    while job.state == 'Waiting' or job.state == 'Running':
+        job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+
+    assert job.state == 'PermanentFailure'
