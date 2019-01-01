@@ -10,7 +10,7 @@ docs:
 
 .PHONY: test
 test:
-	pytest --cov --ignore=docs
+	pytest --cov --ignore=docs -k 'not test_service'
 	coverage combine --append integration_test
 	coverage xml
 	coverage report -m
