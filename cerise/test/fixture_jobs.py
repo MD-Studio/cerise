@@ -439,3 +439,34 @@ class NoWorkflowJob:
         return ''
 
     output_files = []
+
+
+class LongRunningJob:
+    workflow = bytes(
+            '#!/usr/bin/env cwl-runner\n'
+            '\n'
+            'cwlVersion: v1.0\n'
+            'class: Workflow\n'
+            'steps:\n'
+            '  sleep:\n'
+            '    run: test/sleep.cwl\n'
+            '    in:\n'
+            '      delay: 120\n'
+            '\n'
+            'inputs: []\n'
+            '\n'
+            'outputs: []\n', 'utf-8')
+
+    def local_input(local_baseurl):
+        return '{}'
+
+    local_input_files = []
+
+    required_num_cores = 0
+
+    time_limit = 0
+
+    output_files = [
+            ('output', 'output.txt', bytes('', 'utf-8'))]
+
+    local_output = '{ "output": { "class": "File", "location": "output.txt" } }\n'

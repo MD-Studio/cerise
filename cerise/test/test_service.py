@@ -14,7 +14,7 @@ import webdav.urn as wu
 
 from cerise.test.fixture_jobs import (
         PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        MissingInputJob, BrokenJob, NoWorkflowJob)
+        MissingInputJob, BrokenJob, NoWorkflowJob, LongRunningJob)
 
 
 def clear_old_container(client, name):
@@ -169,8 +169,9 @@ def debug_output(request, tmpdir, cerise_client):
         f.write(stream.read())
 
 
-def _start_job(cerise_client, webdav_client, job_fixture):
-    test_name = 'test_post_' + job_fixture.__name__
+def _start_job(cerise_client, webdav_client, job_fixture, test_name=None):
+    if test_name is None:
+        test_name = 'test_post_' + job_fixture.__name__
 
     input_dir = '/files/input/{}'.format(test_name)
     webdav_client.mkdir(input_dir)
@@ -253,3 +254,41 @@ def test_get_job_by_id(cerise_service, cerise_client, webdav_client):
     job, response = cerise_client.jobs.get_job_by_id(jobId=job2.id).result()
     assert job.name == job2.name
     assert job.id == job2.id
+
+
+def test_cancel_waiting_job(cerise_service, cerise_client, webdav_client):
+    start_time = time.perf_counter()
+    job = _start_job(cerise_client, webdav_client, LongRunningJob,
+                     'test_cancel_waiting_job')
+
+    assert job.state == 'Waiting'
+    _, response = cerise_client.jobs.cancel_job_by_id(jobId=job.id).result()
+    assert response.status_code == 200
+
+    while (job.state in ['Waiting', 'Running']
+           and time.perf_counter() < start_time + 10.0):
+        time.sleep(0.1)
+        job, _ = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+
+    assert job.state == 'Cancelled'
+    assert time.perf_counter() < start_time + 10.0
+
+
+def test_cancel_running_job(cerise_service, cerise_client, webdav_client):
+    start_time = time.perf_counter()
+    job = _start_job(cerise_client, webdav_client, LongRunningJob,
+                     'test_cancel_running_job')
+
+    while job.state != 'Running' and time.perf_counter() < start_time + 10.0:
+        time.sleep(0.1)
+        job, _ = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+
+    _, response = cerise_client.jobs.cancel_job_by_id(jobId=job.id).result()
+    assert response.status_code == 200
+
+    while job.state == 'Running' and time.perf_counter() < start_time + 10.0:
+        time.sleep(0.1)
+        job, _ = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+
+    assert job.state == 'Cancelled'
+    assert time.perf_counter() < start_time + 10.0
