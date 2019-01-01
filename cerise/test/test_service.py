@@ -211,6 +211,37 @@ def _start_job(cerise_client, webdav_client, job_fixture, test_name=None):
     return job
 
 
+def _wait_for_state(job_id, timeout, states, cerise_client):
+    if states == 'DONE':
+        states = ['Success', 'Cancelled', 'PermanentFailure',
+                  'TemporaryFailure', 'SystemError']
+
+    if isinstance(states, str):
+        states = [states]
+
+    def get_state(job_id):
+        """Returns a tuple of whether the job exists, and if so the state."""
+        try:
+            test_job, response = cerise_client.jobs.get_job_by_id(
+                    jobId=job_id).result()
+            assert response.status_code == 200
+        except HTTPNotFound:
+                return False, None
+        return True, test_job
+
+    exists, test_job = get_state(job_id)
+
+    start_time = time.perf_counter()
+    while (exists and test_job.state not in states
+           and time.perf_counter() < start_time + timeout):
+        time.sleep(0.1)
+        exists, test_job = get_state(job_id)
+
+    assert time.perf_counter() < start_time + timeout
+    assert ('DELETED' in states and not exists) or test_job.state in states
+    return test_job
+
+
 def test_get_jobs(cerise_service, cerise_client):
     (jobs, response) = cerise_client.jobs.get_jobs().result()
     assert response.status_code == 200
@@ -221,9 +252,7 @@ def test_run_job(cerise_service, cerise_client, webdav_client,
     job = _start_job(cerise_client, webdav_client, job_fixture_success)
     assert job.state == 'Waiting'
 
-    while job.state == 'Waiting' or job.state == 'Running':
-        job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
-
+    job = _wait_for_state(job.id, 5.0, 'DONE', cerise_client)
     assert job.state == 'Success'
 
     log, response = cerise_client.jobs.get_job_log_by_id(jobId=job.id).result()
@@ -237,9 +266,7 @@ def test_run_broken_job(cerise_service, cerise_client, webdav_client,
     job = _start_job(cerise_client, webdav_client, job_fixture_permfail)
     assert job.state == 'Waiting'
 
-    while job.state == 'Waiting' or job.state == 'Running':
-        job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
-
+    job = _wait_for_state(job.id, 5.0, 'DONE', cerise_client)
     assert job.state == 'PermanentFailure'
 
 
@@ -265,11 +292,7 @@ def test_cancel_waiting_job(cerise_service, cerise_client, webdav_client):
     _, response = cerise_client.jobs.cancel_job_by_id(jobId=job.id).result()
     assert response.status_code == 200
 
-    while (job.state in ['Waiting', 'Running']
-           and time.perf_counter() < start_time + 10.0):
-        time.sleep(0.1)
-        job, _ = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
-
+    job = _wait_for_state(job.id, 10.0, 'DONE', cerise_client)
     assert job.state == 'Cancelled'
     assert time.perf_counter() < start_time + 10.0
 
@@ -279,17 +302,11 @@ def test_cancel_running_job(cerise_service, cerise_client, webdav_client):
     job = _start_job(cerise_client, webdav_client, LongRunningJob,
                      'test_cancel_running_job')
 
-    while job.state != 'Running' and time.perf_counter() < start_time + 10.0:
-        time.sleep(0.1)
-        job, _ = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
-
+    job = _wait_for_state(job.id, 10.0, 'Running', cerise_client)
     _, response = cerise_client.jobs.cancel_job_by_id(jobId=job.id).result()
     assert response.status_code == 200
 
-    while job.state == 'Running' and time.perf_counter() < start_time + 10.0:
-        time.sleep(0.1)
-        job, _ = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
-
+    job = _wait_for_state(job.id, 10.0, 'DONE', cerise_client)
     assert job.state == 'Cancelled'
     assert time.perf_counter() < start_time + 10.0
 
@@ -297,22 +314,11 @@ def test_cancel_running_job(cerise_service, cerise_client, webdav_client):
 def test_delete_job(cerise_service, cerise_client, webdav_client):
     job = _start_job(cerise_client, webdav_client, WcJob, 'test_delete_job')
 
-    while job.state != 'Success':
-        time.sleep(0.1)
-        job, _ = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
-
+    job = _wait_for_state(job.id, 5.0, 'Success', cerise_client)
     _, response = cerise_client.jobs.delete_job_by_id(jobId=job.id).result()
     assert response.status_code == 204
 
-    start_time = time.perf_counter()
-    job_gone = False
-    while not job_gone and time.perf_counter() < start_time + 5.0:
-        try:
-            cerise_client.jobs.get_job_by_id(jobId=job.id).result()
-            time.sleep(0.1)
-        except HTTPNotFound:
-            job_gone = True
-    assert job_gone
+    _wait_for_state(job.id, 5.0, 'DELETED', cerise_client)
 
 
 def test_delete_running_job(cerise_service, cerise_client, webdav_client):
@@ -320,18 +326,8 @@ def test_delete_running_job(cerise_service, cerise_client, webdav_client):
     job = _start_job(cerise_client, webdav_client, LongRunningJob,
                      'test_delete_running_job')
 
-    while job.state != 'Running':
-        time.sleep(0.1)
-        job, _ = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
-
+    job = _wait_for_state(job.id, 5.0, 'Running', cerise_client)
     _, response = cerise_client.jobs.delete_job_by_id(jobId=job.id).result()
     assert response.status_code == 204
 
-    job_gone = False
-    while not job_gone and time.perf_counter() < start_time + 5.0:
-        try:
-            cerise_client.jobs.get_job_by_id(jobId=job.id).result()
-            time.sleep(0.1)
-        except HTTPNotFound:
-            job_gone = True
-    assert job_gone
+    _wait_for_state(job.id, 5.0, 'DELETED', cerise_client)
