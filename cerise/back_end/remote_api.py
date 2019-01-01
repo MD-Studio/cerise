@@ -292,16 +292,29 @@ class RemoteApi:
     def _run_install_script(self, remote_project_dir):
         files_dir = remote_project_dir / 'files'
         install_script = remote_project_dir / 'install.sh'
+        remote_stdout = remote_project_dir / '.cerise_install.out'
+        remote_stderr = remote_project_dir / '.cerise_install.err'
         if install_script.exists():
             jobdesc = cerulean.JobDescription()
             jobdesc.command = str(install_script)
             jobdesc.arguments=[str(files_dir)]
             jobdesc.environment['CERISE_PROJECT_FILES'] = str(files_dir)
+            jobdesc.stdout_file=str(remote_stdout)
+            jobdesc.stderr_file=str(remote_stderr)
 
             self._logger.debug("Starting api install script {}".format(jobdesc.command))
             job_id = self._sched.submit(jobdesc)
             exit_code = self._sched.wait(job_id)
             if exit_code != 0:
+                self._logger.debug('API install script error code: {}'.format(
+                    exit_code))
+                self._logger.debug('API install script stdout: {}'.format(
+                    remote_stdout.read_text()))
+                self._logger.debug('API install script stderr: {}'.format(
+                    remote_stderr.read_text()))
                 raise RuntimeError('API install script returned error code'
                                    ' {}'.format(exit_code))
+            else:
+                remote_stdout.unlink()
+                remote_stderr.unlink()
             self._logger.debug("API install script done")
