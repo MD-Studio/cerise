@@ -225,6 +225,10 @@ def test_run_job(cerise_service, cerise_client, webdav_client,
 
     assert job.state == 'Success'
 
+    log, response = cerise_client.jobs.get_job_log_by_id(jobId=job.id).result()
+    assert 'CWLTiny' in log
+    assert 'success' in log
+
 
 def test_run_broken_job(cerise_service, cerise_client, webdav_client,
                         job_fixture_permfail, debug_output):
