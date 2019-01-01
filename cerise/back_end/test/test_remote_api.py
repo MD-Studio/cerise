@@ -22,7 +22,7 @@ def test_install(installed_api_dir):
 
     # check that install script was run
     test_files_dir = installed_api_dir / 'test' / 'files'
-    assert (test_files_dir / 'test' / 'test_file.txt').is_file()
+    assert (test_files_dir / 'test_file.txt').is_file()
 
     # check that it was run once
     assert (installed_api_dir / 'count.txt').read_text().strip() == '1'

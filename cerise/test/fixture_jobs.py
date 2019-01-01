@@ -80,7 +80,7 @@ class HostnameJob:
                 job_remote_workdir)
 
     output_files = [
-            ('host', 'output.txt', bytes('hostname', 'utf-8'))]
+            ('host', 'output.txt', bytes('hostname\n', 'utf-8'))]
 
     local_output = '{ "host": { "class": "File", "location": "output.txt" } }\n'
 
@@ -358,6 +358,74 @@ class FileArrayJob:
     local_output = '{{ "counts": {{ "class": "File", "location": "output.txt" }} }}\n'
 
 
+class LongRunningJob:
+    workflow = bytes(
+            '#!/usr/bin/env cwl-runner\n'
+            '\n'
+            'cwlVersion: v1.0\n'
+            'class: Workflow\n'
+            'steps:\n'
+            '  sleep:\n'
+            '    run: test/sleep.cwl\n'
+            '    in:\n'
+            '      delay: 120\n'
+            '\n'
+            'inputs: []\n'
+            '\n'
+            'outputs: []\n', 'utf-8')
+
+    def local_input(local_baseurl):
+        return '{}'
+
+    local_input_files = []
+
+    required_num_cores = 0
+
+    time_limit = 0
+
+    output_files = []
+
+    local_output = '{}\n'
+
+
+class InstallScriptTestJob:
+    workflow = bytes(
+            '#!/usr/bin/env cwl-runner\n'
+            '\n'
+            'cwlVersion: v1.0\n'
+            'class: Workflow\n'
+            'steps:\n'
+            '  test_install:\n'
+            '    run: test/test_install_script.cwl\n'
+            '    out: [output]\n'
+            '\n'
+            'inputs: []\n'
+            '\n'
+            'outputs:\n'
+            '  output:\n'
+            '    type: File\n'
+            '    outputSource: test_install/output\n'
+            '\n', 'utf-8')
+
+    def local_input(local_baseurl):
+        return '{}'
+
+    local_input_files = []
+
+    required_num_cores = 0
+
+    time_limit = 0
+
+    def remote_output(job_remote_workdir):
+        return '{{ "output": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(
+                job_remote_workdir)
+
+    output_files = [
+            ('host', 'output.txt', bytes('Testing API installation\n', 'utf-8'))]
+
+    local_output = '{ "host": { "class": "File", "location": "output.txt" } }\n'
+
+
 class MissingInputJob:
     """A broken job that references an input file that doesn't exist.
     """
@@ -439,34 +507,3 @@ class NoWorkflowJob:
         return ''
 
     output_files = []
-
-
-class LongRunningJob:
-    workflow = bytes(
-            '#!/usr/bin/env cwl-runner\n'
-            '\n'
-            'cwlVersion: v1.0\n'
-            'class: Workflow\n'
-            'steps:\n'
-            '  sleep:\n'
-            '    run: test/sleep.cwl\n'
-            '    in:\n'
-            '      delay: 120\n'
-            '\n'
-            'inputs: []\n'
-            '\n'
-            'outputs: []\n', 'utf-8')
-
-    def local_input(local_baseurl):
-        return '{}'
-
-    local_input_files = []
-
-    required_num_cores = 0
-
-    time_limit = 0
-
-    output_files = [
-            ('output', 'output.txt', bytes('', 'utf-8'))]
-
-    local_output = '{ "output": { "class": "File", "location": "output.txt" } }\n'

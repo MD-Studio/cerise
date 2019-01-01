@@ -1,13 +1,10 @@
 #!/bin/bash
 
-CERISE_API_FILES="$1"
+echo "Testing API installation" >$CERISE_PROJECT_FILES/test_file.txt
 
-mkdir -p $CERISE_API_FILES/test
-echo "Testing API installation at $CERISE_API_FILES" >$CERISE_API_FILES/test/test_file.txt
-
-# Cheat, we're not supposed to write outside of CERISE_API_FILES, but
+# Cheat, we're not supposed to write outside of CERISE_PROJECT_FILES, but
 # we need something that persists. So abuse the parent dir.
-COUNT_FILE="$CERISE_API_FILES/../../count.txt"
+COUNT_FILE="$CERISE_PROJECT_FILES/../../count.txt"
 
 if [ -e $COUNT_FILE ] ; then
     cur_count=$(cat $COUNT_FILE)

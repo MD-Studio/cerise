@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 import pytest
+import requests
 import tarfile
 import time
 import webdav.client as wc
@@ -14,7 +15,8 @@ import webdav.urn as wu
 
 from cerise.test.fixture_jobs import (
         PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        MissingInputJob, BrokenJob, NoWorkflowJob, LongRunningJob)
+        LongRunningJob, MissingInputJob, BrokenJob, NoWorkflowJob,
+        InstallScriptTestJob)
 
 
 def clear_old_container(client, name):
@@ -44,7 +46,8 @@ def cerise_service():
     slurm_image = client.images.get(
             'mdstudio/cerulean-test-slurm-18-08:latest')
     slurm_container = client.containers.run(
-            slurm_image, name='cerise-test-slurm', detach=True)
+            slurm_image, name='cerise-test-slurm', hostname='hostname',
+            detach=True)
 
     client.images.build(path='.', tag='cerise')
     service_image = client.images.build(path='cerise/test',
@@ -243,8 +246,20 @@ def _wait_for_state(job_id, timeout, states, cerise_client):
 
 
 def test_get_jobs(cerise_service, cerise_client):
-    (jobs, response) = cerise_client.jobs.get_jobs().result()
+    _, response = cerise_client.jobs.get_jobs().result()
     assert response.status_code == 200
+
+
+def test_api_install_script(cerise_service, cerise_client, webdav_client, debug_output):
+    job = _start_job(cerise_client, webdav_client, InstallScriptTestJob)
+    job = _wait_for_state(job.id, 5.0, 'DONE', cerise_client)
+    assert job.state == 'Success'
+
+    output_path = '/files/output/{}/output.txt'.format(job.id)
+    resource = wc.Resource(webdav_client, wu.Urn(output_path))
+    output_buffer = io.BytesIO()
+    resource.write_to(output_buffer)
+    assert output_buffer.getvalue() == b'Testing API installation\n'
 
 
 def test_run_job(cerise_service, cerise_client, webdav_client,
