@@ -236,3 +236,16 @@ def test_run_broken_job(cerise_service, cerise_client, webdav_client,
         job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
 
     assert job.state == 'PermanentFailure'
+
+
+def test_get_job_by_id(cerise_service, cerise_client, webdav_client):
+    job1 = _start_job(cerise_client, webdav_client, WcJob)
+    job2 = _start_job(cerise_client, webdav_client, SecondaryFilesJob)
+
+    job, response = cerise_client.jobs.get_job_by_id(jobId=job1.id).result()
+    assert job.name == job1.name
+    assert job.id == job1.id
+
+    job, response = cerise_client.jobs.get_job_by_id(jobId=job2.id).result()
+    assert job.name == job2.name
+    assert job.id == job2.id
