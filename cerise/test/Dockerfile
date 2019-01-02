@@ -8,6 +8,7 @@ COPY container/config.yml /home/cerise/conf/config.yml
 RUN chown -R cerise:cerise /home/cerise/conf
 COPY container/docker-init.sh /usr/local/bin/init.sh
 RUN chmod 755 /usr/local/bin/init.sh
+COPY container/.coveragerc /home/cerise/.coveragerc
 
 # Copy credentials
 RUN mkdir /home/cerise/.ssh

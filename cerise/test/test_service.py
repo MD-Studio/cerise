@@ -79,13 +79,15 @@ def cerise_service(slurm_container):
 
     cur_dir = Path(__file__).parent
     try:
-        stream, _ = service_container.get_archive('/home/cerise/.coverage')
+        stream, _ = service_container.get_archive('/home/cerise')
         buf = io.BytesIO(stream.read())
-        coverage_file = cur_dir.parents[1] / '.coverage.integration_test'
         with tarfile.open(fileobj=buf) as archive:
-            with archive.extractfile('.coverage') as cov_data:
-                with coverage_file.open('wb') as cov_file:
-                    cov_file.write(cov_data.read())
+            for name in archive.getnames():
+                if name.startswith('cerise/.coverage.'):
+                    with archive.extractfile(name) as cov_data:
+                        external_path = cur_dir.parents[1] / name[7:]
+                        with external_path.open('wb') as cov_file:
+                            cov_file.write(cov_data.read())
     except docker.errors.NotFound:
         print('Error: No coverage data found inside service container')
         pass
@@ -277,7 +279,7 @@ def test_get_jobs(cerise_service, cerise_client):
     assert response.status_code == 200
 
 
-def test_api_install_script(cerise_service, cerise_client, webdav_client, debug_output):
+def test_api_install_script(cerise_service, cerise_client, webdav_client):
     job = _start_job(cerise_client, webdav_client, InstallScriptTestJob)
     job = _wait_for_state(job.id, 5.0, 'DONE', cerise_client)
     assert job.state == 'Success'
@@ -303,7 +305,7 @@ def test_run_job(cerise_service, cerise_client, webdav_client,
 
 
 def test_run_broken_job(cerise_service, cerise_client, webdav_client,
-                        job_fixture_permfail, debug_output):
+                        job_fixture_permfail):
 
     job = _start_job(cerise_client, webdav_client, job_fixture_permfail)
     assert job.state == 'Waiting'
@@ -406,7 +408,7 @@ def test_restart_service(cerise_service, cerise_client, webdav_client,
 
 
 def test_dropped_connection(cerise_service, cerise_client, webdav_client,
-                            slurm_container, debug_output):
+                            slurm_container):
     job = _start_job(cerise_client, webdav_client, SlowJob,
                      'test_dropped_connection')
     print(job.id)
