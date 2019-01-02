@@ -1,5 +1,5 @@
 from cerise.back_end.job_planner import JobPlanner
-from cerise.test.fixture_jobs import PassJob, SlowJob, BrokenJob
+from cerise.test.fixture_jobs import PassJob, SlowJob, BrokenJob, NoSuchStepJob
 
 import pytest
 
@@ -35,6 +35,9 @@ def test_plan_job(mock_config, mock_store_resolved, local_api_dir):
     except RuntimeError as e:
         if 'Invalid workflow file' in e.args[0]:
             if job_fixture in [PassJob, SlowJob, BrokenJob]:
+                return
+        elif 'Invalid step in workflow' in e.args[0]:
+            if job_fixture is NoSuchStepJob:
                 return
         raise
     assert job.required_num_cores == job_fixture.required_num_cores

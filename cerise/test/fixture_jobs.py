@@ -494,6 +494,13 @@ class NoSuchStepJob:
 
     time_limit = 0
 
+    remote_input = '{}'
+
+    remote_input_files = []
+
+    def remote_output(job_remote_workdir):
+        return ''
+
     output_files = []
 
     local_output = '{}\n'

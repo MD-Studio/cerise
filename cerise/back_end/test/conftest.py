@@ -9,7 +9,7 @@ from cerise.job_store.job_state import JobState
 from cerise.back_end.test.mock_job import MockJob
 from cerise.test.fixture_jobs import (
         PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        MissingInputJob, BrokenJob)
+        MissingInputJob, BrokenJob, NoSuchStepJob)
 
 
 def workflow_to_json(yaml_string, test_steps_dir):
@@ -149,7 +149,7 @@ def mock_store_submitted(request, mock_config):
 
 @pytest.fixture(params=[
         PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        BrokenJob])
+        BrokenJob, NoSuchStepJob])
 def mock_store_resolved(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param
