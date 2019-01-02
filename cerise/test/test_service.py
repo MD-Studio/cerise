@@ -37,11 +37,16 @@ def wait_for_container(client, container):
 
 
 @pytest.fixture(scope='session')
-def cerise_service():
+def clean_up_old_containers():
     client = docker.from_env()
 
     clear_old_container(client, 'cerise-test-service')
     clear_old_container(client, 'cerise-test-slurm')
+
+
+@pytest.fixture(scope='session')
+def slurm_container(clean_up_old_containers):
+    client = docker.from_env()
 
     client.images.pull('mdstudio/cerulean-test-slurm-18-08:latest')
     slurm_image = client.images.get(
@@ -49,6 +54,12 @@ def cerise_service():
     slurm_container = client.containers.run(
             slurm_image, name='cerise-test-slurm', hostname='hostname',
             detach=True)
+    return slurm_container
+
+
+@pytest.fixture(scope='session')
+def cerise_service(slurm_container):
+    client = docker.from_env()
 
     client.images.build(path='.', tag='cerise')
     service_image = client.images.build(path='cerise/test',
@@ -255,6 +266,12 @@ def _wait_for_state(job_id, timeout, states, cerise_client):
     return test_job
 
 
+def _drop_connections(slurm_container):
+    # this will drop all SSH connections for user cerulean from the server side
+    # it doesn't kill sshd completely, because the main process runs as root
+    slurm_container.exec_run('/bin/bash -c "killall sshd"', user='cerulean')
+
+
 def test_get_jobs(cerise_service, cerise_client):
     _, response = cerise_client.jobs.get_jobs().result()
     assert response.status_code == 200
@@ -358,13 +375,32 @@ def test_delete_running_job(cerise_service, cerise_client, webdav_client):
     _wait_for_state(job.id, 5.0, 'DELETED', cerise_client)
 
 
-def test_restart_service(cerise_service, cerise_client, webdav_client, debug_output):
+def test_restart_service(cerise_service, cerise_client, webdav_client,
+                         slurm_container):
     job = _start_job(cerise_client, webdav_client, SlowJob,
                      'test_restart_service')
-    print(job.id)
     job = _wait_for_state(job.id, 10.0, 'Running', cerise_client)
     cerise_service.stop()
     time.sleep(1)
     cerise_service.start()
     job = _wait_for_state(job.id, 5.0, 'DONE', cerise_client)
+    assert job.state == 'Success'
+
+    # the back-end is still re-installing the API here (dev mode)
+    # so test that it'll survive a dropped connection while we're at it
+    _drop_connections(slurm_container)
+
+    # give it a bit to finish installing, so that it doesn't cause timeouts on
+    # subsequent tests
+    time.sleep(5)
+
+
+def test_dropped_connection(cerise_service, cerise_client, webdav_client,
+                            slurm_container, debug_output):
+    job = _start_job(cerise_client, webdav_client, SlowJob,
+                     'test_dropped_connection')
+    print(job.id)
+    _drop_connections(slurm_container)
+
+    job = _wait_for_state(job.id, 10.0, 'DONE', cerise_client)
     assert job.state == 'Success'

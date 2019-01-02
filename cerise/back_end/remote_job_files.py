@@ -110,7 +110,7 @@ class RemoteJobFiles:
         output_files = []
         with self._job_store:
             job = self._job_store.get_job(job_id)
-            self._logger.debug("Remote output" + job.remote_output)
+            self._logger.debug("Remote output: {}".format(job.remote_output))
             if job.remote_output != '':
                 outputs = json.loads(job.remote_output)
                 for output_file in get_files_from_binding(outputs):

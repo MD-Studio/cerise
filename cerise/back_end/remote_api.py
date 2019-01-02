@@ -1,8 +1,9 @@
 import cerulean
 import json
 import logging
-import os
-import re
+from paramiko.ssh_exception import SSHException
+from retrying import retry
+import time
 import yaml
 
 from .cwl import get_files_from_binding, get_required_num_cores
@@ -178,6 +179,8 @@ class RemoteApi:
 
         return updatable_projects
 
+    @retry(retry_on_exception=lambda e: isinstance(e, SSHException),
+           stop_max_attempt_number=10)
     def _make_remote_project(self, name):
         """Creates a remote directory for a given project.
 
@@ -195,6 +198,8 @@ class RemoteApi:
         remote_project_dir.mkdir(0o700)
         return remote_project_dir
 
+    @retry(retry_on_exception=lambda e: isinstance(e, SSHException),
+           stop_max_attempt_number=10)
     def _stage_api_steps(self, local_project_dir, remote_project_dir):
         """Copy the CWL steps forming the API to the remote compute
         resource, replacing $CERISE_PROJECT_FILES at the start of a
@@ -256,6 +261,8 @@ class RemoteApi:
                 cwlfile['arguments'] = newargs
         return cwlfile
 
+    @retry(retry_on_exception=lambda e: isinstance(e, SSHException),
+           stop_max_attempt_number=10)
     def _stage_api_files(self, local_project_dir, remote_project_dir):
         cerulean.copy(local_project_dir / 'version', remote_project_dir / 'version', overwrite='always')
 
@@ -268,9 +275,21 @@ class RemoteApi:
         remote_dir = remote_project_dir / 'files'
         self._logger.debug('Staging API part to {} from {}'.format(
                            remote_dir, local_dir))
-        cerulean.copy(local_dir, remote_dir, overwrite='always',
-                      copy_into=False, copy_permissions=True)
 
+        try_count = 0
+        succeeded = False
+        while not succeeded and try_count < 10:
+            try:
+                cerulean.copy(local_dir, remote_dir, overwrite='always',
+                              copy_into=False, copy_permissions=True)
+                succeeded = True
+            except paramiko.ssh_exception.SSHException as e:
+                self._logger.info('Connection error: {}'.format(e.args[0]))
+                try_count += 1
+                self._logger.info('Try {} of 10 failed'.format(try_count))
+
+    @retry(retry_on_exception=lambda e: isinstance(e, SSHException),
+           stop_max_attempt_number=10)
     def _stage_install_script(self, local_project_dir, remote_project_dir):
         local_path = local_project_dir / 'install.sh'
         if not local_path.exists():
@@ -284,11 +303,13 @@ class RemoteApi:
         cerulean.copy(local_path, remote_path, overwrite='always', copy_into=False)
 
         while not remote_path.exists():
-            pass
+            time.sleep(0.05)
 
         remote_path.chmod(0o700)
         return remote_path
 
+    @retry(retry_on_exception=lambda e: isinstance(e, SSHException),
+           stop_max_attempt_number=10)
     def _run_install_script(self, remote_project_dir):
         files_dir = remote_project_dir / 'files'
         install_script = remote_project_dir / 'install.sh'
