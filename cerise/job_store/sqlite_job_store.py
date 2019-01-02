@@ -66,7 +66,7 @@ class SQLiteJobStore:
         conn.execute("""CREATE TABLE IF NOT EXISTS job_log(
                 job_id CHARACTER(32),
                 level INTEGER,
-                time INT8,
+                time DOUBLE PRECISION,
                 message TEXT
                 )
                 """)

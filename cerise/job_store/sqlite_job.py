@@ -66,7 +66,7 @@ class SQLiteJob:
         return int(self._get_var('resolve_retry_count'))
 
     @resolve_retry_count.setter
-    def resolve_retry_count(self):
+    def resolve_retry_count(self, value):
         self._set_var('resolve_retry_count', value)
 
     @property
@@ -264,7 +264,7 @@ class SQLiteJob:
         cursor = self._store._thread_local_data.conn.execute(
             'INSERT INTO job_log (job_id, level, time, message)'
             'VALUES (?, ?, ?, ?)',
-            (self.id, level, int(time()), message))
+            (self.id, level, time(), message))
         cursor.close()
 
     def debug(self, message):
