@@ -1,4 +1,4 @@
-from cerise.test.fixture_jobs import WcJob
+from cerise.test.fixture_jobs import PassJob, MissingInputJob, BrokenJob
 from cerise.back_end.remote_api import RemoteApi
 
 import cerulean
@@ -13,6 +13,11 @@ def installed_api_dir(mock_config, local_api_dir):
     remote_api = RemoteApi(mock_config, str(local_api_dir))
     remote_api.install()
     return mock_config.get_basedir() / 'api'
+
+
+@pytest.fixture
+def remote_api(mock_config, local_api_dir):
+    return RemoteApi(mock_config, str(local_api_dir))
 
 
 def test_install(installed_api_dir):
@@ -42,13 +47,38 @@ def test_update(installed_api_dir, mock_config):
 
 
 def test_dev_update(installed_api_dir, mock_config, local_api_dir):
-    remote_api_files = RemoteApi(mock_config, str(local_api_dir))
+    remote_api = RemoteApi(mock_config, str(local_api_dir))
 
-    assert remote_api_files.update_available()
-    remote_api_files.install()
+    assert remote_api.update_available()
+    remote_api.install()
 
     # check that it was run a second time
     assert (installed_api_dir / 'count.txt').read_text().strip() == '2'
 
     # check that it will keep reinstalling
-    assert remote_api_files.update_available()
+    assert remote_api.update_available()
+
+
+def test_get_projects(remote_api):
+    print(remote_api.get_projects())
+    assert 'test 0.0.0.dev' in remote_api.get_projects()
+    assert 'cerise 0.0.0.dev' in remote_api.get_projects()
+
+
+def test_translate_runner_location(installed_api_dir, mock_config,
+                                   remote_api, local_api_dir):
+    remote_api_dir = mock_config.get_basedir() / 'api'
+    location = remote_api.translate_runner_location(
+            '$CERISE_API/project/files/cwltool.sh')
+    assert location == '{}/project/files/cwltool.sh'.format(remote_api_dir)
+
+
+def test_translate_workflow(mock_store_submitted, remote_api, mock_config):
+    store, job_fixture = mock_store_submitted
+
+    if job_fixture in [PassJob, MissingInputJob, BrokenJob]:
+        with pytest.raises(RuntimeError):
+            remote_api.translate_workflow(job_fixture.workflow)
+    else:
+        translated_json = remote_api.translate_workflow(job_fixture.workflow)
+        assert str(mock_config.get_basedir()) in translated_json.decode()
