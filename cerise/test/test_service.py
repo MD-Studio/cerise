@@ -17,7 +17,7 @@ import webdav.urn as wu
 from cerise.test.fixture_jobs import (
         PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
         LongRunningJob, NoSuchStepJob, MissingInputJob, BrokenJob,
-        NoWorkflowJob, InstallScriptTestJob)
+        NoWorkflowJob, InstallScriptTestJob, PartiallyFailingJob)
 
 
 def clear_old_container(client, name):
@@ -147,7 +147,7 @@ def job_fixture_success(request):
 
 
 @pytest.fixture(params=[MissingInputJob, BrokenJob, NoWorkflowJob,
-                        NoSuchStepJob])
+                        NoSuchStepJob, PartiallyFailingJob])
 def job_fixture_permfail(request):
     return request.param
 
@@ -310,6 +310,16 @@ def test_run_broken_job(cerise_service, cerise_client, webdav_client,
 
     job = _wait_for_state(job.id, 5.0, 'DONE', cerise_client)
     assert job.state == 'PermanentFailure'
+
+    if job_fixture_permfail == PartiallyFailingJob:
+        print(job.output['output'])
+        print(job.output['missing_output'])
+        assert ('missing_output' not in job.output or
+                job.output['missing_output'] is None)
+
+        out_data = requests.get(job.output['output']['location'])
+        assert out_data.status_code == 200
+        assert out_data.text == 'Running on host: hostname\n'
 
 
 def test_get_job_by_id(cerise_service, cerise_client, webdav_client):

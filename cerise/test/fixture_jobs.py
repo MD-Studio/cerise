@@ -423,6 +423,52 @@ class InstallScriptTestJob:
     local_output = '{ "host": { "class": "File", "location": "output.txt" } }\n'
 
 
+class PartiallyFailingJob:
+    workflow = bytes(
+                '#!/usr/bin/env cwl-runner\n'
+                '\n'
+                'cwlVersion: v1.0\n'
+                'class: Workflow\n'
+                'inputs: []\n'
+                'outputs:\n'
+                '  output:\n'
+                '    type: File\n'
+                '    outputSource: failing/output\n'
+                '  missing_output:\n'
+                '    type: File\n'
+                '    outputSource: failing/missing_output\n'
+                '\n'
+                'steps:\n'
+                '  failing:\n'
+                '    run: test/partially_failing_step.cwl\n'
+                '    in: []\n'
+                '    out:\n'
+                '      [output, missing_output]\n', 'utf-8')
+
+    def local_input(local_baseurl):
+        return '{}'
+
+    local_input_files = []
+
+    required_num_cores = 0
+
+    time_limit = 0
+
+    remote_input = '{}'
+
+    remote_input_files = []
+
+    def remote_output(job_remote_workdir):
+        return ('{{ "output": {{ "class": "File", "location": "{}/output.txt" }},\n'
+                '   "missing_output": null }}\n').format(job_remote_workdir)
+
+    output_files = [
+            ('output', 'output.txt', bytes('Running on host: hostname\n', 'utf-8'))]
+
+    local_output = ('{ "output": { "class": "File", "location": "output.txt" },'
+                    '  "missing_output": null }\n')
+
+
 class NoSuchStepJob:
     workflow = bytes(
             '#!/usr/bin/env cwl-runner\n'
