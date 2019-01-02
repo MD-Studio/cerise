@@ -34,7 +34,7 @@ class LocalFiles:
         """str: The externally accessible base URL corresponding to the _basedir."""
 
         basedir = urllib.parse.urlparse(self._basedir)
-        if basedir.scheme != 'file':
+        if basedir.scheme != 'local':
             raise ValueError('Invalid scheme in store-location-service: ' + basedir.scheme)
         self._basedir = basedir.path
 
@@ -161,12 +161,13 @@ class LocalFiles:
         Returns:
             bytes: The contents of the file
         """
+        print(self._baseurl)
         if url.startswith(self._baseurl):
-            url = 'file://' + self._basedir + url[len(self._baseurl):]
+            url = 'local://' + self._basedir + url[len(self._baseurl):]
 
         parsed_url = urllib.parse.urlparse(url)
 
-        if parsed_url.scheme == 'file':
+        if parsed_url.scheme == 'local':
             try:
                 return self._read_from_file(os.path.join('', parsed_url.path))
             except FileNotFoundError:

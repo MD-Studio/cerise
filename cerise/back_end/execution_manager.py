@@ -139,6 +139,10 @@ class ExecutionManager:
             job.error('Input not found: {}'.format(e.args[0]))
             job.state = JobState.PERMANENT_FAILURE
             return
+        except ValueError as e:
+            job.error('Invalid input: {}'.format(e.args[0]))
+            job.state = JobState.PERMANENT_FAILURE
+            return
         except ConnectionError:
             job.resolve_retry_count += 1
             job.warning('Could not connect to input source, will retry')

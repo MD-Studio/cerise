@@ -3,6 +3,7 @@ from pathlib import Path
 
 import cerulean
 import pytest
+from urllib.parse import urlparse
 import yaml
 
 from cerise.job_store.job_state import JobState
@@ -67,7 +68,7 @@ class MockConfig:
         return None
 
     def get_store_location_service(self):
-        return 'file://{}/'.format(self._exchange_path)
+        return 'local://{}/'.format(self._exchange_path)
 
     def get_store_location_client(self):
         return 'client://{}'.format(self._exchange_path)
@@ -117,7 +118,9 @@ def mock_store_submitted(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param
 
-    exchange_dir = Path(mock_config.get_store_location_service()[7:])
+    parsed_url = urlparse(mock_config.get_store_location_service())
+    assert parsed_url.scheme == 'local'
+    exchange_dir = Path(parsed_url.path)
     exchange_input_dir = exchange_dir / 'input'
     exchange_input_dir.mkdir()
     exchange_job_input_dir = exchange_input_dir / 'test_job'
@@ -140,7 +143,7 @@ def mock_store_submitted(request, mock_config):
 
 
     job = MockJob('test_job', 'test_job', 'client://' + str(wf_path),
-                      job_fixture.local_input('file://' + str(exchange_job_input_dir) + '/'))
+                      job_fixture.local_input('local://' + str(exchange_job_input_dir) + '/'))
     job.state = JobState.SUBMITTED
 
     store.add_job(job)
@@ -154,7 +157,9 @@ def mock_store_resolved(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param
 
-    exchange_dir = Path(mock_config.get_store_location_service()[7:])
+    parsed_url = urlparse(mock_config.get_store_location_service())
+    assert parsed_url.scheme == 'local'
+    exchange_dir = Path(parsed_url.path)
     exchange_job_input_dir = exchange_dir / 'input' / 'test_job'
     local_input = job_fixture.local_input('file://' + str(exchange_job_input_dir) + '/')
 

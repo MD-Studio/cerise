@@ -536,6 +536,7 @@ class MissingInputJob:
 
 class BrokenJob:
     """A simple job with no inputs or outputs, and an invalid command.
+    And an invalid scheme in the input description.
     """
     workflow = bytes(
                 '#!/usr/bin/env cwl-runner\n'
@@ -547,7 +548,8 @@ class BrokenJob:
                 'outputs: []\n', 'utf-8')
 
     def local_input(local_base_url):
-        return '{}'
+        return ('{ "file": { "class": "File", "location":'
+                '"does_not_exist://hello_world.txt" } }')
 
     local_input_files = []
 
