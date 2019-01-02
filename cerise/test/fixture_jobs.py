@@ -152,19 +152,17 @@ class SlowJob:
             '#!/usr/bin/env cwl-runner\n'
             '\n'
             'cwlVersion: v1.0\n'
-            'class: CommandLineTool\n'
-            'baseCommand: bash\n'
-            'arguments:\n'
-            '  - \'-c\'\n'
-            '  - \'sleep 1\''
+            'class: Workflow\n'
+            'steps:\n'
+            '  sleep:\n'
+            '    run: test/sleep.cwl\n'
+            '    in:\n'
+            '      delay:\n'
+            '        default: 1\n'
             '\n'
             'inputs: []\n'
             '\n'
-            'stdout: output.txt\n'
-            'outputs:\n'
-            '  output:\n'
-            '    type: File\n'
-            '    outputBinding: { glob: output.txt }\n', 'utf-8')
+            'outputs: []\n', 'utf-8')
 
     def local_input(local_baseurl):
         return '{}'
@@ -180,12 +178,11 @@ class SlowJob:
     remote_input_files = []
 
     def remote_output(job_remote_workdir):
-        return '{{ "output": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(job_remote_workdir)
+        return '{}'
 
-    output_files = [
-            ('output', 'output.txt', bytes('', 'utf-8'))]
+    output_files = []
 
-    local_output = '{ "output": { "class": "File", "location": "output.txt" } }\n'
+    local_output = '{}'
 
 
 class SecondaryFilesJob:

@@ -62,6 +62,7 @@ def test_start_job(runner_store, mock_config):
     _wait_for_state(store, job_runner, JobState.FINISHED, 5.0)
 
     logfile = mock_config.get_basedir() / 'jobs' / 'test_job' / 'stderr.txt'
+    print(logfile.read_text())
     if job_fixture is not BrokenJob:
         assert 'Final process status is success' in logfile.read_text()
 

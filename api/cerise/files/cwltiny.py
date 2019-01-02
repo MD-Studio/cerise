@@ -506,6 +506,8 @@ def resolve_output_reference(reference, workflow_dict, input_dict):
         if 'id' in step and step['id'] == step_id:
             if 'cwltiny_output_available' not in step:
                 return None, False
+            if not 'out' in step:
+                exit_perm_fail('Step {} does not have an "out" member'.format(step_id))
             for output in step['out']:
                 if output['id'] == output_id:
                     return output['cwltiny_value'], True
@@ -530,7 +532,9 @@ def resolve_step_inputs(step, workflow_dict, input_dict):
 
     if 'in' in step:
         for step_input in step['in']:
-            value = None
+            value, ready = None, False
+            if 'default' in step_input:
+                value, ready = step_input['default'], True
             if 'source' in step_input:
                 value, ready = resolve_output_reference(step_input['source'], workflow_dict, input_dict)
 

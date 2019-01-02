@@ -185,7 +185,6 @@ def mock_store_staged(request, mock_config):
     (job_dir / 'input.json').write_text(job_fixture.remote_input)
 
     for _, name, content in job_fixture.remote_input_files:
-        print('staging {} with {}'.format((work_dir / name), content))
         (work_dir / name).write_bytes(content)
 
     job = MockJob('test_job', 'test_job', None, None)

@@ -1,3 +1,4 @@
+import bravado
 from bravado.client import SwaggerClient
 from bravado.exception import HTTPBadGateway, HTTPNotFound
 from bravado_core.formatter import SwaggerFormat
@@ -61,7 +62,7 @@ def cerise_service():
             detach=True)
     wait_for_container(client, service_container)
 
-    yield
+    yield service_container
 
     service_container.stop()
 
@@ -224,22 +225,30 @@ def _wait_for_state(job_id, timeout, states, cerise_client):
         states = [states]
 
     def get_state(job_id):
-        """Returns a tuple of whether the job exists, and if so the state."""
+        """Returns job/connection state.
+
+        Returns a tuple of whether we could connect, if so whether the job
+        exists, and if so the state.
+        """
         try:
             test_job, response = cerise_client.jobs.get_job_by_id(
                     jobId=job_id).result()
             assert response.status_code == 200
         except HTTPNotFound:
-                return False, None
-        return True, test_job
+            return True, False, None
+        except requests.exceptions.ConnectionError:
+            return False, None, None
+        except HTTPBadGateway:
+            return False, None, None
+        return True, True, test_job
 
-    exists, test_job = get_state(job_id)
+    connected, exists, test_job = get_state(job_id)
 
     start_time = time.perf_counter()
-    while (exists and test_job.state not in states
+    while ((not connected or (exists and test_job.state not in states))
            and time.perf_counter() < start_time + timeout):
         time.sleep(0.1)
-        exists, test_job = get_state(job_id)
+        connected, exists, test_job = get_state(job_id)
 
     assert time.perf_counter() < start_time + timeout
     assert ('DELETED' in states and not exists) or test_job.state in states
@@ -347,3 +356,15 @@ def test_delete_running_job(cerise_service, cerise_client, webdav_client):
     assert response.status_code == 204
 
     _wait_for_state(job.id, 5.0, 'DELETED', cerise_client)
+
+
+def test_restart_service(cerise_service, cerise_client, webdav_client, debug_output):
+    job = _start_job(cerise_client, webdav_client, SlowJob,
+                     'test_restart_service')
+    print(job.id)
+    job = _wait_for_state(job.id, 10.0, 'Running', cerise_client)
+    cerise_service.stop()
+    time.sleep(1)
+    cerise_service.start()
+    job = _wait_for_state(job.id, 5.0, 'DONE', cerise_client)
+    assert job.state == 'Success'
