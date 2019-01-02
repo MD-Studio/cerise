@@ -18,6 +18,16 @@ def is_workflow(workflow_content):
         workflow = yaml.safe_load(workflow_content)
     except yaml.scanner.ScannerError:
         return False
+    except yaml.parser.ParserError:
+        return False
+
+    if not 'class' in workflow:
+        return False
+    if not 'inputs' in workflow or not 'outputs' in workflow:
+        return False
+    if not 'steps' in workflow:
+        return False
+
     process_class = workflow.get('class')
     return process_class == 'Workflow'
 
@@ -107,14 +117,15 @@ def get_time_limit(cwl_content):
 
     if isinstance(time_limit, int):
         return time_limit
-
-    if isinstance(time_limit, dict):
+    elif isinstance(time_limit, dict):
         limit = time_limit.get('timeLimit')
         if limit is None:
-            return 0
+            raise ValueError('Invalid TimeLimit specification in CWL file,'
+                             ' expected timeLimit attribute')
         return limit
-
-    return 0
+    else:
+        raise ValueError('Invalid TimeLimit specification in CWL file,'
+                         ' expected int or timeLimit attribute')
 
 
 def get_secondary_files(secondary_files):
@@ -157,15 +168,21 @@ def get_files_from_binding(cwl_binding):
     result = []
     if cwl_binding is not None:
         for name, value in cwl_binding.items():
-            if isinstance(value, dict) and value.get('class') == 'File':
-                secondary_files = get_secondary_files(value.get('secondaryFiles', []))
-                result.append(InputFile(name, value['location'], None, secondary_files))
+            if isinstance(value, dict):
+                if value.get('class') == 'File':
+                    secondary_files = get_secondary_files(value.get('secondaryFiles', []))
+                    result.append(InputFile(name, value['location'], None, secondary_files))
+                elif value.get('class') == 'Directory':
+                    raise RuntimeError('Directory inputs are not yet supported, sorry')
             elif isinstance(value, list):
                 for i, val in enumerate(value):
-                    if isinstance(val, dict) and val.get('class') == 'File':
-                        secondary_files = get_secondary_files(val.get('secondaryFiles', []))
-                        input_file = InputFile(name, val['location'], None, secondary_files, i)
-                        result.append(input_file)
+                    if isinstance(val, dict):
+                        if val.get('class') == 'File':
+                            secondary_files = get_secondary_files(val.get('secondaryFiles', []))
+                            input_file = InputFile(name, val['location'], None, secondary_files, i)
+                            result.append(input_file)
+                        elif val.get('class') == 'Directory':
+                            raise RuntimeError('Directory inputs are not yet supported, sorry')
 
     return result
 
