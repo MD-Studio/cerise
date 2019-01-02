@@ -15,8 +15,8 @@ import webdav.urn as wu
 
 from cerise.test.fixture_jobs import (
         PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        LongRunningJob, MissingInputJob, BrokenJob, NoWorkflowJob,
-        InstallScriptTestJob)
+        LongRunningJob, NoSuchStepJob, MissingInputJob, BrokenJob,
+        NoWorkflowJob, InstallScriptTestJob)
 
 
 def clear_old_container(client, name):
@@ -134,7 +134,8 @@ def job_fixture_success(request):
     return request.param
 
 
-@pytest.fixture(params=[MissingInputJob, BrokenJob, NoWorkflowJob])
+@pytest.fixture(params=[MissingInputJob, BrokenJob, NoWorkflowJob,
+                        NoSuchStepJob])
 def job_fixture_permfail(request):
     return request.param
 

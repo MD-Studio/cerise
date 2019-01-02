@@ -426,6 +426,36 @@ class InstallScriptTestJob:
     local_output = '{ "host": { "class": "File", "location": "output.txt" } }\n'
 
 
+class NoSuchStepJob:
+    workflow = bytes(
+            '#!/usr/bin/env cwl-runner\n'
+            '\n'
+            'cwlVersion: v1.0\n'
+            'class: Workflow\n'
+            'steps:\n'
+            '  sleep:\n'
+            '    run: test/no_such_step.cwl\n'
+            '    in:\n'
+            '      delay: 120\n'
+            '\n'
+            'inputs: []\n'
+            '\n'
+            'outputs: []\n', 'utf-8')
+
+    def local_input(local_baseurl):
+        return '{}'
+
+    local_input_files = []
+
+    required_num_cores = 0
+
+    time_limit = 0
+
+    output_files = []
+
+    local_output = '{}\n'
+
+
 class MissingInputJob:
     """A broken job that references an input file that doesn't exist.
     """
