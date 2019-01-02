@@ -1,6 +1,6 @@
 client-file-exchange:
-  store-location-service: file:///tmp/cerise_files
-  store-location-client: file:///tmp/cerise_files
+  store-location-service: local:///tmp/cerise_files
+  store-location-client: local:///tmp/cerise_files
 
 database:
   file: run/cerise.db
