@@ -3,6 +3,7 @@
 import argparse
 import glob
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -14,8 +15,13 @@ from urllib.parse import urlparse
 
 # Logging and output
 
+def setup_logging():
+    format = '%(asctime)-15s: %(message)s'
+    logging.basicConfig(level=logging.INFO, format=format, stream=sys.stderr)
+
+
 def log(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
+    logging.info(*args, **kwargs)
 
 def exit_validation(message):
     log(message)
@@ -628,6 +634,8 @@ def main():
     parser.add_argument('inputfile', type=str, help='An input file in JSON format')
 
     args = parser.parse_args()
+
+    setup_logging()
 
     log('====================')
     log('CWLTiny starting run')
