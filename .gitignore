@@ -5,5 +5,6 @@
 **/.cache/**
 .mypy_cache
 .pytest_cache/**
-**/.coverage*
+**/.coverage.*
+**/.coverage
 coverage.xml
