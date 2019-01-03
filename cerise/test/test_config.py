@@ -1,6 +1,7 @@
 import cerise.config as config
 
 import logging
+import os
 import pytest
 
 
@@ -16,7 +17,7 @@ def config_1():
                 },
             'logging': {
                 'file': 'test/logfile.txt',
-                'level': 'INFO'
+                'level': 'DEBUG'
                 },
             'pidfile': 'test/cerise.pid',
             'client-file-exchange': {
@@ -115,7 +116,13 @@ def test_get_log_file(config_0, config_1):
     assert config_1.get_log_file() == 'test/logfile.txt'
 
 def test_get_log_level(config_0, config_1):
-    assert config_1.get_log_level() == logging.INFO
+    assert config_0.get_log_level() == logging.INFO
+    assert config_1.get_log_level() == logging.DEBUG
+    os.environ['CERISE_LOG_LEVEL'] = 'warning'
+    assert config_0.get_log_level() == logging.WARNING
+    os.environ['CERISE_LOG_LEVEL'] = 'ERROR'
+    assert config_1.get_log_level() == logging.ERROR
+    del(os.environ['CERISE_LOG_LEVEL'])
 
 def test_get_store_location_service(config_0, config_1):
     with pytest.raises(KeyError):

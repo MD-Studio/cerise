@@ -321,7 +321,11 @@ class Config:
                     library.
         """
         import logging
-        loglevel_str = self._config['logging'].get('level', 'INFO')
+        loglevel_str = 'INFO'
+        if 'logging' in self._config:
+            loglevel_str = self._config['logging'].get('level', 'INFO')
+        if 'CERISE_LOG_LEVEL' in os.environ:
+            loglevel_str = os.environ['CERISE_LOG_LEVEL'].strip()
         loglevel = getattr(logging, loglevel_str.upper(), None)
         return loglevel
 
