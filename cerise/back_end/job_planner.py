@@ -1,8 +1,8 @@
 import logging
 from cerulean import LocalFileSystem
 
-from .cwl import (get_workflow_step_names, get_required_num_cores,
-                  get_time_limit)
+from cerise.back_end.cwl import (
+        get_workflow_step_names, get_required_num_cores, get_time_limit)
 from cerise.job_store.job_state import JobState
 
 

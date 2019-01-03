@@ -1,5 +1,5 @@
-from .sqlite_job import SQLiteJob
-from .job_state import JobState
+from cerise.job_store.sqlite_job import SQLiteJob
+from cerise.job_store.job_state import JobState
 
 import sqlite3
 import threading

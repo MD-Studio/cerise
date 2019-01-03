@@ -1,7 +1,7 @@
 import logging
 from time import asctime, localtime, time
 
-from .job_state import JobState
+from cerise.job_store.job_state import JobState
 
 
 class SQLiteJob:

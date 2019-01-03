@@ -1,5 +1,5 @@
-from .cwl import get_files_from_binding
-from .input_file import InputFile
+from cerise.back_end.cwl import get_files_from_binding
+from cerise.back_end.input_file import InputFile
 
 from cerise.job_store.job_state import JobState
 

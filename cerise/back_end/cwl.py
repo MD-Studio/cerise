@@ -1,6 +1,6 @@
 import yaml
 from cerise.job_store.job_state import JobState
-from .input_file import InputFile
+from cerise.back_end.input_file import InputFile
 
 def is_workflow(workflow_content):
     """Takes CWL file contents and checks whether it is a CWL Workflow

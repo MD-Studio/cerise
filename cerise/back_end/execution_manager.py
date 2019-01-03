@@ -1,12 +1,11 @@
 from cerise.job_store.sqlite_job_store import SQLiteJobStore
 from cerise.job_store.job_state import JobState
-from .cwl import get_cwltool_result
-from .cwl import is_workflow
-from .local_files import ConnectionError, LocalFiles
-from .remote_api import RemoteApi
-from .remote_job_files import RemoteJobFiles
-from .job_planner import InvalidJobError, JobPlanner
-from .job_runner import JobRunner
+from cerise.back_end.cwl import get_cwltool_result, is_workflow
+from cerise.back_end.local_files import ConnectionError, LocalFiles
+from cerise.back_end.remote_api import RemoteApi
+from cerise.back_end.remote_job_files import RemoteJobFiles
+from cerise.back_end.job_planner import InvalidJobError, JobPlanner
+from cerise.back_end.job_runner import JobRunner
 
 import logging
 import time

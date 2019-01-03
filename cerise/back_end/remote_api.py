@@ -6,7 +6,7 @@ from retrying import retry
 import time
 import yaml
 
-from .cwl import get_files_from_binding, get_required_num_cores
+from cerise.back_end.cwl import get_files_from_binding, get_required_num_cores
 
 
 class RemoteApi:
