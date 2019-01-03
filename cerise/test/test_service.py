@@ -365,7 +365,7 @@ def test_cancel_running_job(cerise_service, cerise_client, webdav_client):
     assert time.perf_counter() < start_time + 10.0
 
 
-def test_delete_job(cerise_service, cerise_client, webdav_client):
+def test_delete_job(cerise_service, cerise_client, webdav_client, debug_output):
     job = _start_job(cerise_client, webdav_client, WcJob, 'test_delete_job')
 
     job = _wait_for_state(job.id, 5.0, 'Success', cerise_client)

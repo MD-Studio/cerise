@@ -3,11 +3,16 @@ import json
 import logging
 import os
 import re
+from typing import Any, Dict, List, Optional, Tuple, cast
 import yaml
 
 from pathlib import Path
 
 from cerise.back_end.cwl import get_files_from_binding
+from cerise.back_end.input_file import InputFile
+from cerise.job_store.sqlite_job_store import SQLiteJobStore
+from cerise.config import Config
+
 
 class RemoteJobFiles:
     """Manages a remote directory structure.
@@ -25,14 +30,14 @@ class RemoteJobFiles:
     - jobs/<job_id>/stderr.txt is the standard error of the CWL runner
     """
 
-    def __init__(self, job_store, config):
+    def __init__(self, job_store: SQLiteJobStore, config: Config) -> None:
         """Create a RemoteJobFiles object.
         Sets up remote directory structure as well, but refuses to
         create the top-level directory.
 
         Args:
-            job_store (JobStore): The job store to use.
-            config (Config): The configuration.
+            job_store: The job store to use.
+            config: The configuration.
         """
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
@@ -52,13 +57,14 @@ class RemoteJobFiles:
         self._basedir.mkdir(0o750, parents=True, exists_ok=True)
         (self._basedir / 'jobs').mkdir(parents=True, exists_ok=True)
 
-    def stage_job(self, job_id, input_files, workflow_content):
+    def stage_job(self, job_id: str, input_files: List[InputFile],
+                  workflow_content: bytes) -> None:
         """Stage a job. Copies any necessary files to
         the remote resource.
 
         Args:
-            job_id (str): The id of the job to stage
-            input_files ([InputFile]): A list of input files to stage.
+            job_id: The id of the job to stage
+            input_files: A list of input files to stage.
             workflow_content: Translated contents of the workflow to be
                     run.
         """
@@ -97,14 +103,14 @@ class RemoteJobFiles:
             job.remote_stdout_path = str(self._abs_path(job_id, 'stdout.txt'))
             job.remote_stderr_path = str(self._abs_path(job_id, 'stderr.txt'))
 
-    def destage_job_output(self, job_id):
+    def destage_job_output(self, job_id: str) -> List[Tuple[Optional[str], str, bytes]]:
         """Download results of the given job from the compute resource.
 
         Args:
-            job_id (str): The id of the job to download results of.
+            job_id: The id of the job to download results of.
 
         Returns:
-            List[str, str, bytes]: A list of (name, path, content) tuples.
+            A list of (name, path, content) tuples.
         """
         self._logger.debug('Destaging job ' + job_id)
         output_files = []
@@ -118,7 +124,7 @@ class RemoteJobFiles:
                         output_file.location, output_file.name))
                     prefix = 'file://' + str(self._basedir / 'jobs' / job_id / 'work') + '/'
                     if not output_file.location.startswith(prefix):
-                        raise Exception("Unexpected output location in cwl-runner output: {}, expected it to start with: {}, {}".format(output_file.location, prefix, str(self._basedir._Path__path)))
+                        raise Exception("Unexpected output location in cwl-runner output: {}, expected it to start with: {}".format(output_file.location, prefix))
                     rel_path = output_file.location[len(prefix):]
                     content = self._read_remote_file(job_id, 'work/' + rel_path)
                     output_files.append((output_file.name, rel_path, content))
@@ -129,22 +135,22 @@ class RemoteJobFiles:
         # does not come from the store, so we're not leaking here
         return output_files
 
-    def delete_job(self, job_id):
+    def delete_job(self, job_id: str) -> None:
         """Remove the work directory for a job.
         This will remove the directory and everything in it, if it exists.
 
         Args:
-            job_id (str): The id of the job whose work directory to delete.
+            job_id: The id of the job whose work directory to delete.
         """
         job_dir = self._abs_path(job_id, '')
         if job_dir.exists():
             job_dir.rmdir(recursive=True)
 
-    def update_job(self, job_id):
+    def update_job(self, job_id: str) -> None:
         """Get status from remote resource and update store.
 
         Args:
-            job_id (str): ID of the job to get the status of.
+            job_id: ID of the job to get the status of.
         """
         self._logger.debug("Updating " + job_id + " from remote files")
         with self._job_store:
@@ -167,28 +173,29 @@ class RemoteJobFiles:
                     job.debug(line)
                 job.remote_error = log.decode()
 
-    def _stage_input_file(self, count, job_id, input_file, input_desc):
+    def _stage_input_file(self, count: int, job_id: str, input_file: InputFile,
+                          input_desc: Dict[str, Any]) -> int:
         """Stage an input file. Copies the file to the remote resource.
 
         Uses count to create unique file names, returns the new count \
         (i.e. the next available number).
 
         Args:
-            count (int): The next available unique count
-            job_id (str): The job id to stage for
-            input_file (InputFile): The input file to stage
-            input_desc (dict): The input description whose location \
+            count: The next available unique count
+            job_id: The job id to stage for
+            input_file: The input file to stage
+            input_desc: The input description whose location \
                     (and secondaryFiles) to update.
 
         Returns:
-            (int) The updated count
+            The updated count
         """
         self._logger.debug(type(input_file))
         staged_name = _create_input_filename(str(count).zfill(2), input_file.location)
         self._logger.debug('Staging input file {} to remote file {}'.format(
             input_file.location, staged_name))
         count += 1
-        self._add_file_to_job(job_id, 'work/' + staged_name, input_file.content)
+        self._add_file_to_job(job_id, 'work/' + staged_name, cast(bytes, input_file.content))
         input_desc['location'] = str(self._abs_path(job_id, 'work/' + staged_name))
 
         for i, secondary_file in enumerate(input_file.secondary_files):
@@ -197,50 +204,50 @@ class RemoteJobFiles:
 
         return count
 
-    def _add_file_to_job(self, job_id, rel_path, data):
+    def _add_file_to_job(self, job_id: str, rel_path: str, data: bytes) -> None:
         """Write a file on the remote resource containing the given raw data.
 
         Args:
-            job_id (str): The id of the job to write data for
-            rel_path (str): A path relative to the job's directory
-            data (bytes): The data to write
+            job_id: The id of the job to write data for
+            rel_path: A path relative to the job's directory
+            data: The data to write
         """
         remote_path = self._abs_path(job_id, rel_path)
         remote_path.write_bytes(data)
 
-    def _read_remote_file(self, job_id, rel_path):
+    def _read_remote_file(self, job_id: str, rel_path: str) -> bytes:
         """Read data from a remote file.
 
         Silently returns an empty result if the file does not exist.
 
         Args:
-            job_id (str): A job from whose work dir a file is read
-            rel_path (str): A path relative to the job's directory
+            job_id: A job from whose work dir a file is read
+            rel_path: A path relative to the job's directory
         """
         try:
             return self._abs_path(job_id, rel_path).read_bytes()
         except FileNotFoundError:
             return bytes()
 
-    def _abs_path(self, job_id, rel_path):
+    def _abs_path(self, job_id: str, rel_path: str) -> cerulean.Path:
         """Return an absolute remote path given a job-relative path.
 
         Args:
-            job_id (str): A job from whose dir a file is read
-            rel_path (str): A a path relative to the job's directory
+            job_id: A job from whose dir a file is read
+            rel_path: A a path relative to the job's directory
         """
         ret = self._basedir / 'jobs' / job_id
         if rel_path != '':
             ret /= rel_path
         return ret
 
-def _create_input_filename(unique_prefix, orig_path):
+def _create_input_filename(unique_prefix: str, orig_path: str) -> str:
     """Return a string containing a remote filename that
     resembles the original path this file was submitted with.
 
     Args:
-        unique_prefix (str): A unique prefix, used to avoid collisions.
-        orig_path (str): A string we will try to resemble to aid
+        unique_prefix: A unique prefix, used to avoid collisions.
+        orig_path: A string we will try to resemble to aid
             debugging.
     """
     result = orig_path
@@ -257,5 +264,3 @@ def _create_input_filename(unique_prefix, orig_path):
         result = result[:18] + '___' + result[-18:]
 
     return unique_prefix + '_' + result
-
-

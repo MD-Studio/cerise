@@ -1,6 +1,8 @@
 import cerulean
 import logging
 import os
+import traceback
+from typing import cast, Any, Dict, Optional
 import yaml
 
 
@@ -8,7 +10,8 @@ _remote_file_system = None
 
 
 class Config:
-    def __init__(self, config, api_config):
+    def __init__(self, config: Dict[str, Any], api_config: Dict[str, Any]
+                 ) -> None:
         """Create a configuration object.
 
         Args:
@@ -21,15 +24,14 @@ class Config:
         """The main configuration dictionary."""
         self._api_config = api_config
         """The API configuration dictionary."""
-        self._cr_config = None
+        self._cr_config = dict()  # type: Dict[str, Any]
         """The compute-resource part of the main config."""
 
-        if 'compute-resource' not in self._api_config:
-            self._api_config['compute-resource'] = {}
-        self._cr_config = self._api_config['compute-resource']
+        if 'compute-resource' in self._api_config:
+            self._cr_config = cast(dict, self._api_config['compute-resource'])
 
-    def _get_credential_variable(self, kind, name):
-        def have_config(kind, name):
+    def _get_credential_variable(self, kind: str, name: str) -> Optional[str]:
+        def have_config(kind: str, name: str) -> bool:
             if kind == '':
                 return 'credentials' in self._cr_config and \
                         name in self._cr_config['credentials']
@@ -37,21 +39,21 @@ class Config:
                     'credentials' in self._cr_config[kind] and \
                     name in self._cr_config[kind]['credentials']
 
-        def get_config(kind, name):
+        def get_config(kind: str, name: str) -> str:
             if kind == '':
                 return self._cr_config['credentials'][name]
             return self._cr_config[kind]['credentials'][name]
 
-        def env_var(kind, name):
+        def env_var(kind: str, name: str) -> str:
             if kind == '':
                 return '_'.join(['CERISE', name.upper()])
             else:
                 return '_'.join(['CERISE', kind.upper(), name.upper()])
 
-        def have_env(kind, name):
+        def have_env(kind: str, name: str) -> bool:
             return env_var(kind, name) in os.environ
 
-        def get_env(kind, name):
+        def get_env(kind: str, name: str) -> str:
             return os.environ[env_var(kind, name)]
 
         value = None
@@ -65,7 +67,7 @@ class Config:
             value = get_env(kind, name)
         return value
 
-    def _get_credential(self, kind):
+    def _get_credential(self, kind: str) -> Optional[cerulean.Credential]:
         """
         Create a Cerulean Credential given the configuration, and return
         it together with the username.
@@ -81,16 +83,15 @@ class Config:
         certfile = self._get_credential_variable(kind, 'certfile')
         passphrase = self._get_credential_variable(kind, 'passphrase')
 
+        credential = None   # type: Optional[cerulean.Credential]
         if username and certfile:
-            credential = cerulean.CertificateCredential(username, certfile, passphrase)
+            credential = cerulean.PubKeyCredential(username, certfile, passphrase)
         elif username and password:
             credential = cerulean.PasswordCredential(username, password)
-        else:
-            credential = None
 
         return credential
 
-    def get_service_host(self):
+    def get_service_host(self) -> str:
         """
         Return the host interface Cerise should listen on.
 
@@ -100,7 +101,7 @@ class Config:
         rs_config = self._config.get('rest-service', {})
         return rs_config.get('hostname', '127.0.0.1')
 
-    def get_service_port(self):
+    def get_service_port(self) -> int:
         """
         Return the port on which Cerise should listen.
 
@@ -110,7 +111,7 @@ class Config:
         rs_config = self._config.get('rest-service', {})
         return int(rs_config.get('port', 29593))
 
-    def get_username(self, kind):
+    def get_username(self, kind: str) -> Optional[str]:
         """
         Return the username used to connect to the specified kind of resource.
 
@@ -122,7 +123,8 @@ class Config:
         """
         return self._get_credential_variable(kind, 'username')
 
-    def get_scheduler(self, run_on_head_node=False):
+    def get_scheduler(self, run_on_head_node: bool = False
+                      ) -> cerulean.Scheduler:
         """
         Returns a scheduler as configured by the user.
 
@@ -137,21 +139,22 @@ class Config:
         if 'jobs' not in self._cr_config:
             protocol = 'local'
             location = None
-            scheduler = 'directgnu'
+            scheduler_type = 'directgnu'
         else:
             protocol = self._cr_config['jobs'].get('protocol', 'local')
             location = self._cr_config['jobs'].get('location')
-            scheduler = self._cr_config['jobs'].get('scheduler', 'directgnu')
+            scheduler_type = self._cr_config['jobs'].get('scheduler',
+                                                         'directgnu')
 
         if run_on_head_node:
-            scheduler = 'directgnu'
+            scheduler_type = 'directgnu'
 
         credential = self._get_credential('jobs')
         terminal = cerulean.make_terminal(protocol, location, credential)
-        scheduler = cerulean.make_scheduler(scheduler, terminal)
+        scheduler = cerulean.make_scheduler(scheduler_type, terminal)
         return scheduler
 
-    def get_file_system(self):
+    def get_file_system(self) -> cerulean.FileSystem:
         """
         Returns a remote file system as configured by the user.
 
@@ -176,7 +179,7 @@ class Config:
 
         return _remote_file_system
 
-    def get_remote_cwl_runner(self):
+    def get_remote_cwl_runner(self) -> str:
         """
         Returns the configured remote path to the CWL runner to use.
 
@@ -190,7 +193,7 @@ class Config:
             return default
         return self._cr_config['jobs'].get('cwl-runner', default)
 
-    def get_basedir(self):
+    def get_basedir(self) -> cerulean.Path:
         """
         Returns the configured remote base directory to use.
 
@@ -207,7 +210,7 @@ class Config:
         basedir = basedir.strip('/')
         return self.get_file_system() / basedir
 
-    def get_queue_name(self):
+    def get_queue_name(self) -> Optional[str]:
         """
         Returns the name of the queue to submit jobs to, or None if no
         queue name was configured.
@@ -219,7 +222,7 @@ class Config:
             return None
         return self._cr_config['jobs'].get('queue-name')
 
-    def get_slots_per_node(self):
+    def get_slots_per_node(self) -> int:
         """
         Returns the configured number of MPI slots per node.
 
@@ -231,7 +234,7 @@ class Config:
             return default
         return self._cr_config['jobs'].get('slots-per-node', default)
 
-    def get_scheduler_options(self):
+    def get_scheduler_options(self) -> Optional[str]:
         """Returns the additional scheduler options to use.
 
         Returns:
@@ -241,7 +244,7 @@ class Config:
             return None
         return self._cr_config['jobs'].get('scheduler-options', None)
 
-    def get_cores_per_node(self):
+    def get_cores_per_node(self) -> int:
         """Returns the number of cores per node.
 
         This depends on the available compute hardware, and should be
@@ -261,7 +264,7 @@ class Config:
             return 32
         return self._cr_config['jobs'].get('cores-per-node', 32)
 
-    def get_remote_refresh(self):
+    def get_remote_refresh(self) -> float:
         """
         Returns the interval in between checks of the remote job \
         status, in seconds.
@@ -271,7 +274,7 @@ class Config:
         """
         return self._cr_config.get('refresh', 60.0)
 
-    def get_database_location(self):
+    def get_database_location(self) -> str:
         """
         Returns the local path to the database file.
 
@@ -283,7 +286,7 @@ class Config:
         """
         return self._config['database']['file']
 
-    def get_pid_file(self):
+    def get_pid_file(self) -> Optional[str]:
         """
         Returns the location of the PID file, if any.
 
@@ -292,7 +295,7 @@ class Config:
         """
         return self._config.get('pidfile')
 
-    def has_logging(self):
+    def has_logging(self) -> bool:
         """
         Returns if logging is configured.
 
@@ -301,7 +304,7 @@ class Config:
         """
         return 'logging' in self._config
 
-    def get_log_file(self):
+    def get_log_file(self) -> str:
         """
         Returns the configured path for the log file. Use has_logging()
         to see if logging has been configured first.
@@ -311,7 +314,7 @@ class Config:
         """
         return self._config['logging'].get('file', '/var/log/cerise/cerise_backend.log')
 
-    def get_log_level(self):
+    def get_log_level(self) -> int:
         """
         Returns the configured log level. Use has_logging() to see if
         logging has been configured first.
@@ -329,7 +332,7 @@ class Config:
         loglevel = getattr(logging, loglevel_str.upper(), None)
         return loglevel
 
-    def get_store_location_service(self):
+    def get_store_location_service(self) -> str:
         """
         Returns the file exchange location access point for the service.
 
@@ -341,7 +344,7 @@ class Config:
         """
         return self._config['client-file-exchange']['store-location-service']
 
-    def get_store_location_client(self):
+    def get_store_location_client(self) -> str:
         """
         Returns the file exchange location access point for the client.
 
@@ -356,7 +359,7 @@ class Config:
         return self._config['client-file-exchange']['store-location-client']
 
 
-def make_config():
+def make_config() -> Config:
     """Make a configuration object.
 
     Uses the configuration files and environment variables to determine
@@ -365,9 +368,6 @@ def make_config():
     Returns:
         Config: The Cerise configuration.
     """
-    config = None
-    api_config = None
-
     config_file_path = 'conf/config.yml'
     try:
         with open(config_file_path) as config_file:

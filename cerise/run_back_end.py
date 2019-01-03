@@ -3,6 +3,7 @@ import signal
 import sys
 import time
 import traceback
+from types import FrameType
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -15,7 +16,7 @@ if __name__ == "__main__":
     config = cerise.config.make_config()
 
     # Set up shut-down handler
-    def term_handler(signum, frame):
+    def term_handler(signum: int, frame: FrameType) -> None:
         logging.info('Back-end shut down requested')
         manager.shutdown()
 

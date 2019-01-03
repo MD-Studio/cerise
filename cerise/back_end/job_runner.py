@@ -2,19 +2,22 @@ import cerulean
 import logging
 from math import ceil
 import os
-
-from cerise.job_store.job_state import JobState
-
 from time import sleep
 
+from cerise.job_store.job_state import JobState
+from cerise.job_store.sqlite_job_store import SQLiteJobStore
+from cerise.config import Config
+
+
 class JobRunner:
-    def __init__(self, job_store, config, remote_cwlrunner):
+    def __init__(self, job_store: SQLiteJobStore, config: Config,
+                 remote_cwlrunner: str) -> None:
         """Create a JobRunner object.
 
         Args:
-            job_store (JobStore): The job store to get jobs from.
-            config (Config): The configuration.
-            remote_cwlrunner (str): The location of the CWL runner to use.
+            job_store: The job store to get jobs from.
+            config: The configuration.
+            remote_cwlrunner: The location of the CWL runner to use.
         """
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
@@ -37,11 +40,11 @@ class JobRunner:
 
         self._logger.debug('Slots per node set to ' + str(self._mpi_slots_per_node))
 
-    def update_job(self, job_id):
+    def update_job(self, job_id: str) -> None:
         """Get status from compute resource and update store.
 
         Args:
-            job_id (str): ID of the job to get the status of.
+            job_id: ID of the job to get the status of.
         """
         self._logger.debug("Updating job " + job_id + " from remote job")
         with self._job_store:
@@ -61,11 +64,11 @@ class JobRunner:
             job.try_transition(JobState.WAITING_CR, JobState.CANCELLED)
             job.try_transition(JobState.RUNNING_CR, JobState.CANCELLED)
 
-    def start_job(self, job_id):
+    def start_job(self, job_id: str) -> None:
         """Get a job from the job store and start it on the compute resource.
 
         Args:
-            job_id (str): The id of the job to start.
+            job_id: The id of the job to start.
         """
         self._logger.debug('Starting job ' + job_id)
         with self._job_store:
@@ -97,7 +100,7 @@ class JobRunner:
             job.remote_job_id = self._sched.submit(jobdesc)
             self._logger.debug('Job submitted')
 
-    def cancel_job(self, job_id):
+    def cancel_job(self, job_id: str) -> bool:
         """Cancel a running job.
 
         Job must be cancellable, i.e. in JobState.RUNNING or
@@ -110,10 +113,10 @@ class JobRunner:
         it returns True.
 
         Args:
-            job_id (str): The id of the job to cancel.
+            job_id: The id of the job to cancel.
 
         Returns:
-            bool: Whether the job is still running.
+            Whether the job is still running.
         """
         self._logger.debug('Cancelling job ' + job_id)
         with self._job_store:

@@ -84,11 +84,11 @@ def get_job_by_id(jobId):
     :rtype: Job
     """
     with _job_store:
-        job = _job_store.get_job(jobId)
-        if not job:
+        try:
+            job = _job_store.get_job(jobId)
+            return _internal_job_to_rest_job(job), 200
+        except RuntimeError:
             flask.abort(404, "Job not found")
-
-        return _internal_job_to_rest_job(job), 200
 
 
 def get_job_log_by_id(jobId):

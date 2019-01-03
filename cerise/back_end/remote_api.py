@@ -1,12 +1,14 @@
 import cerulean
 import json
 import logging
-from paramiko.ssh_exception import SSHException
+from paramiko.ssh_exception import SSHException  # type: ignore
 from retrying import retry
 import time
+from typing import Any, Dict, List, Optional
 import yaml
 
 from cerise.back_end.cwl import get_files_from_binding, get_required_num_cores
+from cerise.config import Config
 
 
 class RemoteApi:
@@ -23,13 +25,14 @@ class RemoteApi:
     <project>/install.sh
     """
 
-    def __init__(self, config, local_api_dir):
+    def __init__(self, config: Config, local_api_dir: str) -> None:
         """Create a RemoteApiFiles object.
         Sets up remote directory structure as well, but refuses to
         create the top-level directory.
 
         Args:
-            config (Config): The configuration.
+            config: The configuration.
+            local_api_dir: The path to the local API dir to install from.
         """
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
@@ -47,12 +50,12 @@ class RemoteApi:
         """cerulean.Path: The remote path to the base directory where we store our stuff."""
         self._remote_api_dir = self._basedir / 'api'
         """cerulean.Path: The remote path to the base directory where we store our stuff."""
-        self._steps_requirements = dict()  # type: Dict[Dict[str, int]]
+        self._steps_requirements = dict()  # type: Dict[str, Dict[str, int]]
         """Resource requirements for each loaded step."""
 
         self._remote_api_dir.mkdir(0o750, parents=True, exists_ok=True)
 
-    def update_available(self):
+    def update_available(self) -> bool:
         """Returns whether the remote API is older than the local one.
 
         Returns:
@@ -60,7 +63,7 @@ class RemoteApi:
         """
         return self._updatable_projects() != []
 
-    def install(self):
+    def install(self) -> None:
         """Install the API onto the compute resource.
 
         Copies subdirectories steps/ and files/ of the given local api
@@ -84,7 +87,7 @@ class RemoteApi:
                                   ' disk space or quota on the remote machine.'
                                   ''.format(e))
 
-    def get_projects(self):
+    def get_projects(self) -> List[str]:
         """Return names and versions of the installed projects.
 
         Returns:
@@ -101,7 +104,7 @@ class RemoteApi:
 
         return projects_versions
 
-    def translate_runner_location(self, runner_location):
+    def translate_runner_location(self, runner_location: str) -> str:
         """Perform macro substitution on CWL runner location.
 
         This replaces $CERISE_API with the API base dir.
@@ -120,7 +123,7 @@ class RemoteApi:
                 '$CERISE_USERNAME', self._username)
         return actual_location
 
-    def translate_workflow(self, workflow_content):
+    def translate_workflow(self, workflow_content: bytes) -> bytes:
         """Parse workflow content, check that it calls steps, and
         insert the location of the steps on the remote resource so that
         the remote runner can find them.
@@ -128,10 +131,10 @@ class RemoteApi:
         Also converts YAML to JSON, for cwltiny compatibility.
 
         Args:
-            workflow_content (bytes): The raw workflow data
+            workflow_content: The raw workflow data
 
         Returns:
-            bytes: The modified workflow data, serialised as JSON
+            The modified workflow data, serialised as JSON
 
         """
         workflow = yaml.safe_load(str(workflow_content, 'utf-8'))
@@ -146,7 +149,7 @@ class RemoteApi:
             step['run'] = str(steps_dir) + '/' + '/'.join(step_parts)
         return bytes(json.dumps(workflow), 'utf-8')
 
-    def _updatable_projects(self):
+    def _updatable_projects(self) -> List[str]:
         """Returns a list of names of projects that can be updated.
 
         A project is updatable if its local version is larger than its
@@ -154,7 +157,7 @@ class RemoteApi:
         latter is handy for development.
 
         Returns:
-            list(str): A list of updatable project names.
+            A list of updatable project names.
         """
         updatable_projects = list()
         for local_project_dir in self._local_api_dir.iterdir():
@@ -181,7 +184,7 @@ class RemoteApi:
 
     @retry(retry_on_exception=lambda e: isinstance(e, SSHException),
            stop_max_attempt_number=10)
-    def _make_remote_project(self, name):
+    def _make_remote_project(self, name: str) -> cerulean.Path:
         """Creates a remote directory for a given project.
 
         If a directory already exists, removes it first.
@@ -200,7 +203,8 @@ class RemoteApi:
 
     @retry(retry_on_exception=lambda e: isinstance(e, SSHException),
            stop_max_attempt_number=10)
-    def _stage_api_steps(self, local_project_dir, remote_project_dir):
+    def _stage_api_steps(self, local_project_dir: cerulean.Path,
+                         remote_project_dir: cerulean.Path) -> None:
         """Copy the CWL steps forming the API to the remote compute
         resource, replacing $CERISE_PROJECT_FILES at the start of a
         baseCommand and in arguments with the remote path to the files,
@@ -229,7 +233,8 @@ class RemoteApi:
                         rem_file, filename))
                     rem_file.write_text(json.dumps(cwlfile))
 
-    def _translate_api_step(self, step_path, remote_project_dir):
+    def _translate_api_step(self, step_path: cerulean.Path,
+                            remote_project_dir: cerulean.Path) -> Any:
         """Do CERISE_PROJECT_FILES macro substitution on an API step file.
 
         Args:
@@ -263,7 +268,8 @@ class RemoteApi:
 
     @retry(retry_on_exception=lambda e: isinstance(e, SSHException),
            stop_max_attempt_number=10)
-    def _stage_api_files(self, local_project_dir, remote_project_dir):
+    def _stage_api_files(self, local_project_dir: cerulean.Path,
+                         remote_project_dir: cerulean.Path) -> None:
         cerulean.copy(local_project_dir / 'version', remote_project_dir / 'version', overwrite='always')
 
         local_dir = local_project_dir / 'files'
@@ -283,14 +289,16 @@ class RemoteApi:
                 cerulean.copy(local_dir, remote_dir, overwrite='always',
                               copy_into=False, copy_permissions=True)
                 succeeded = True
-            except paramiko.ssh_exception.SSHException as e:
+            except SSHException as e:
                 self._logger.info('Connection error: {}'.format(e.args[0]))
                 try_count += 1
                 self._logger.info('Try {} of 10 failed'.format(try_count))
 
     @retry(retry_on_exception=lambda e: isinstance(e, SSHException),
            stop_max_attempt_number=10)
-    def _stage_install_script(self, local_project_dir, remote_project_dir):
+    def _stage_install_script(self, local_project_dir: cerulean.Path,
+                              remote_project_dir: cerulean.Path
+                              ) -> Optional[cerulean.Path]:
         local_path = local_project_dir / 'install.sh'
         if not local_path.exists():
             self._logger.debug('API install script not found at {}, not'
@@ -310,7 +318,7 @@ class RemoteApi:
 
     @retry(retry_on_exception=lambda e: isinstance(e, SSHException),
            stop_max_attempt_number=10)
-    def _run_install_script(self, remote_project_dir):
+    def _run_install_script(self, remote_project_dir: cerulean.Path) -> None:
         files_dir = remote_project_dir / 'files'
         install_script = remote_project_dir / 'install.sh'
         remote_stdout = remote_project_dir / '.cerise_install.out'

@@ -1,5 +1,10 @@
+from typing import List, Optional
+
+
 class InputFile:
-    def __init__(self, name, location, content, secondary_files, index=None):
+    def __init__(self, name: Optional[str], location: str,
+                 content: Optional[bytes], secondary_files: List['InputFile'],
+                 index: int = None) -> None:
         """Create an InputFile object.
 
         This describes an input file, and is the result of resolving \
@@ -8,19 +13,19 @@ class InputFile:
         update the input description with remote paths.
 
         Args:
-            name (str): The name of the input for which this file is.
-            location (str): A URL with the (local) location of the \
+            name: The name of the input for which this file is.
+            location: A URL with the (local) location of the \
                     file.
-            content (bytes): The content of the file.
-            secondary_files ([InputFile]): A list of secondary files.
+            content: The content of the file.
+            secondary_files: A list of secondary files.
         """
         self.name = name
-        """(str) The input name for which this file is."""
+        """The input name for which this file is."""
         self.index = index
-        """(int) The index of this file, if it is in an array of files."""
+        """The index of this file, if it is in an array of files."""
         self.location = location
-        """(str) Local URL of the file."""
+        """Local URL of the file."""
         self.content = content
-        """(bytes) The content of the file."""
+        """The content of the file."""
         self.secondary_files = secondary_files
-        """([InputFile]) CWL secondary files."""
+        """CWL secondary files."""

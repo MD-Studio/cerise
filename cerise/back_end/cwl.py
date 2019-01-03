@@ -1,24 +1,26 @@
+from typing import Any, Dict, List
 import yaml
+
 from cerise.job_store.job_state import JobState
 from cerise.back_end.input_file import InputFile
 
-def is_workflow(workflow_content):
+
+def is_workflow(workflow_content: bytes) -> bool:
     """Takes CWL file contents and checks whether it is a CWL Workflow
     (and not an ExpressionTool or CommandLineTool).
 
     Args:
-        workflow_content (bytes): a dict structure parsed from a CWL
-                file.
+        workflow_content: a dict structure parsed from a CWL file.
 
     Returns:
-        bool: True iff the top-level Process in this CWL file is an
+        True iff the top-level Process in this CWL file is an
                 instance of Workflow.
     """
     try:
-        workflow = yaml.safe_load(workflow_content)
-    except yaml.scanner.ScannerError:
+        workflow = yaml.safe_load(workflow_content.decode())
+    except yaml.scanner.ScannerError:   # type: ignore
         return False
-    except yaml.parser.ParserError:
+    except yaml.parser.ParserError:     # type: ignore
         return False
 
     if not 'class' in workflow:
@@ -32,7 +34,7 @@ def is_workflow(workflow_content):
     return process_class == 'Workflow'
 
 
-def get_workflow_step_names(workflow_content):
+def get_workflow_step_names(workflow_content: bytes) -> List[str]:
     """Takes a CWL workflow and extracts names of steps.
 
     This assumes that the steps are not inlined, but referenced by
@@ -42,12 +44,12 @@ def get_workflow_step_names(workflow_content):
     attribute, not that of the ``id`` attribute.
 
     Args:
-        workflow_content (bytes): The contents of the workflow file.
+        workflow_content: The contents of the workflow file.
 
     Returns:
-        (List[str]): A list of step names.
+        A list of step names.
     """
-    workflow = yaml.safe_load(workflow_content)
+    workflow = yaml.safe_load(workflow_content.decode())
     if not 'class' in workflow or workflow['class'] != 'Workflow':
         raise RuntimeError('Invalid workflow file')
     if not 'steps' in workflow:
@@ -55,7 +57,7 @@ def get_workflow_step_names(workflow_content):
 
     steps = None
     if isinstance(workflow['steps'], dict):
-        steps = workflow['steps'].values()
+        steps = list(workflow['steps'].values())
     elif isinstance(workflow['steps'], list):
         steps = workflow['steps']
 
@@ -65,16 +67,16 @@ def get_workflow_step_names(workflow_content):
     return [step['run'] for step in steps]
 
 
-def get_required_num_cores(cwl_content):
+def get_required_num_cores(cwl_content: bytes) -> int:
     """Takes a CWL file contents and extracts number of cores required.
 
     Args:
-        cwl_content (bytes): The contents of a CWL file.
+        cwl_content: The contents of a CWL file.
 
     Returns:
-        int: The number of cores required, or 0 if not specified.
+        The number of cores required, or 0 if not specified.
     """
-    workflow = yaml.safe_load(cwl_content)
+    workflow = yaml.safe_load(cwl_content.decode())
     hints = workflow.get('hints')
     if hints is None:
         return 0
@@ -93,7 +95,7 @@ def get_required_num_cores(cwl_content):
     return 0
 
 
-def get_time_limit(cwl_content):
+def get_time_limit(cwl_content: bytes) -> int:
     """Takes a CWL file contents and extracts cwl1.1-dev1 time limit.
 
     Supports only two of three possible ways of writing this. Returns
@@ -101,12 +103,12 @@ def get_time_limit(cwl_content):
     used.
 
     Args:
-        cwl_content (bytes): The contents of a CWL file.
+        cwl_content: The contents of a CWL file.
 
     Returns:
-        int: Time to reserve in seconds.
+        Time to reserve in seconds.
     """
-    workflow = yaml.safe_load(cwl_content)
+    workflow = yaml.safe_load(cwl_content.decode())
     hints = workflow.get('hints')
     if hints is None:
         return 0
@@ -128,15 +130,16 @@ def get_time_limit(cwl_content):
                          ' expected int or timeLimit attribute')
 
 
-def get_secondary_files(secondary_files):
+def get_secondary_files(secondary_files: List[Dict[str, Any]]
+                        ) -> List[InputFile]:
     """Parses a list of secondary files, recursively.
 
     Args:
-        secondary_files (list): A list of values from a CWL \
-                secondaryFiles attribute.
+        secondary_files: A list of values from a CWL secondaryFiles
+                attribute.
 
     Returns:
-        ([InputFile]): A list of secondary input files.
+        A list of secondary input files.
     """
     result = []
     for value in secondary_files:
@@ -153,7 +156,7 @@ def get_secondary_files(secondary_files):
     return result
 
 
-def get_files_from_binding(cwl_binding):
+def get_files_from_binding(cwl_binding: Dict[str, Any]) -> List[InputFile]:
     """Parses a CWL input or output binding an returns a list
     containing name: path pairs. Any non-File objects are
     omitted.
@@ -187,17 +190,17 @@ def get_files_from_binding(cwl_binding):
     return result
 
 
-def get_cwltool_result(cwltool_log):
+def get_cwltool_result(cwltool_log: str) -> JobState:
     """Parses cwltool log output and returns a JobState object
     describing the outcome of the cwl execution.
 
     Args:
-        cwltool_log (str): The standard error output of cwltool
+        cwltool_log: The standard error output of cwltool
 
     Returns:
-        JobState: Any of JobState.PERMANENT_FAILURE,
-        JobState.TEMPORARY_FAILURE or JobState.SUCCESS, or
-        JobState.SYSTEM_ERROR if the output could not be interpreted.
+        Any of JobState.PERMANENT_FAILURE, JobState.TEMPORARY_FAILURE or
+        JobState.SUCCESS, or JobState.SYSTEM_ERROR if the output could
+        not be interpreted.
     """
     if 'Tool definition failed validation:' in cwltool_log:
         return JobState.PERMANENT_FAILURE

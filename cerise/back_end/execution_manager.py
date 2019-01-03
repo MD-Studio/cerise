@@ -6,10 +6,14 @@ from cerise.back_end.remote_api import RemoteApi
 from cerise.back_end.remote_job_files import RemoteJobFiles
 from cerise.back_end.job_planner import InvalidJobError, JobPlanner
 from cerise.back_end.job_runner import JobRunner
+from cerise.config import Config
+from cerise.job_store.sqlite_job import SQLiteJob
 
 import logging
 import time
 import traceback
+from typing import cast
+
 
 class ExecutionManager:
     """Handles the execution of jobs on the remote resource.
@@ -19,35 +23,40 @@ class ExecutionManager:
     resource, ensuring that any remote state changes are propagated to
     the job store correctly.
     """
-    def __init__(self, config, local_api_dir):
+    def __init__(self, config: Config, local_api_dir: str) -> None:
         """Set up the execution manager.
 
         Args:
-            config (Config): The configuration.
-            local_api_dir (str): The path to the local API directory.
+            config: The configuration.
+            local_api_dir: The path to the local API directory.
         """
         self._logger = logging.getLogger(__name__)
 
         self._update_available = False
-        """bool: Whether the installed API is older than the local one."""
+        """Whether the installed API is older than the local one."""
 
         self._shutting_down = False
-        """bool: True iff we're shutting down."""
+        """True iff we're shutting down."""
 
         self._job_store = SQLiteJobStore(config.get_database_location())
-        """SQLiteJobStore: The job store to use."""
+        """The job store to use."""
         self._local_files = LocalFiles(self._job_store, config)
-        """LocalFiles: The local files manager."""
+        """The local files manager."""
         self._remote_api = RemoteApi(config, local_api_dir)
-        """RemoteApi: The remote API manager."""
+        """The remote API manager."""
         self._remote_refresh = config.get_remote_refresh()
 
         self._job_planner = JobPlanner(self._job_store, local_api_dir)
-        """JobPlanner: Determines required hardware resources."""
+        """Determines required hardware resources."""
 
         self._remote_job_files = RemoteJobFiles(self._job_store, config)
-        """RemoteJobFiles: The remote job files manager."""
+        """The remote job files manager."""
 
+        remote_cwlrunner = self._remote_api.translate_runner_location(
+                config.get_remote_cwl_runner())
+        self._job_runner = JobRunner(
+                self._job_store, config, remote_cwlrunner)
+        """The job runner submits jobs and checks on them."""
 
         # recover database from crash
         with self._job_store:
@@ -63,11 +72,6 @@ class ExecutionManager:
                 if job.state == JobState.RUNNING_CR:
                     self._job_runner.cancel_job(job.id)
 
-        remote_cwlrunner = self._remote_api.translate_runner_location(
-                config.get_remote_cwl_runner())
-        self._job_runner = JobRunner(
-                self._job_store, config, remote_cwlrunner)
-
         # Check for updates
         self._update_available = self._remote_api.update_available()
         if self._update_available:
@@ -75,12 +79,12 @@ class ExecutionManager:
 
         self._logger.info('Started back-end')
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Requests the execution manager to execute a clean shutdown."""
         self._logger.debug('Shutdown requested')
         self._shutting_down = True
 
-    def _delete_job(self, job_id, job):
+    def _delete_job(self, job_id: str, job: SQLiteJob) -> None:
         """Delete a job.
 
         Deletes the job from the compute resource, and if it was
@@ -98,7 +102,7 @@ class ExecutionManager:
             self._local_files.delete_output_dir(job_id)
         self._job_store.delete_job(job_id)
 
-    def _cancel_job(self, job_id, job):
+    def _cancel_job(self, job_id: str, job: SQLiteJob) -> None:
         """Cancel a job.
 
         If the job is running, the cancellation request may take some
@@ -120,7 +124,7 @@ class ExecutionManager:
             job.state = JobState.CANCELLED
             job.info('Job cancelled')
 
-    def _stage_and_start_job(self, job_id, job):
+    def _stage_and_start_job(self, job_id: str, job: SQLiteJob) -> None:
         """Stages, plans and starts a job.
 
         Precondition: Job is in STAGING_IN state
@@ -150,7 +154,7 @@ class ExecutionManager:
                 job.state = JobState.TEMPORARY_FAILURE
             return
 
-        if not is_workflow(job.workflow_content):
+        if not is_workflow(cast(bytes, job.workflow_content)):
             job.error('Input is not a CWL workflow')
             job.state = JobState.PERMANENT_FAILURE
             return
@@ -171,7 +175,7 @@ class ExecutionManager:
             return
 
         job.info('Planned job, now staging in inputs')
-        workflow_content = self._remote_api.translate_workflow(job.workflow_content)
+        workflow_content = self._remote_api.translate_workflow(cast(bytes, job.workflow_content))
         try:
             self._remote_job_files.stage_job(job_id, input_files, workflow_content)
         except IOError as e:
@@ -196,7 +200,7 @@ class ExecutionManager:
             self._logger.critical('State is now {}'.format(job.state))
             job.state = JobState.SYSTEM_ERROR
 
-    def _destage_job(self, job_id, job):
+    def _destage_job(self, job_id: str, job: SQLiteJob) -> None:
         """Get job results back from the compute resource.
 
         Precondition: Job is in FINISHED
@@ -219,13 +223,16 @@ class ExecutionManager:
                     job.try_transition(JobState.STAGING_OUT_CR, JobState.CANCELLED)):
                 job.state = JobState.SYSTEM_ERROR
 
-    def _process_jobs(self, check_remote):
+    def _process_jobs(self, check_remote: bool) -> bool:
         """
         Go through the jobs and do what needs to be done.
 
         Args:
-            check_remote (boolean): Whether to access the remote
+            check_remote: Whether to access the remote
                 compute resource to check on jobs.
+
+        Returns:
+            True iff there are currently running jobs.
         """
         # If we don't check remote, assume that we have running jobs,
         # so that we don't install updates while jobs are running.
@@ -269,7 +276,7 @@ class ExecutionManager:
 
         return have_running_jobs
 
-    def execute_jobs(self):
+    def execute_jobs(self) -> None:
         """Run the main backend execution loop.
 
         This repeatedly processes jobs, but does not check the remote

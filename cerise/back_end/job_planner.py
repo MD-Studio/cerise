@@ -1,9 +1,11 @@
-import logging
 from cerulean import LocalFileSystem
+import logging
+from typing import cast, Dict
 
 from cerise.back_end.cwl import (
         get_workflow_step_names, get_required_num_cores, get_time_limit)
 from cerise.job_store.job_state import JobState
+from cerise.job_store.sqlite_job_store import SQLiteJobStore
 
 
 class InvalidJobError(RuntimeError):
@@ -18,7 +20,7 @@ class JobPlanner:
     resources it needs based on this.
     """
 
-    def __init__(self, job_store, local_api_dir):
+    def __init__(self, job_store: SQLiteJobStore, local_api_dir: str):
         """Create a JobPlanner.
 
         Args:
@@ -37,7 +39,7 @@ class JobPlanner:
         """
         self._get_steps_resource_requirements(local_api_dir)
 
-    def plan_job(self, job_id):
+    def plan_job(self, job_id: str) -> None:
         """Figures out which resources a job needs.
 
         Resources are identified by strings. Currently, there is
@@ -50,24 +52,25 @@ class JobPlanner:
         with self._job_store:
             job = self._job_store.get_job(job_id)
 
-            steps = get_workflow_step_names(job.workflow_content)
+            steps = get_workflow_step_names(cast(bytes, job.workflow_content))
             for step in steps:
                 if step not in self._steps_requirements:
                     job.error('Found invalid step {} in workflow'.format(step))
                     raise InvalidJobError('Invalid step in workflow')
 
-            job.required_num_cores = get_required_num_cores(job.workflow_content)
+            job.required_num_cores = get_required_num_cores(
+                    cast(bytes, job.workflow_content))
             num_cores_steps = [self._steps_requirements[step]['num_cores']
                                for step in steps]
             if max(num_cores_steps) > 0:
                 job.required_num_cores = max(num_cores_steps)
 
-            job.time_limit = get_time_limit(job.workflow_content)
+            job.time_limit = get_time_limit(cast(bytes, job.workflow_content))
             time_limit_steps = [self._steps_requirements[step]['time_limit']
                                 for step in steps]
             job.time_limit = max(job.time_limit, sum(time_limit_steps))
 
-    def _get_steps_resource_requirements(self, local_api_dir):
+    def _get_steps_resource_requirements(self, local_api_dir: str) -> None:
         """Scan CWL steps and extract resource requirements.
 
         Args:

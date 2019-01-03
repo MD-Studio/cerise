@@ -6,7 +6,7 @@ from cerise.job_store.job_state import JobState
 
 
 def test_is_workflow():
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.0
         class: Workflow
 
@@ -14,12 +14,12 @@ def test_is_workflow():
         outputs: []
 
         steps: []
-        """
+        """, 'utf-8')
     assert cwl.is_workflow(wf)
 
 
 def test_is_not_workflow():
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.0
         class: CommandLineTool
         baseCommand: hostname
@@ -30,7 +30,7 @@ def test_is_not_workflow():
             output:
                 type: File
                 outputBinding: { glob: output.txt }
-        """
+        """, 'utf-8')
     assert not cwl.is_workflow(wf)
 
 
@@ -40,45 +40,45 @@ def test_is_workflow_invalid():
 
 
 def test_is_workflow_required_attributes():
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.0
         class: Workflow
         inputs: []
         outputs: []
         steps: []
-        """
+        """, 'utf-8')
     assert cwl.is_workflow(wf)
 
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.0
         inputs: []
         outputs: []
         steps: []
-        """
+        """, 'utf-8')
     assert not cwl.is_workflow(wf)
 
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.0
         class: Workflow
         outputs: []
         steps: []
-        """
+        """, 'utf-8')
     assert not cwl.is_workflow(wf)
 
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.0
         class: Workflow
         inputs: []
         steps: []
-        """
+        """, 'utf-8')
     assert not cwl.is_workflow(wf)
 
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.0
         class: Workflow
         inputs: []
         outputs: []
-        """
+        """, 'utf-8')
     assert not cwl.is_workflow(wf)
 
 
@@ -149,7 +149,7 @@ def test_get_workflow_step_names_4():
 
 
 def test_get_required_num_cores_coresmin():
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.0
         class: Workflow
 
@@ -161,12 +161,12 @@ def test_get_required_num_cores_coresmin():
         hints:
             ResourceRequirement:
                 coresMin: 10
-        """
+        """, 'utf-8')
     assert cwl.get_required_num_cores(wf) == 10
 
 
 def test_get_required_num_cores_coresmax():
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.0
         class: Workflow
 
@@ -178,12 +178,12 @@ def test_get_required_num_cores_coresmax():
         hints:
             ResourceRequirement:
                 coresMax: 10
-        """
+        """, 'utf-8')
     assert cwl.get_required_num_cores(wf) == 10
 
 
 def test_get_required_num_cores_both():
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.0
         class: Workflow
 
@@ -196,12 +196,12 @@ def test_get_required_num_cores_both():
             ResourceRequirement:
                 coresMin: 5
                 coresMax: 10
-        """
+        """, 'utf-8')
     assert cwl.get_required_num_cores(wf) == 5
 
 
 def test_get_required_num_cores_default():
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.0
         class: Workflow
 
@@ -209,12 +209,12 @@ def test_get_required_num_cores_default():
         outputs: []
 
         steps: []
-        """
+        """, 'utf-8')
     assert cwl.get_required_num_cores(wf) == 0
 
 
 def test_get_time_limit():
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.1.0-dev1
         class: Workflow
 
@@ -225,12 +225,12 @@ def test_get_time_limit():
 
         hints:
             TimeLimit: 123
-        """
+        """, 'utf-8')
     assert cwl.get_time_limit(wf) == 123
 
 
 def test_get_time_limit2():
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.1.0-dev1
         class: Workflow
 
@@ -242,12 +242,12 @@ def test_get_time_limit2():
         hints:
             TimeLimit:
                 timeLimit: 321
-        """
+        """, 'utf-8')
     assert cwl.get_time_limit(wf) == 321
 
 
 def test_no_time_limit():
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.1.0-dev1
         class: Workflow
 
@@ -259,13 +259,13 @@ def test_no_time_limit():
         hints:
             TimeLimit:
                 timeLmt: 321
-        """
+        """, 'utf-8')
     with pytest.raises(ValueError):
         cwl.get_time_limit(wf)
 
 
 def test_no_time_limit2():
-    wf = """
+    wf = bytes("""
         cwlVersion: v1.1.0-dev1
         class: Workflow
 
@@ -273,7 +273,7 @@ def test_no_time_limit2():
         outputs: []
 
         steps: []
-        """
+        """, 'utf-8')
     assert cwl.get_time_limit(wf) == 0
 
 
