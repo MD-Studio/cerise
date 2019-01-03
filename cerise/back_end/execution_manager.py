@@ -10,6 +10,7 @@ from cerise.config import Config
 from cerise.job_store.sqlite_job import SQLiteJob
 
 import logging
+from paramiko.ssh_exception import SSHException     # type: ignore
 import time
 import traceback
 from typing import cast
@@ -149,6 +150,7 @@ class ExecutionManager:
         except ConnectionError:
             job.resolve_retry_count += 1
             job.warning('Could not connect to input source, will retry')
+            job.state = JobState.SUBMITTED
             if job.resolve_retry_count > 10:
                 job.error('Could not connect to input source, giving up')
                 job.state = JobState.TEMPORARY_FAILURE
@@ -178,6 +180,11 @@ class ExecutionManager:
         workflow_content = self._remote_api.translate_workflow(cast(bytes, job.workflow_content))
         try:
             self._remote_job_files.stage_job(job_id, input_files, workflow_content)
+        except SSHException as e:
+            job.warning('Connection problem with remote resource: {}'.format(e.args[0]))
+            job.warning('Will try again later')
+            job.state = JobState.SUBMITTED
+            return
         except IOError as e:
             job.error('An IO error occurred while uploading the job'
                       ' input data: {}. Please check that your network'
@@ -191,7 +198,13 @@ class ExecutionManager:
         job.info('API versions:')
         for project_version in self._remote_api.get_projects():
             job.info('  {}'.format(project_version))
-        self._job_runner.start_job(job_id)
+        try:
+            self._job_runner.start_job(job_id)
+        except SSHException as e:
+            job.warning('Connection problem with remote resource: {}'.format(e.args[0]))
+            job.warning('Will try again later')
+            job.state = JobState.SUBMITTED
+            return
         job.info('Started job')
 
         if not (job.try_transition(JobState.STAGING_IN, JobState.WAITING) or
@@ -215,8 +228,15 @@ class ExecutionManager:
 
         if job.try_transition(JobState.FINISHED, JobState.STAGING_OUT):
             job.info('Starting destaging of results')
-            output_files = self._remote_job_files.destage_job_output(job_id)
-            self._local_files.publish_job_output(job_id, output_files)
+            try:
+                output_files = self._remote_job_files.destage_job_output(job_id)
+                self._local_files.publish_job_output(job_id, output_files)
+            except SSHException as e:
+                job.warning('Connection problem with remote resource: {}'.format(e.args[0]))
+                job.warning('Will try again later')
+                job.state = JobState.FINISHED
+                return
+
             job.info('Results downloaded and available')
 
             if not (job.try_transition(JobState.STAGING_OUT, result) or
@@ -249,10 +269,13 @@ class ExecutionManager:
 
                 if check_remote and JobState.is_remote(job.state):
                     self._logger.debug('Checking remote state')
-                    self._job_runner.update_job(job_id)
-                    self._remote_job_files.update_job(job_id)
-                    job = self._job_store.get_job(job_id)
-                    have_running_jobs = have_running_jobs or JobState.is_remote(job.state)
+                    try:
+                        self._job_runner.update_job(job_id)
+                        self._remote_job_files.update_job(job_id)
+                        job = self._job_store.get_job(job_id)
+                        have_running_jobs = have_running_jobs or JobState.is_remote(job.state)
+                    except SSHException:
+                        have_running_jobs = True
 
                 if job.state == JobState.FINISHED:
                     self._destage_job(job_id, job)

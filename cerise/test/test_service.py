@@ -365,7 +365,7 @@ def test_cancel_running_job(cerise_service, cerise_client, webdav_client):
     assert time.perf_counter() < start_time + 10.0
 
 
-def test_delete_job(cerise_service, cerise_client, webdav_client, debug_output):
+def test_delete_job(cerise_service, cerise_client, webdav_client):
     job = _start_job(cerise_client, webdav_client, WcJob, 'test_delete_job')
 
     job = _wait_for_state(job.id, 5.0, 'Success', cerise_client)
@@ -407,12 +407,35 @@ def test_restart_service(cerise_service, cerise_client, webdav_client,
     time.sleep(5)
 
 
-def test_dropped_connection(cerise_service, cerise_client, webdav_client,
+def test_dropped_ssh_connection(cerise_service, cerise_client, webdav_client,
                             slurm_container):
     job = _start_job(cerise_client, webdav_client, SlowJob,
-                     'test_dropped_connection')
-    print(job.id)
+                     'test_dropped_ssh_connection')
     _drop_connections(slurm_container)
 
     job = _wait_for_state(job.id, 10.0, 'DONE', cerise_client)
+    assert job.state == 'Success'
+
+
+def test_no_resource_connection(cerise_service, cerise_client, webdav_client,
+                       slurm_container):
+    slurm_container.stop()
+    time.sleep(1)
+    job = _start_job(cerise_client, webdav_client, SlowJob,
+                     'test_no_resource_connection')
+    time.sleep(1)
+    job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+    assert response.status_code == 200
+    assert job.state == 'Waiting'
+
+    slurm_container.start()
+    job = _wait_for_state(job.id, 5.0, 'Running', cerise_client)
+
+    job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+    assert response.status_code == 200
+    assert job.state == 'Running'
+
+    _drop_connections(slurm_container)
+
+    job = _wait_for_state(job.id, 15.0, 'DONE', cerise_client)
     assert job.state == 'Success'
