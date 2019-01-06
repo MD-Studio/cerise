@@ -36,17 +36,13 @@ class RemoteApi:
         """
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
-        self._fs = config.get_file_system()
-        """cerulean.FileSystem: The Cerulean remote file system to stage to."""
         self._sched = config.get_scheduler(run_on_head_node=True)
         """cerulean.Scheduler: Scheduler for running install script."""
         self._username = config.get_username('files')
         """str: The remote user name to use, if any."""
         self._local_api_dir = local_api_dir
         """cerulean.Path: The path to the local API dir."""
-        self._basedir = config.get_basedir()
-        """cerulean.Path: The remote path to the base directory where we store our stuff."""
-        self._remote_api_dir = self._basedir / 'api'
+        self._remote_api_dir = config.get_basedir() / 'api'
         """cerulean.Path: The remote path to the base directory where we store our stuff."""
         self._steps_requirements = dict()  # type: Dict[str, Dict[str, int]]
         """Resource requirements for each loaded step."""

@@ -43,14 +43,10 @@ class RemoteJobFiles:
         """Logger: The logger for this class."""
         self._job_store = job_store
         """JobStore: The job store to use."""
-        self._fs = config.get_file_system()
-        """cerulean.FileSystem: The Cerulean remote file system to stage to."""
         self._username = config.get_username('files')
         """str: The remote user name to use, if any."""
         self._basedir = config.get_basedir()
         """cerulean.Path: The remote path to the directory where the API files are."""
-        self._local_fs = cerulean.LocalFileSystem()
-        """Cerulean.FileSystem: Cerulean object for the local file system."""
 
         # Create directories if they don't exist
         self._logger.debug('basedir: {}'.format(self._basedir))
