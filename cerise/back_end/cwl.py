@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 import yaml
 
 from cerise.job_store.job_state import JobState
-from cerise.back_end.input_file import InputFile
+from cerise.back_end.file import File
 
 
 def is_workflow(workflow_content: bytes) -> bool:
@@ -131,7 +131,7 @@ def get_time_limit(cwl_content: bytes) -> int:
 
 
 def get_secondary_files(secondary_files: List[Dict[str, Any]]
-                        ) -> List[InputFile]:
+                        ) -> List[File]:
     """Parses a list of secondary files, recursively.
 
     Args:
@@ -145,7 +145,7 @@ def get_secondary_files(secondary_files: List[Dict[str, Any]]
     for value in secondary_files:
         if isinstance(value, dict):
             if 'class' in value and value['class'] == 'File':
-                new_file = InputFile(None, value['location'], None, [])
+                new_file = File(None, value['location'], None, [])
                 if 'secondaryFiles' in value:
                     new_file.secondary_files = get_secondary_files(value['secondaryFiles'])
                 result.append(new_file)
@@ -156,17 +156,17 @@ def get_secondary_files(secondary_files: List[Dict[str, Any]]
     return result
 
 
-def get_files_from_binding(cwl_binding: Dict[str, Any]) -> List[InputFile]:
+def get_files_from_binding(cwl_binding: Dict[str, Any]) -> List[File]:
     """Parses a CWL input or output binding an returns a list
     containing name: path pairs. Any non-File objects are
     omitted.
 
     Args:
-        cwl_binding (Dict): A dict structure parsed from a JSON CWL binding
+        cwl_binding: A dict structure parsed from a JSON CWL binding
 
     Returns:
-        [InputFile]: A list of InputFile objects describing the input \
-                files described in the binding.
+        A list of File objects describing the input files described
+            in the binding.
     """
     result = []
     if cwl_binding is not None:
@@ -174,7 +174,7 @@ def get_files_from_binding(cwl_binding: Dict[str, Any]) -> List[InputFile]:
             if isinstance(value, dict):
                 if value.get('class') == 'File':
                     secondary_files = get_secondary_files(value.get('secondaryFiles', []))
-                    result.append(InputFile(name, value['location'], None, secondary_files))
+                    result.append(File(name, value['location'], None, secondary_files))
                 elif value.get('class') == 'Directory':
                     raise RuntimeError('Directory inputs are not yet supported, sorry')
             elif isinstance(value, list):
@@ -182,7 +182,7 @@ def get_files_from_binding(cwl_binding: Dict[str, Any]) -> List[InputFile]:
                     if isinstance(val, dict):
                         if val.get('class') == 'File':
                             secondary_files = get_secondary_files(val.get('secondaryFiles', []))
-                            input_file = InputFile(name, val['location'], None, secondary_files, i)
+                            input_file = File(name, val['location'], None, secondary_files, i)
                             result.append(input_file)
                         elif val.get('class') == 'Directory':
                             raise RuntimeError('Directory inputs are not yet supported, sorry')

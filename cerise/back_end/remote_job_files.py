@@ -9,7 +9,7 @@ import yaml
 from pathlib import Path
 
 from cerise.back_end.cwl import get_files_from_binding
-from cerise.back_end.input_file import InputFile
+from cerise.back_end.file import File
 from cerise.job_store.sqlite_job_store import SQLiteJobStore
 from cerise.config import Config
 
@@ -57,7 +57,7 @@ class RemoteJobFiles:
         self._basedir.mkdir(0o750, parents=True, exists_ok=True)
         (self._basedir / 'jobs').mkdir(parents=True, exists_ok=True)
 
-    def stage_job(self, job_id: str, input_files: List[InputFile],
+    def stage_job(self, job_id: str, input_files: List[File],
                   workflow_content: bytes) -> None:
         """Stage a job. Copies any necessary files to
         the remote resource.
@@ -173,7 +173,7 @@ class RemoteJobFiles:
                     job.debug(line)
                 job.remote_error = log.decode()
 
-    def _stage_input_file(self, count: int, job_id: str, input_file: InputFile,
+    def _stage_input_file(self, count: int, job_id: str, input_file: File,
                           input_desc: Dict[str, Any]) -> int:
         """Stage an input file. Copies the file to the remote resource.
 

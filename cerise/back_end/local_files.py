@@ -1,5 +1,5 @@
 from cerise.back_end.cwl import get_files_from_binding
-from cerise.back_end.input_file import InputFile
+from cerise.back_end.file import File
 
 from cerise.job_store.job_state import JobState
 from cerise.job_store.sqlite_job_store import SQLiteJobStore
@@ -42,8 +42,8 @@ class LocalFiles:
         (self._basedir / 'input').mkdir(exists_ok=True)
         (self._basedir / 'output').mkdir(exists_ok=True)
 
-    def resolve_secondary_files(self, secondary_files: List[InputFile]) -> None:
-        """Makes an InputFile object for each secondary file.
+    def resolve_secondary_files(self, secondary_files: List[File]) -> None:
+        """Makes a File object for each secondary file.
 
         Works recursively, so nested secondaryFiles work.
 
@@ -51,7 +51,7 @@ class LocalFiles:
             secondary_files: List of secondary files.
 
         Returns:
-            Resulting InputFiles, with contents.
+            Resulting Files, with contents.
         """
         for secondary_file in secondary_files:
             self._logger.debug("Resolving secondary file from " + secondary_file.location)
@@ -59,13 +59,13 @@ class LocalFiles:
             self.resolve_secondary_files(secondary_file.secondary_files)
 
 
-    def resolve_input(self, job_id: str) -> List[InputFile]:
+    def resolve_input(self, job_id: str) -> List[File]:
         """Resolves input (workflow and input files) for a job.
 
         This function will read the job from the database, add a
         .workflow_content attribute with the contents of the
-        workflow, and return a list of InputFile objects
-        describing the input files.
+        workflow, and return a list of File objects describing the
+        input files.
 
 
         This function will accept local file:// URLs as well as
@@ -75,7 +75,7 @@ class LocalFiles:
             job_id: The id of the job whose input to resolve.
 
         Returns:
-            A list of InputFile objects to stage.
+            A list of File objects to stage.
         """
         self._logger.debug("Resolving input for job " + job_id)
         with self._job_store:

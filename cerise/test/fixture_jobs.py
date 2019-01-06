@@ -1,4 +1,4 @@
-from cerise.back_end.input_file import InputFile
+from cerise.back_end.file import File
 
 
 class PassJob:
@@ -118,7 +118,7 @@ class WcJob:
         return ('{ "file": { "class": "File", "location":'
                 '"%shello_world.txt" } }') % local_baseurl
 
-    local_input_files = [InputFile('file', 'hello_world.txt', bytes(
+    local_input_files = [File('file', 'hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'
@@ -223,13 +223,13 @@ class SecondaryFilesJob:
             }}'''.format(local_baseurl)
 
     def _make_local_input_files():
-        input_file = InputFile('file', 'hello_world.txt', bytes(
+        input_file = File('file', 'hello_world.txt', bytes(
                 'Hello, World!\n'
                 '\n'
                 'Here is a test file for the staging test.\n'
                 '\n', 'utf-8'), [])
         input_file.secondary_files = [
-            InputFile(None, 'hello_world.2nd', bytes(
+            File(None, 'hello_world.2nd', bytes(
                 'Hello, secondaryFiles!', 'utf-8'), [])]
         return [input_file]
 
@@ -309,12 +309,12 @@ class FileArrayJob:
             }}'''.format(local_baseurl)
 
     def _make_local_input_files():
-        input_file_1 = InputFile('files', 'hello_world.txt', bytes(
+        input_file_1 = File('files', 'hello_world.txt', bytes(
             'Hello, World!\n'
             '\n'
             'Here is a test file for the staging test.\n'
             '\n', 'utf-8'), [], 0)
-        input_file_2 = InputFile('files', 'hello_world.2nd', bytes(
+        input_file_2 = File('files', 'hello_world.2nd', bytes(
             'Hello, file arrays!', 'utf-8'), [], 1)
         return [input_file_1, input_file_2]
 

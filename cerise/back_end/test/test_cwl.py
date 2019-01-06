@@ -1,7 +1,7 @@
 import pytest
 
 import cerise.back_end.cwl as cwl
-from cerise.back_end.input_file import InputFile
+from cerise.back_end.file import File
 from cerise.job_store.job_state import JobState
 
 
@@ -311,7 +311,7 @@ def test_get_files_from_binding():
     assert len(files) == 4
 
     for f in files:
-        assert isinstance(f, InputFile)
+        assert isinstance(f, File)
 
     input_2 = [f for f in files if f.name == 'input_2'][0]
     assert input_2.index is None
