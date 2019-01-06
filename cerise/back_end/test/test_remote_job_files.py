@@ -1,6 +1,6 @@
 from cerise.back_end.remote_job_files import RemoteJobFiles
 
-
+import json
 import pytest
 
 
@@ -31,6 +31,9 @@ def test_stage_job(mock_config, mock_store_resolved):
 
     workflow_file = jobdir / 'workflow.cwl'
     assert workflow_file.read_bytes() == job_fixture.workflow
+
+    input_file = jobdir / 'input.json'
+    assert json.loads(input_file.read_text()) == job_fixture.remote_input(jobdir / 'work')
 
     for _, path, content in job_fixture.remote_input_files:
         staged_file = jobdir / 'work' / path

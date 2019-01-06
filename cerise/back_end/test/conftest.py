@@ -145,7 +145,7 @@ def mock_store_submitted(request, mock_config):
 
 @pytest.fixture(params=[
         PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        BrokenJob, NoSuchStepJob])
+        NoSuchStepJob])
 def mock_store_resolved(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param
@@ -163,8 +163,7 @@ def mock_store_resolved(request, mock_config):
 
 
 @pytest.fixture(params=[
-        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        BrokenJob])
+        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob])
 def mock_store_staged(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param
@@ -178,7 +177,8 @@ def mock_store_staged(request, mock_config):
 
     (job_dir / 'workflow.cwl').write_bytes(workflow_to_json(
             job_fixture.workflow, test_steps_dir))
-    (job_dir / 'input.json').write_text(job_fixture.remote_input)
+    (job_dir / 'input.json').write_text(json.dumps(
+            job_fixture.remote_input(work_dir)))
 
     for _, name, content in job_fixture.remote_input_files:
         (work_dir / name).write_bytes(content)
@@ -197,8 +197,7 @@ def mock_store_staged(request, mock_config):
 
 
 @pytest.fixture(params=[
-        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        BrokenJob])
+        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob])
 def mock_store_run(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param
@@ -237,8 +236,7 @@ def mock_store_run_and_updated(mock_config, mock_store_run):
 
 
 @pytest.fixture(params=[
-        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        BrokenJob])
+        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob])
 def mock_store_destaged(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param

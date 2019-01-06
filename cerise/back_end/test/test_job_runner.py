@@ -63,6 +63,7 @@ def test_start_job(runner_store, mock_config):
 
     logfile = mock_config.get_basedir() / 'jobs' / 'test_job' / 'stderr.txt'
     if job_fixture is not BrokenJob:
+        print(logfile.read_text())
         assert 'Final process status is success' in logfile.read_text()
 
 

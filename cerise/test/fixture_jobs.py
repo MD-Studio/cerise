@@ -26,7 +26,8 @@ class PassJob:
 
     time_limit = 0
 
-    remote_input = '{}'
+    def remote_input(job_remote_workdir):
+        return {}
 
     remote_input_files = []
 
@@ -71,7 +72,8 @@ class HostnameJob:
 
     time_limit = 101
 
-    remote_input = '{}'
+    def remote_input(job_remote_workdir):
+        return {}
 
     remote_input_files = []
 
@@ -127,7 +129,14 @@ class WcJob:
 
     time_limit = 60
 
-    remote_input = '{ "file": { "class": "File", "location": "01_hello_world.txt" } }'
+    def remote_input(job_remote_workdir):
+        return {
+                'file': {
+                    'class': 'File',
+                    'location': '{}/01_hello_world.txt'.format(
+                        job_remote_workdir)
+                }
+            }
 
     remote_input_files = [('file', '01_hello_world.txt', bytes(
                 'Hello, World!\n'
@@ -171,7 +180,8 @@ class SlowJob:
 
     time_limit = 0
 
-    remote_input = '{}'
+    def remote_input(job_remote_workdir):
+        return {}
 
     remote_input_files = []
 
@@ -237,16 +247,19 @@ class SecondaryFilesJob:
 
     time_limit = 0
 
-    remote_input = '''{
-            "file": {
-                "class": "File",
-                "location": "01_hello_world.txt",
-                "secondaryFiles": [{
-                    "class": "File",
-                    "location": "02_hello_world.2nd"
+    def remote_input(job_remote_workdir):
+        return {
+                'file': {
+                    'class': 'File',
+                    'location': '{}/01_hello_world.txt'.format(
+                        job_remote_workdir),
+                    'secondaryFiles': [{
+                        'class': 'File',
+                        'location': '{}/02_hello_world.2nd'.format(
+                            job_remote_workdir),
                     }]
                 }
-            }'''
+            }
 
     remote_input_files = [
             ('file', '01_hello_world.txt', bytes(
@@ -321,16 +334,19 @@ class FileArrayJob:
 
     time_limit = 60
 
-    remote_input = '''{
-            "files": [{
-                    "class": "File",
-                    "location": "01_hello_world.txt"
-                },
-                {
-                    "class": "File",
-                    "location": "02_hello_world.2nd"
-                }]
-            }'''
+    def remote_input(job_remote_workdir):
+        return {
+                'files': [{
+                        'class': 'File',
+                        'location': '{}/01_hello_world.txt'.format(
+                            job_remote_workdir)
+                    },
+                    {
+                        'class': 'File',
+                        'location': '{}/02_hello_world.2nd'.format(
+                            job_remote_workdir)
+                    }]
+            }
 
     remote_input_files = [
             ('files', '01_hello_world.txt', bytes(
@@ -450,7 +466,8 @@ class PartiallyFailingJob:
 
     time_limit = 0
 
-    remote_input = '{}'
+    def remote_input(job_remote_workdir):
+        return {}
 
     remote_input_files = []
 
@@ -490,7 +507,8 @@ class NoSuchStepJob:
 
     time_limit = 0
 
-    remote_input = '{}'
+    def remote_input(job_remote_workdir):
+        return {}
 
     remote_input_files = []
 
@@ -553,7 +571,8 @@ class BrokenJob:
 
     time_limit = 0
 
-    remote_input = '{}'
+    def remote_input(job_remote_workdir):
+        return {}
 
     remote_input_files = []
 
@@ -577,7 +596,8 @@ class NoWorkflowJob:
 
     time_limit = 0
 
-    remote_input = '{}'
+    def remote_input(job_remote_workdir):
+        return {}
 
     remote_input_files = []
 
