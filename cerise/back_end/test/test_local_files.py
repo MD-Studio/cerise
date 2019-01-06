@@ -77,5 +77,5 @@ def test_publish_output(mock_config, mock_store_destaged, output_dir):
     local_files = LocalFiles(store, mock_config)
     local_files.publish_job_output('test_job', job_fixture.output_files)
 
-    for _, name, content in job_fixture.output_files:
-        assert (output_dir / name).read_bytes() == content
+    for out_file in job_fixture.output_files:
+        assert (output_dir / out_file.location).read_bytes() == out_file.content

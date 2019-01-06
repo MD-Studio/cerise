@@ -103,7 +103,7 @@ class RemoteJobFiles:
             job.remote_stdout_path = str(self._abs_path(job_id, 'stdout.txt'))
             job.remote_stderr_path = str(self._abs_path(job_id, 'stderr.txt'))
 
-    def destage_job_output(self, job_id: str) -> List[Tuple[Optional[str], str, bytes]]:
+    def destage_job_output(self, job_id: str) -> List[File]:
         """Download results of the given job from the compute resource.
 
         Args:
@@ -125,13 +125,14 @@ class RemoteJobFiles:
                     prefix = 'file://' + str(self._basedir / 'jobs' / job_id / 'work') + '/'
                     if not output_file.location.startswith(prefix):
                         raise Exception("Unexpected output location in cwl-runner output: {}, expected it to start with: {}".format(output_file.location, prefix))
-                    rel_path = output_file.location[len(prefix):]
-                    content = self._read_remote_file(job_id, 'work/' + rel_path)
-                    output_files.append((output_file.name, rel_path, content))
+                    output_file.location = output_file.location[len(prefix):]
+                    output_file.content = self._read_remote_file(
+                            job_id, 'work/' + output_file.location)
+                    output_files.append(output_file)
             else:
                 self._logger.error('CWL runner did not produce any output for job {}!'.format(job_id))
 
-        # output_name and rel_path are (immutable) str's, while content
+        # output name and location are (immutable) str's, while content
         # does not come from the store, so we're not leaking here
         return output_files
 

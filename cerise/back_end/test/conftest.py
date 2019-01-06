@@ -211,8 +211,8 @@ def mock_store_run(request, mock_config):
     (job_dir / 'stdout.txt').write_text(job_fixture.remote_output('file://{}'.format(work_dir)))
     (job_dir / 'stderr.txt').write_text('Test log output\nAnother line\n')
 
-    for _, name, content in job_fixture.output_files:
-        (work_dir / name).write_bytes(content)
+    for outf in job_fixture.output_files:
+        (work_dir / outf.location).write_bytes(outf.content)
 
     job = MockJob('test_job', 'test_job', None, None)
     job.remote_workdir_path = str(work_dir)

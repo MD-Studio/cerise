@@ -79,8 +79,7 @@ class HostnameJob:
         return '{{ "host": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(
                 job_remote_workdir)
 
-    output_files = [
-            ('host', 'output.txt', bytes('hostname\n', 'utf-8'))]
+    output_files = [File('host', 'output.txt', b'hostname\n', [])]
 
     local_output = '{ "host": { "class": "File", "location": "output.txt" } }\n'
 
@@ -141,8 +140,7 @@ class WcJob:
                 job_remote_workdir)
 
     output_files = [
-                ('output', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
-                ]
+            File('output', 'output.txt', b' 4 11 58 hello_world.txt', [])]
 
     local_output = '{ "output": { "class": "File", "location": "output.txt" } }\n'
 
@@ -264,8 +262,7 @@ class SecondaryFilesJob:
         return '{{ "counts": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(job_remote_workdir)
 
     output_files = [
-            ('counts', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
-            ]
+            File('counts', 'output.txt', b' 4 11 58 hello_world.txt', [])]
 
     local_output = '{ "counts": { "class": "File", "location": "output.txt" } }\n'
 
@@ -349,8 +346,7 @@ class FileArrayJob:
         return '{{ "counts": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(job_remote_workdir)
 
     output_files = [
-                ('counts', 'output.txt', bytes(' 4 11 58 hello_world.txt', 'utf-8'))
-                ]
+            File('counts', 'output.txt', b' 4 11 58 hello_world.txt', [])]
 
     local_output = '{{ "counts": {{ "class": "File", "location": "output.txt" }} }}\n'
 
@@ -418,7 +414,7 @@ class InstallScriptTestJob:
                 job_remote_workdir)
 
     output_files = [
-            ('host', 'output.txt', bytes('Testing API installation\n', 'utf-8'))]
+            File('host', 'output.txt', b'Testing API installation\n', [])]
 
     local_output = '{ "host": { "class": "File", "location": "output.txt" } }\n'
 
@@ -462,8 +458,8 @@ class PartiallyFailingJob:
         return ('{{ "output": {{ "class": "File", "location": "{}/output.txt" }},\n'
                 '   "missing_output": null }}\n').format(job_remote_workdir)
 
-    output_files = [
-            ('output', 'output.txt', bytes('Running on host: hostname\n', 'utf-8'))]
+    output_files = [File('output', 'output.txt',
+                         b'Running on host: hostname\n', [])]
 
     local_output = ('{ "output": { "class": "File", "location": "output.txt" },'
                     '  "missing_output": null }\n')

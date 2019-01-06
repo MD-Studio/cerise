@@ -11,7 +11,7 @@ import logging
 import os
 import requests
 import shutil
-from typing import List, Tuple, Optional
+from typing import cast, List, Tuple, Optional
 import urllib
 
 
@@ -112,8 +112,7 @@ class LocalFiles:
         if job_dir.is_dir():
             job_dir.rmdir(recursive=True)
 
-    def publish_job_output(self, job_id: str,
-                           output_files: List[Tuple[Optional[str], str, bytes]]
+    def publish_job_output(self, job_id: str, output_files: List[File]
                            ) -> None:
         """Write output files to the local output dir for this job.
 
@@ -126,16 +125,19 @@ class LocalFiles:
             output_files: List of output files to publish.
         """
         self._logger.debug("Publishing output for job " + job_id)
+        job_dir = self._basedir / 'output' / job_id
         with self._job_store:
             job = self._job_store.get_job(job_id)
-            if output_files is not None and output_files != []:
+            if output_files != []:
                 output = json.loads(job.remote_output)
                 self.create_output_dir(job_id)
-                for output_name, file_name, content in output_files:
-                    output_loc = self._write_to_output_file(job_id, file_name, content)
-                    output[output_name]['location'] = output_loc
-                    output[output_name]['path'] = str(
-                            self._basedir / 'output' / job_id / file_name)
+                for outf in output_files:
+                    out_file = job_dir / outf.location
+                    out_file.write_bytes(cast(bytes, outf.content))
+
+                    output[outf.name]['location'] = self._to_external_url(
+                            'output/' + job_id + '/' + outf.location)
+                    output[outf.name]['path'] = str(out_file)
 
                 job.local_output = json.dumps(output)
 
@@ -177,19 +179,6 @@ class LocalFiles:
             else:
                 raise ValueError('Invalid scheme {} in input URL: {}'.format(
                         parsed_url.scheme, url))
-
-    def _read_from_file(self, abs_path: str) -> bytes:
-        """Read data from a local file.
-
-        Args:
-            abs_path: An absolute local path
-
-        Returns:
-            bytes: The contents of the file.
-        """
-        with open(abs_path, 'rb') as f:
-            data = f.read()
-        return data
 
     def _write_to_output_file(self, job_id: str, rel_path: str, data: bytes
                               ) -> str:
