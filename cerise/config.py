@@ -332,6 +332,19 @@ class Config:
         loglevel = getattr(logging, loglevel_str.upper(), None)
         return loglevel
 
+    def get_base_url(self) -> str:
+        """Returns the service's base url.
+
+        This is the URL of the REST API, before the /jobs part, e.g. if
+        listing jobs is done by a GET to http://localhost/jobs, then
+        this should be set to http://localhost. Obtained from the
+        configuration file or the CERISE_BASE_URL environment variable.
+        """
+        if 'CERISE_BASE_URL' in os.environ:
+            return os.environ['CERISE_BASE_URL']
+        rs_config = self._config.get('rest-service', {})
+        return rs_config.get('base-url', '')
+
     def get_store_location_service(self) -> str:
         """
         Returns the file exchange location access point for the service.

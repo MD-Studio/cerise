@@ -18,19 +18,16 @@ def _internal_job_to_rest_job(job):
         job_output = json.loads(job.local_output)
     job_input = json.loads(job.local_input)
 
+    log_url = '{}/jobs/{}/log'.format(_config.get_base_url(), job.id)
+
     return Job(
-#            id=flask.url_for('.front_end_controllers_default_controller_get_job_by_id',
-#                jobId=job.id,
-#                _external=True),
             id = job.id,
             name=job.name,
             workflow=job.workflow,
             input=job_input,
             state=job_state.JobState.to_cwl_state_string(job.state),
             output=job_output,
-            log=flask.url_for('.front_end_controllers_default_controller_get_job_log_by_id',
-                jobId=job.id,
-                _external=True)
+            log=log_url
         )
 
 

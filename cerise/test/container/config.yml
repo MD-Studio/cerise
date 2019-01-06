@@ -12,5 +12,6 @@ logging:
 pidfile: /home/cerise/run/cerise_backend.pid
 
 rest-service:
+  base-url: http://localhost:29593
   hostname: 127.0.0.1
   port: 29594

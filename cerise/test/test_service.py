@@ -224,7 +224,6 @@ def _start_job(cerise_client, webdav_client, job_fixture, test_name=None):
 
     job, response = cerise_client.jobs.post_job(body=job_desc).result()
 
-    print(str(response))
     assert response.status_code == 201
     return job
 
@@ -303,6 +302,11 @@ def test_run_job(cerise_service, cerise_client, webdav_client,
     assert 'CWLTiny' in log
     assert 'success' in log
 
+    # check that the URL given in the job description points to the log
+    log_response = requests.get(job.log)
+    assert log_response.status_code == 200
+    assert log_response.text == log
+
 
 def test_run_broken_job(cerise_service, cerise_client, webdav_client,
                         job_fixture_permfail):
@@ -314,8 +318,6 @@ def test_run_broken_job(cerise_service, cerise_client, webdav_client,
     assert job.state == 'PermanentFailure'
 
     if job_fixture_permfail == PartiallyFailingJob:
-        print(job.output['output'])
-        print(job.output['missing_output'])
         assert ('missing_output' not in job.output or
                 job.output['missing_output'] is None)
 
