@@ -56,6 +56,8 @@ def process_type(process_dict):
     """
     if 'class' not in process_dict:
         exit_perm_fail("No class attribute in process")
+    if process_dict['class'] not in ['Workflow', 'CommandLineTool']:
+        exit_perm_fail('Invalid class {} in process'.format(process_dict['class']))
     return process_dict['class']
 
 
