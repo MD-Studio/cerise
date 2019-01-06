@@ -1,3 +1,4 @@
+import cerulean
 from cerulean import LocalFileSystem
 import logging
 from typing import cast, Dict
@@ -20,17 +21,15 @@ class JobPlanner:
     resources it needs based on this.
     """
 
-    def __init__(self, job_store: SQLiteJobStore, local_api_dir: str):
+    def __init__(self, job_store: SQLiteJobStore, local_api_dir: cerulean.Path):
         """Create a JobPlanner.
 
         Args:
-            job_store (JobStore): The job store to act on.
-            local_api_dir (str): Path of local api directory.
+            job_store: The job store to act on.
+            local_api_dir: Path of local api directory.
         """
         self._logger = logging.getLogger(__name__)
         """A logger for this object."""
-        self._local_fs = LocalFileSystem()
-        """The local file system."""
         self._job_store = job_store
         """The job store to act on."""
         self._steps_requirements = dict()  # type: Dict[str, Dict[str, int]]
@@ -70,13 +69,13 @@ class JobPlanner:
                                 for step in steps]
             job.time_limit = max(job.time_limit, sum(time_limit_steps))
 
-    def _get_steps_resource_requirements(self, local_api_dir: str) -> None:
+    def _get_steps_resource_requirements(self, local_api_dir: cerulean.Path) -> None:
         """Scan CWL steps and extract resource requirements.
 
         Args:
             local_api_dir: The local directory with the API
         """
-        for project_dir in (self._local_fs / local_api_dir).iterdir():
+        for project_dir in local_api_dir.iterdir():
             local_steps_dir = project_dir / 'steps'
 
             for this_dir, _, files in local_steps_dir.walk():

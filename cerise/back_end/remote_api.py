@@ -25,7 +25,7 @@ class RemoteApi:
     <project>/install.sh
     """
 
-    def __init__(self, config: Config, local_api_dir: str) -> None:
+    def __init__(self, config: Config, local_api_dir: cerulean.Path) -> None:
         """Create a RemoteApiFiles object.
         Sets up remote directory structure as well, but refuses to
         create the top-level directory.
@@ -36,15 +36,13 @@ class RemoteApi:
         """
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
-        self._local_fs = cerulean.LocalFileSystem()
-        """Cerulean.FileSystem: Cerulean object for the local file system."""
         self._fs = config.get_file_system()
         """cerulean.FileSystem: The Cerulean remote file system to stage to."""
         self._sched = config.get_scheduler(run_on_head_node=True)
         """cerulean.Scheduler: Scheduler for running install script."""
         self._username = config.get_username('files')
         """str: The remote user name to use, if any."""
-        self._local_api_dir = self._local_fs / local_api_dir.lstrip('/')
+        self._local_api_dir = local_api_dir
         """cerulean.Path: The path to the local API dir."""
         self._basedir = config.get_basedir()
         """cerulean.Path: The remote path to the base directory where we store our stuff."""

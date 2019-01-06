@@ -1,13 +1,17 @@
 from cerise.back_end.job_planner import JobPlanner
 from cerise.test.fixture_jobs import PassJob, SlowJob, BrokenJob, NoSuchStepJob
 
+import cerulean
 import pytest
+
+
+lfs = cerulean.LocalFileSystem()
 
 
 def test_job_planner_init(mock_config, mock_store_resolved, local_api_dir):
     store, job_fixture = mock_store_resolved
 
-    planner = JobPlanner(store, str(local_api_dir))
+    planner = JobPlanner(store, lfs / str(local_api_dir))
 
     requirements = planner._steps_requirements
     assert requirements['test/wc.cwl']['num_cores'] == 0
@@ -24,7 +28,7 @@ def test_job_planner_init(mock_config, mock_store_resolved, local_api_dir):
 def test_plan_job(mock_config, mock_store_resolved, local_api_dir):
     store, job_fixture = mock_store_resolved
 
-    planner = JobPlanner(store, str(local_api_dir))
+    planner = JobPlanner(store, lfs / str(local_api_dir))
 
     job = store.get_job('test_job')
     assert job.required_num_cores == 0

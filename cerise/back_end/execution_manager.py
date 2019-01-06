@@ -9,6 +9,7 @@ from cerise.back_end.job_runner import JobRunner
 from cerise.config import Config
 from cerise.job_store.sqlite_job import SQLiteJob
 
+import cerulean
 import logging
 from paramiko.ssh_exception import SSHException     # type: ignore
 import time
@@ -24,7 +25,7 @@ class ExecutionManager:
     resource, ensuring that any remote state changes are propagated to
     the job store correctly.
     """
-    def __init__(self, config: Config, local_api_dir: str) -> None:
+    def __init__(self, config: Config, local_api_dir: cerulean.Path) -> None:
         """Set up the execution manager.
 
         Args:

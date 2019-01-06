@@ -8,16 +8,19 @@ from pathlib import Path
 import pytest
 
 
+lfs = cerulean.LocalFileSystem()
+
+
 @pytest.fixture
 def installed_api_dir(mock_config, local_api_dir):
-    remote_api = RemoteApi(mock_config, str(local_api_dir))
+    remote_api = RemoteApi(mock_config, lfs / str(local_api_dir))
     remote_api.install()
     return mock_config.get_basedir() / 'api'
 
 
 @pytest.fixture
 def remote_api(mock_config, local_api_dir):
-    return RemoteApi(mock_config, str(local_api_dir))
+    return RemoteApi(mock_config, lfs / str(local_api_dir))
 
 
 def test_install(installed_api_dir):
@@ -34,8 +37,8 @@ def test_install(installed_api_dir):
 
 
 def test_update(installed_api_dir, mock_config):
-    local_api_dir = Path(__file__).parent / 'api_new'
-    remote_api_files = RemoteApi(mock_config, str(local_api_dir))
+    local_api_dir = (lfs / __file__).parent / 'api_new'
+    remote_api_files = RemoteApi(mock_config, local_api_dir)
 
     assert remote_api_files.update_available()
     remote_api_files.install()
@@ -47,7 +50,7 @@ def test_update(installed_api_dir, mock_config):
 
 
 def test_dev_update(installed_api_dir, mock_config, local_api_dir):
-    remote_api = RemoteApi(mock_config, str(local_api_dir))
+    remote_api = RemoteApi(mock_config, lfs / str(local_api_dir))
 
     assert remote_api.update_available()
     remote_api.install()
@@ -66,7 +69,7 @@ def test_get_projects(remote_api):
 
 
 def test_translate_runner_location(installed_api_dir, mock_config,
-                                   remote_api, local_api_dir):
+                                   remote_api):
     remote_api_dir = mock_config.get_basedir() / 'api'
     location = remote_api.translate_runner_location(
             '$CERISE_API/project/files/cwltool.sh')

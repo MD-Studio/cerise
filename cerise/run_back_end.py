@@ -7,6 +7,8 @@ from types import FrameType
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+import cerulean
+
 import cerise.config
 from cerise.back_end.execution_manager import ExecutionManager
 
@@ -39,7 +41,9 @@ if __name__ == "__main__":
     # Run
     logging.info('Starting up')
     try:
-        apidir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'api')
+        lfs = cerulean.LocalFileSystem()
+        this_file = lfs / os.path.abspath(__file__)
+        apidir = this_file.parents[1] / 'api'
         manager = ExecutionManager(config, apidir)
         manager.execute_jobs()
     except:
