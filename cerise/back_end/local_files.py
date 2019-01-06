@@ -33,31 +33,14 @@ class LocalFiles:
         """JobStore: The job store to get jobs from."""
 
         self._basedir = config.get_store_location_service()
-        """str: The local path to the base directory where we store our stuff."""
+        """cerulean.Path: The directory used to exchange data with the client."""
 
         self._baseurl = config.get_store_location_client()
         """str: The externally accessible base URL corresponding to the _basedir."""
 
-        basedir = urllib.parse.urlparse(self._basedir)
-        if basedir.scheme != 'local':
-            raise ValueError('Invalid scheme in store-location-service: ' + basedir.scheme)
-        self._basedir = basedir.path
-
-        try:
-            os.mkdir(self._basedir)
-        except FileExistsError:
-            pass
-
-        try:
-            os.mkdir(self._to_abs_path('input'))
-        except FileExistsError:
-            pass
-
-        try:
-            os.mkdir(self._to_abs_path('output'))
-        except FileExistsError:
-            pass
-
+        self._basedir.mkdir(exists_ok=True)
+        (self._basedir / 'input').mkdir(exists_ok=True)
+        (self._basedir / 'output').mkdir(exists_ok=True)
 
     def resolve_secondary_files(self, secondary_files: List[InputFile]) -> None:
         """Makes an InputFile object for each secondary file.
@@ -116,7 +99,7 @@ class LocalFiles:
         Args:
             job_id: The id of the job to make a work directory for.
         """
-        os.mkdir(self._to_abs_path('output/' + job_id))
+        (self._basedir / 'output' / job_id).mkdir()
 
     def delete_output_dir(self, job_id: str) -> None:
         """Delete the output directory for a job.
@@ -125,9 +108,9 @@ class LocalFiles:
         Args:
             job_id: The id of the job whose output directory to delete.
         """
-        job_dir = self._to_abs_path('output/' + job_id)
-        if os.path.isdir(job_dir):
-            shutil.rmtree(job_dir)
+        job_dir = self._basedir / 'output' / job_id
+        if job_dir.is_dir():
+            job_dir.rmdir(recursive=True)
 
     def publish_job_output(self, job_id: str,
                            output_files: List[Tuple[Optional[str], str, bytes]]
@@ -151,7 +134,8 @@ class LocalFiles:
                 for output_name, file_name, content in output_files:
                     output_loc = self._write_to_output_file(job_id, file_name, content)
                     output[output_name]['location'] = output_loc
-                    output[output_name]['path'] = self._to_abs_path('output/' + job_id + '/' + file_name)
+                    output[output_name]['path'] = str(
+                            self._basedir / 'output' / job_id / file_name)
 
                 job.local_output = json.dumps(output)
 
@@ -169,23 +153,30 @@ class LocalFiles:
         Returns:
             bytes: The contents of the file
         """
-        if url.startswith(self._baseurl):
-            url = 'local://' + self._basedir + url[len(self._baseurl):]
-
-        parsed_url = urllib.parse.urlparse(url)
-
-        if parsed_url.scheme == 'local':
-            try:
-                return self._read_from_file(os.path.join('', parsed_url.path))
-            except FileNotFoundError:
-                raise FileNotFoundError(url)
-        elif parsed_url.scheme == 'http':
-            response = requests.get(url)
-            if response.status_code != 200:
-                raise FileNotFoundError(url)
-            return response.content
+        if self._baseurl and url.startswith(self._baseurl):
+            source = self._basedir / url[len(self._baseurl):]
+            return source.read_bytes()
         else:
-            raise ValueError('Invalid scheme {} in input URL: {}'.format(parsed_url.scheme, url))
+            parsed_url = urllib.parse.urlparse(url)
+            if parsed_url.scheme == 'file':
+                if self._baseurl is None:
+                    source = cerulean.LocalFileSystem() / parsed_url.path
+                    return source.read_bytes()
+                else:
+                    raise ValueError('Cerise is configured to only accept'
+                                     ' local files from {}'.format(
+                                         self._baseurl))
+            elif parsed_url.scheme == 'http':
+                response = requests.get(url)
+                if response.status_code != 200:
+                    raise ValueError(('Could not resolve {}, the server'
+                                      ' returned {} {}').format(
+                                          url, response.status_code,
+                                          response.reason))
+                return response.content
+            else:
+                raise ValueError('Invalid scheme {} in input URL: {}'.format(
+                        parsed_url.scheme, url))
 
     def _read_from_file(self, abs_path: str) -> bytes:
         """Read data from a local file.
@@ -212,13 +203,8 @@ class LocalFiles:
         Returns:
             An external URL that points to the file
         """
-        with open(self._to_abs_path('output/' + job_id + '/' + rel_path), 'wb') as f:
-            f.write(data)
-
+        (self._basedir / 'output' / job_id / rel_path).write_bytes(data)
         return self._to_external_url('output/' + job_id + '/' + rel_path)
-
-    def _to_abs_path(self, rel_path: str) -> str:
-        return self._basedir + '/' + rel_path
 
     def _to_external_url(self, rel_path: str) -> str:
         return self._baseurl + '/' + rel_path

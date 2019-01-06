@@ -3,6 +3,7 @@ import logging
 import os
 import traceback
 from typing import cast, Any, Dict, Optional
+import urllib
 import yaml
 
 
@@ -345,17 +346,25 @@ class Config:
         rs_config = self._config.get('rest-service', {})
         return rs_config.get('base-url', '')
 
-    def get_store_location_service(self) -> str:
+    def get_store_location_service(self) -> cerulean.Path:
         """
         Returns the file exchange location access point for the service.
 
         Returns:
-            (str): A URL.
+            The local base directory for file exchange with the client.
 
         Raises:
             KeyError: The location was not set.
         """
-        return self._config['client-file-exchange']['store-location-service']
+        url = self._config['client-file-exchange']['store-location-service']
+        urlparts = urllib.parse.urlparse(url)
+        if urlparts.scheme == 'file':
+            return cerulean.LocalFileSystem() / urlparts.path
+        elif urlparts.scheme == 'http':
+            return cerulean.WebdavFileSystem(url) / ''
+        else:
+            raise RuntimeError('Config store-location-service contains an'
+                               ' invalid scheme. Use file:// or http://.')
 
     def get_store_location_client(self) -> str:
         """
@@ -369,7 +378,7 @@ class Config:
         """
         if 'CERISE_STORE_LOCATION_CLIENT' in os.environ:
             return os.environ['CERISE_STORE_LOCATION_CLIENT']
-        return self._config['client-file-exchange']['store-location-client']
+        return self._config['client-file-exchange'].get('store-location-client')
 
 
 def make_config() -> Config:

@@ -127,7 +127,7 @@ def test_get_log_level(config_0, config_1):
 def test_get_store_location_service(config_0, config_1):
     with pytest.raises(KeyError):
         config_0.get_store_location_service()
-    assert config_1.get_store_location_service() == 'file:///tmp/cerise_files'
+    assert str(config_1.get_store_location_service()) == '/tmp/cerise_files'
 
 def test_get_store_location_client(config_0, config_1):
     with pytest.raises(KeyError):

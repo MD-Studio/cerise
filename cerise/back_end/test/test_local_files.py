@@ -9,9 +9,7 @@ import pytest
 
 @pytest.fixture
 def output_dir(mock_config):
-    parsed_url = urlparse(mock_config.get_store_location_service())
-    assert parsed_url.scheme == 'local'
-    exchange_dir = Path(parsed_url.path)
+    exchange_dir = mock_config.get_store_location_service()
     output_dir = exchange_dir / 'output' / 'test_job'
     return output_dir
 
@@ -48,7 +46,7 @@ def test_resolve_input(mock_config, mock_store_submitted):
         for i, input_file in enumerate(input_files):
             assert _local_files_are_equal(
                     input_file, job_fixture.local_input_files[i],
-                    mock_config.get_store_location_service() + 'input/test_job/')
+                    mock_config.get_store_location_client() + '/input/test_job/')
 
 
 def test_create_output_dir(mock_config, mock_store_destaged, output_dir):

@@ -1,5 +1,5 @@
 client-file-exchange:
-  store-location-service: local:///home/webdav/files
+  store-location-service: file:///home/webdav/files
   store-location-client: http://localhost:29593/files
 
 database:
