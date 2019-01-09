@@ -49,5 +49,7 @@ if __name__ == "__main__":
     except:
         logging.critical(traceback.format_exc())
 
+
     # Shut down
     logging.info('Shutting down')
+    config.close_file_systems()

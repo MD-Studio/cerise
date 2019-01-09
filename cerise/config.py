@@ -92,6 +92,16 @@ class Config:
 
         return credential
 
+    def close_file_systems(self) -> None:
+        """Close any open connections and free resources.
+
+        This function is to be called on shutdown, to ensure that the
+        remote file system managed by Config is shut down properly.
+        """
+        global _remote_file_system
+        if _remote_file_system is not None:
+            _remote_file_system.close()
+
     def get_service_host(self) -> str:
         """
         Return the host interface Cerise should listen on.

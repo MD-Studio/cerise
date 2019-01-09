@@ -7,7 +7,10 @@ import pytest
 
 @pytest.fixture
 def config_0():
-    return config.Config({}, {})
+    config_0 = config.Config({}, {})
+    yield config_0
+    config_0.close_file_systems()
+
 
 @pytest.fixture
 def config_1():
@@ -56,7 +59,11 @@ def config_1():
             }
         }
 
-    return config.Config(test_config, test_api_config)
+    config_1 = config.Config(test_config, test_api_config)
+    yield config_1
+
+    config_1.close_file_systems()
+
 
 def test_create_config(config_0, config_1):
     pass
