@@ -14,28 +14,21 @@ def output_dir(mock_config):
     return output_dir
 
 
-def _local_files_are_equal(input_file, reference_input_file, prefix):
-    if input_file.name != reference_input_file.name:
-        return False
-    if input_file.index != reference_input_file.index:
-        return False
-    if input_file.location != (prefix + reference_input_file.location):
-        return False
-    if input_file.content != reference_input_file.content:
-        return False
+def _assert_local_files_are_equal(input_file, reference_input_file, prefix):
+    assert input_file.name == reference_input_file.name
+    assert input_file.index == reference_input_file.index
+    assert input_file.location == (prefix + reference_input_file.location)
+    assert str(input_file.source) == str(reference_input_file.source)
     for i, secondary_file in enumerate(input_file.secondary_files):
-        return _local_files_are_equal(secondary_file, reference_input_file.secondary_files[i], prefix)
-    return True
+        _assert_local_files_are_equal(
+                secondary_file, reference_input_file.secondary_files[i], prefix)
 
 
 def test_resolve_input(mock_config, mock_store_submitted):
     store, job_fixture = mock_store_submitted
 
     local_files = LocalFiles(store, mock_config)
-    if job_fixture == MissingInputJob:
-        with pytest.raises(FileNotFoundError):
-            local_files.resolve_input('test_job')
-    elif job_fixture == BrokenJob:
+    if job_fixture == BrokenJob:
         with pytest.raises(ValueError):
             local_files.resolve_input('test_job')
     else:
@@ -44,7 +37,7 @@ def test_resolve_input(mock_config, mock_store_submitted):
         assert store.get_job('test_job').workflow_content == job_fixture.workflow
 
         for i, input_file in enumerate(input_files):
-            assert _local_files_are_equal(
+            _assert_local_files_are_equal(
                     input_file, job_fixture.local_input_files[i],
                     mock_config.get_store_location_client() + '/input/test_job/')
 
@@ -77,5 +70,5 @@ def test_publish_output(mock_config, mock_store_destaged, output_dir):
     local_files = LocalFiles(store, mock_config)
     local_files.publish_job_output('test_job', job_fixture.output_files)
 
-    for out_file in job_fixture.output_files:
-        assert (output_dir / out_file.location).read_bytes() == out_file.content
+    for location, content in job_fixture.output_content.items():
+        assert (output_dir / location).read_bytes() == content

@@ -316,7 +316,7 @@ def test_get_files_from_binding():
     input_2 = [f for f in files if f.name == 'input_2'][0]
     assert input_2.index is None
     assert input_2.location == 'http://example.com/test.txt'
-    assert input_2.content is None
+    assert input_2.source is None
     assert input_2.secondary_files == []
 
 

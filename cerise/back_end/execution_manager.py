@@ -181,6 +181,10 @@ class ExecutionManager:
         workflow_content = self._remote_api.translate_workflow(cast(bytes, job.workflow_content))
         try:
             self._remote_job_files.stage_job(job_id, input_files, workflow_content)
+        except FileNotFoundError as e:
+            job.error('Input not found: {}'.format(e.args[0]))
+            job.state = JobState.PERMANENT_FAILURE
+            return
         except SSHException as e:
             job.warning('Connection problem with remote resource: {}'.format(e.args[0]))
             job.warning('Will try again later')

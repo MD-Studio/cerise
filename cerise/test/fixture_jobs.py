@@ -22,6 +22,8 @@ class PassJob:
 
     local_input_files = []
 
+    input_content = {}
+
     required_num_cores = 0
 
     time_limit = 0
@@ -37,6 +39,8 @@ class PassJob:
         return '{}\n'
 
     output_files = []
+
+    output_content = {}
 
     local_output = '{}'
 
@@ -68,6 +72,8 @@ class HostnameJob:
 
     local_input_files = []
 
+    input_content = {}
+
     required_num_cores = 2
 
     time_limit = 101
@@ -81,7 +87,9 @@ class HostnameJob:
         return '{{ "host": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(
                 job_remote_workdir)
 
-    output_files = [File('host', 'output.txt', b'hostname\n', [])]
+    output_files = [File('host', None, 'output.txt', [])]
+
+    output_content = {'output.txt': b'hostname\n'}
 
     local_output = '{ "host": { "class": "File", "location": "output.txt" } }\n'
 
@@ -119,11 +127,14 @@ class WcJob:
         return ('{ "file": { "class": "File", "location":'
                 '"%shello_world.txt" } }') % local_baseurl
 
-    local_input_files = [File('file', 'hello_world.txt', bytes(
-                'Hello, World!\n'
-                '\n'
-                'Here is a test file for the staging test.\n'
-                '\n', 'utf-8'), [])]
+    local_input_files = [File('file', None, 'hello_world.txt', [])]
+
+    input_content = {
+            'hello_world.txt': bytes(
+                    'Hello, World!\n'
+                    '\n'
+                    'Here is a test file for the staging test.\n'
+                    '\n', 'utf-8')}
 
     required_num_cores = 3
 
@@ -149,7 +160,9 @@ class WcJob:
                 job_remote_workdir)
 
     output_files = [
-            File('output', 'output.txt', b' 4 11 58 hello_world.txt', [])]
+            File('output', None, 'output.txt', [])]
+
+    output_content = {'output.txt': b' 4 11 58 hello_world.txt'}
 
     local_output = '{ "output": { "class": "File", "location": "output.txt" } }\n'
 
@@ -176,6 +189,8 @@ class SlowJob:
 
     local_input_files = []
 
+    input_content = {}
+
     required_num_cores = 0
 
     time_limit = 0
@@ -189,6 +204,8 @@ class SlowJob:
         return '{}'
 
     output_files = []
+
+    output_content = {}
 
     local_output = '{}'
 
@@ -231,17 +248,19 @@ class SecondaryFilesJob:
             }}'''.format(local_baseurl)
 
     def _make_local_input_files():
-        input_file = File('file', 'hello_world.txt', bytes(
-                'Hello, World!\n'
-                '\n'
-                'Here is a test file for the staging test.\n'
-                '\n', 'utf-8'), [])
-        input_file.secondary_files = [
-            File(None, 'hello_world.2nd', bytes(
-                'Hello, secondaryFiles!', 'utf-8'), [])]
+        input_file = File('file', None, 'hello_world.txt', [])
+        input_file.secondary_files = [File(None, None, 'hello_world.2nd', [])]
         return [input_file]
 
     local_input_files = _make_local_input_files()
+
+    input_content = {
+            'hello_world.txt': bytes(
+                    'Hello, World!\n'
+                    '\n'
+                    'Here is a test file for the staging test.\n'
+                    '\n', 'utf-8'),
+            'hello_world.2nd': b'Hello, secondaryFiles!'}
 
     required_num_cores = 0
 
@@ -274,8 +293,9 @@ class SecondaryFilesJob:
     def remote_output(job_remote_workdir):
         return '{{ "counts": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(job_remote_workdir)
 
-    output_files = [
-            File('counts', 'output.txt', b' 4 11 58 hello_world.txt', [])]
+    output_files = [File('counts', None, 'output.txt', [])]
+
+    output_content = {'output.txt': b' 4 11 58 hello_world.txt'}
 
     local_output = '{ "counts": { "class": "File", "location": "output.txt" } }\n'
 
@@ -319,16 +339,19 @@ class FileArrayJob:
             }}'''.format(local_baseurl)
 
     def _make_local_input_files():
-        input_file_1 = File('files', 'hello_world.txt', bytes(
-            'Hello, World!\n'
-            '\n'
-            'Here is a test file for the staging test.\n'
-            '\n', 'utf-8'), [], 0)
-        input_file_2 = File('files', 'hello_world.2nd', bytes(
-            'Hello, file arrays!', 'utf-8'), [], 1)
+        input_file_1 = File('files', 0, 'hello_world.txt', [])
+        input_file_2 = File('files', 1, 'hello_world.2nd', [])
         return [input_file_1, input_file_2]
 
     local_input_files = _make_local_input_files()
+
+    input_content = {
+            'hello_world.txt': bytes(
+                    'Hello, World!\n'
+                    '\n'
+                    'Here is a test file for the staging test.\n'
+                    '\n', 'utf-8'),
+            'hello_world.2nd': b'Hello, file arrays!'}
 
     required_num_cores = 0
 
@@ -361,8 +384,9 @@ class FileArrayJob:
     def remote_output(job_remote_workdir):
         return '{{ "counts": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(job_remote_workdir)
 
-    output_files = [
-            File('counts', 'output.txt', b' 4 11 58 hello_world.txt', [])]
+    output_files = [File('counts', None, 'output.txt', [])]
+
+    output_content = {'output.txt': b' 4 11 58 hello_world.txt'}
 
     local_output = '{{ "counts": {{ "class": "File", "location": "output.txt" }} }}\n'
 
@@ -394,6 +418,8 @@ class LongRunningJob:
 
     output_files = []
 
+    output_content = {}
+
     local_output = '{}\n'
 
 
@@ -421,6 +447,8 @@ class InstallScriptTestJob:
 
     local_input_files = []
 
+    input_content = {}
+
     required_num_cores = 0
 
     time_limit = 0
@@ -429,8 +457,9 @@ class InstallScriptTestJob:
         return '{{ "output": {{ "class": "File", "location": "{}/output.txt" }} }}\n'.format(
                 job_remote_workdir)
 
-    output_files = [
-            File('host', 'output.txt', b'Testing API installation\n', [])]
+    output_files = [File('host', None, 'output.txt', [])]
+
+    output_content = [('output.txt', b'Testing API installation\n')]
 
     local_output = '{ "host": { "class": "File", "location": "output.txt" } }\n'
 
@@ -462,6 +491,8 @@ class PartiallyFailingJob:
 
     local_input_files = []
 
+    input_content = {}
+
     required_num_cores = 0
 
     time_limit = 0
@@ -475,8 +506,9 @@ class PartiallyFailingJob:
         return ('{{ "output": {{ "class": "File", "location": "{}/output.txt" }},\n'
                 '   "missing_output": null }}\n').format(job_remote_workdir)
 
-    output_files = [File('output', 'output.txt',
-                         b'Running on host: hostname\n', [])]
+    output_files = [File('output', None, 'output.txt', [])]
+
+    output_content = [('output.txt', b'Running on host: hostname\n')]
 
     local_output = ('{ "output": { "class": "File", "location": "output.txt" },'
                     '  "missing_output": null }\n')
@@ -503,6 +535,8 @@ class NoSuchStepJob:
 
     local_input_files = []
 
+    input_content = {}
+
     required_num_cores = 0
 
     time_limit = 0
@@ -516,6 +550,8 @@ class NoSuchStepJob:
         return ''
 
     output_files = []
+
+    output_content = {}
 
     local_output = '{}\n'
 
@@ -545,7 +581,20 @@ class MissingInputJob:
         return '{{ "file": {{ "class": "File", "location": "{}non_existing_file.txt" }} }}'.format(
                 local_baseurl)
 
-    local_input_files = []
+    local_input_files = [File('file', None, 'non_existing_file.txt', [])]
+
+    input_content = {}
+
+    def remote_input(job_remote_workdir):
+        return {
+                'file': {
+                    'class': 'File',
+                    'location': '{}/01_non_existing_file.txt'.format(
+                        job_remote_workdir)
+                }
+            }
+
+    remote_input_files = []
 
 
 class BrokenJob:
@@ -567,6 +616,8 @@ class BrokenJob:
 
     local_input_files = []
 
+    input_content = {}
+
     required_num_cores = 0
 
     time_limit = 0
@@ -580,6 +631,8 @@ class BrokenJob:
         return ''
 
     output_files = []
+
+    output_content = {}
 
 
 class NoWorkflowJob:
@@ -592,6 +645,8 @@ class NoWorkflowJob:
 
     local_input_files = []
 
+    input_content = {}
+
     required_num_cores = 0
 
     time_limit = 0
@@ -605,3 +660,5 @@ class NoWorkflowJob:
         return ''
 
     output_files = []
+
+    output_content = {}

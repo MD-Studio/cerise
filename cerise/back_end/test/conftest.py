@@ -1,3 +1,4 @@
+import copy
 import json
 from pathlib import Path
 
@@ -129,37 +130,66 @@ def mock_store_submitted(request, mock_config):
 
     for input_file in job_fixture.local_input_files:
         input_path = exchange_job_input_dir / input_file.location
-        input_path.write_bytes(input_file.content)
+        if input_file.location in job_fixture.input_content:
+            input_path.write_bytes(job_fixture.input_content[input_file.location])
+        input_file.source = input_path
 
-        for secondary_file in input_file.secondary_files:
-            sf_path = exchange_job_input_dir / secondary_file.location
-            sf_path.write_bytes(secondary_file.content)
+        for sec_file in input_file.secondary_files:
+            sec_path = exchange_job_input_dir / sec_file.location
+            if sec_file.location in job_fixture.input_content:
+                sec_path.write_bytes(job_fixture.input_content[sec_file.location])
+            sec_file.source = sec_path
 
     job = MockJob('test_job', 'test_job', 'client://' + str(wf_path),
                       job_fixture.local_input('client://' + str(exchange_job_input_dir) + '/'))
     job.state = JobState.SUBMITTED
 
     store.add_job(job)
-    return store, job_fixture
+    yield store, job_fixture
+
+    for input_file in job_fixture.local_input_files:
+        input_file.source = None
+
+        for sec_file in input_file.secondary_files:
+            sec_file.source = None
 
 
 @pytest.fixture(params=[
         PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        NoSuchStepJob])
+        MissingInputJob, NoSuchStepJob])
 def mock_store_resolved(request, mock_config):
     store = MockStore(mock_config)
-    job_fixture = request.param
+    job_fixture = copy.deepcopy(request.param)
 
     exchange_dir = mock_config.get_store_location_service()
     exchange_job_input_dir = exchange_dir / 'input' / 'test_job'
+    exchange_job_input_dir.mkdir(parents=True)
     local_input = job_fixture.local_input('file://' + str(exchange_job_input_dir) + '/')
+
+    for input_file in job_fixture.local_input_files:
+        input_path = exchange_job_input_dir / input_file.location
+        if input_file.location in job_fixture.input_content:
+            input_path.write_bytes(job_fixture.input_content[input_file.location])
+        input_file.source = input_path
+
+        for sec_file in input_file.secondary_files:
+            sec_path = exchange_job_input_dir / sec_file.location
+            if sec_file.location in job_fixture.input_content:
+                sec_path.write_bytes(job_fixture.input_content[sec_file.location])
+            sec_file.source = sec_path
 
     job = MockJob('test_job', 'test_job', None, local_input)
     job.workflow_content = job_fixture.workflow
     job.state = JobState.STAGING_IN
 
     store.add_job(job)
-    return store, job_fixture
+    yield store, job_fixture
+
+    for input_file in job_fixture.local_input_files:
+        input_file.source = None
+
+        for sec_file in input_file.secondary_files:
+            sec_file.source = None
 
 
 @pytest.fixture(params=[
@@ -210,8 +240,8 @@ def mock_store_run(request, mock_config):
     (job_dir / 'stdout.txt').write_text(job_fixture.remote_output('file://{}'.format(work_dir)))
     (job_dir / 'stderr.txt').write_text('Test log output\nAnother line\n')
 
-    for outf in job_fixture.output_files:
-        (work_dir / outf.location).write_bytes(outf.content)
+    for location, content in job_fixture.output_content.items():
+        (work_dir / location).write_bytes(content)
 
     job = MockJob('test_job', 'test_job', None, None)
     job.remote_workdir_path = str(work_dir)
@@ -229,6 +259,12 @@ def mock_store_run_and_updated(mock_config, mock_store_run):
 
     work_dir = mock_config.get_basedir() / 'jobs' / 'test_job' / 'work'
 
+    for output_file in job_fixture.output_files:
+        output_path = work_dir / output_file.location
+        if output_file.location in job_fixture.output_content:
+            output_path.write_bytes(job_fixture.output_content[output_file.location])
+        output_file.source = output_path
+
     job = store.get_job('test_job')
     job.remote_output = job_fixture.remote_output('file://{}'.format(work_dir))
 
@@ -242,10 +278,20 @@ def mock_store_destaged(request, mock_config):
     job_fixture = request.param
 
     work_dir = mock_config.get_basedir() / 'jobs' / 'test_job' / 'work'
+    work_dir.mkdir(parents=True)
+
+    for output_file in job_fixture.output_files:
+        output_path = work_dir / output_file.location
+        if output_file.location in job_fixture.output_content:
+            output_path.write_bytes(job_fixture.output_content[output_file.location])
+        output_file.source = output_path
 
     job = MockJob('test_job', 'test_job', None, None)
     job.remote_output = job_fixture.remote_output('file://{}'.format(work_dir))
 
     store.add_job(job)
 
-    return store, job_fixture
+    yield store, job_fixture
+
+    for output_file in job_fixture.output_files:
+        output_file.source = None

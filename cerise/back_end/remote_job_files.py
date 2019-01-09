@@ -112,23 +112,23 @@ class RemoteJobFiles:
         output_files = []
         with self._job_store:
             job = self._job_store.get_job(job_id)
+            work_dir = self._basedir / 'jobs' / job_id / 'work'
             self._logger.debug("Remote output: {}".format(job.remote_output))
             if job.remote_output != '':
                 outputs = json.loads(job.remote_output)
                 for output_file in get_files_from_binding(outputs):
                     self._logger.debug('Destage path = {} for output {}'.format(
                         output_file.location, output_file.name))
-                    prefix = 'file://' + str(self._basedir / 'jobs' / job_id / 'work') + '/'
+                    prefix = 'file://' + str(work_dir) + '/'
                     if not output_file.location.startswith(prefix):
                         raise Exception("Unexpected output location in cwl-runner output: {}, expected it to start with: {}".format(output_file.location, prefix))
                     output_file.location = output_file.location[len(prefix):]
-                    output_file.content = self._read_remote_file(
-                            job_id, 'work/' + output_file.location)
+                    output_file.source = work_dir / output_file.location
                     output_files.append(output_file)
             else:
                 self._logger.error('CWL runner did not produce any output for job {}!'.format(job_id))
 
-        # output name and location are (immutable) str's, while content
+        # output name and location are (immutable) str's, while source
         # does not come from the store, so we're not leaking here
         return output_files
 
@@ -192,7 +192,10 @@ class RemoteJobFiles:
         self._logger.debug('Staging input file {} to remote file {}'.format(
             input_file.location, staged_name))
         count += 1
-        self._add_file_to_job(job_id, 'work/' + staged_name, cast(bytes, input_file.content))
+
+        target_path = self._abs_path(job_id, 'work/{}'.format(staged_name))
+        cerulean.copy(cast(cerulean.Path, input_file.source), target_path)
+
         input_desc['location'] = str(self._abs_path(job_id, 'work/' + staged_name))
 
         for i, secondary_file in enumerate(input_file.secondary_files):

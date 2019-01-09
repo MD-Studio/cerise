@@ -1,10 +1,11 @@
 from typing import List, Optional
 
+from cerulean import FileSystem, Path
+
 
 class File:
-    def __init__(self, name: Optional[str], location: str,
-                 content: Optional[bytes], secondary_files: List['File'],
-                 index: int = None) -> None:
+    def __init__(self, name: Optional[str], index: Optional[int],
+                 location: str, secondary_files: List['File']) -> None:
         """Create a File object.
 
         This describes a file, and is the result of resolving \
@@ -14,9 +15,9 @@ class File:
 
         Args:
             name: The name of the input for which this file is.
+            index: The index of this file into an array of Files.
             location: A URL with the (local) location of the \
                     file.
-            content: The content of the file.
             secondary_files: A list of secondary files.
         """
         self.name = name
@@ -25,7 +26,7 @@ class File:
         """The index of this file, if it is in an array of files."""
         self.location = location
         """Local URL of the file."""
-        self.content = content
-        """The content of the file."""
+        self.source = None  # type: Optional[Path]
+        """The source of the file."""
         self.secondary_files = secondary_files
         """CWL secondary files."""

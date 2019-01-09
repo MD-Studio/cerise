@@ -204,12 +204,16 @@ def _start_job(cerise_client, webdav_client, job_fixture, test_name=None):
     for input_file in job_fixture.local_input_files:
         input_path = '{}/{}'.format(input_dir, input_file.location)
         input_res = wc.Resource(webdav_client, wu.Urn(input_path))
-        input_res.read_from(io.BytesIO(input_file.content))
+        if input_file.location in job_fixture.input_content:
+            input_res.read_from(io.BytesIO(
+                    job_fixture.input_content[input_file.location]))
 
         for secondary_file in input_file.secondary_files:
             input_path = '{}/{}'.format(input_dir, secondary_file.location)
             input_res = wc.Resource(webdav_client, wu.Urn(input_path))
-            input_res.read_from(io.BytesIO(secondary_file.content))
+            if secondary_file.location in job_fixture.input_content:
+                input_res.read_from(io.BytesIO(
+                    job_fixture.input_content[secondary_file.location]))
 
     input_dir_url = 'http://localhost:29593{}/'.format(input_dir)
     input_text = job_fixture.local_input(input_dir_url)
