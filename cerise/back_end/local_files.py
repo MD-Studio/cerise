@@ -1,20 +1,16 @@
-from cerise.back_end.cwl import get_files_from_binding
-from cerise.back_end.file import File
-
-from cerise.job_store.job_state import JobState
-from cerise.job_store.sqlite_job_store import SQLiteJobStore
-from cerise.config import Config
-
-from cerulean import FileSystem, LocalFileSystem, Path, WebdavFileSystem
-import cerulean
 import json
 import logging
-import os
-import requests
-import shutil
-from typing import cast, List, Tuple, Optional
 import urllib
+from typing import List, cast
 
+import cerulean
+import requests
+from cerulean import LocalFileSystem, Path, WebdavFileSystem
+
+from cerise.back_end.cwl import get_files_from_binding
+from cerise.back_end.file import File
+from cerise.config import Config
+from cerise.job_store.sqlite_job_store import SQLiteJobStore
 
 ConnectionError = requests.exceptions.ConnectionError
 
@@ -55,11 +51,11 @@ class LocalFiles:
             Resulting Files, with contents.
         """
         for secondary_file in secondary_files:
-            self._logger.debug("Resolving secondary file from " + secondary_file.location)
+            self._logger.debug("Resolving secondary file from " +
+                               secondary_file.location)
             secondary_file.source = self._get_source_from_url(
-                    secondary_file.location)
+                secondary_file.location)
             self.resolve_secondary_files(secondary_file.secondary_files)
-
 
     def resolve_input(self, job_id: str) -> List[File]:
         """Resolves input (workflow and input files) for a job.
@@ -83,15 +79,17 @@ class LocalFiles:
         with self._job_store:
             job = self._job_store.get_job(job_id)
 
-            job.workflow_content = self._get_source_from_url(job.workflow
-                    ).read_bytes()
+            job.workflow_content = self._get_source_from_url(
+                job.workflow).read_bytes()
 
             inputs = json.loads(job.local_input)
             input_files = get_files_from_binding(inputs)
             for input_file in input_files:
-                self._logger.debug("Resolving file for input {} from {}".format(
-                    input_file.name, input_file.location))
-                input_file.source = self._get_source_from_url(input_file.location)
+                self._logger.debug(
+                    "Resolving file for input {} from {}".format(
+                        input_file.name, input_file.location))
+                input_file.source = self._get_source_from_url(
+                    input_file.location)
                 self.resolve_secondary_files(input_file.secondary_files)
 
             return input_files
@@ -115,8 +113,8 @@ class LocalFiles:
         if job_dir.is_dir():
             job_dir.rmdir(recursive=True)
 
-    def publish_job_output(self, job_id: str, output_files: List[File]
-                           ) -> None:
+    def publish_job_output(self, job_id: str,
+                           output_files: List[File]) -> None:
         """Write output files to the local output dir for this job.
 
         Uses the .output_files property of the job to get data, and
@@ -139,7 +137,7 @@ class LocalFiles:
                     cerulean.copy(cast(Path, outf.source), out_file)
 
                     output[outf.name]['location'] = self._to_external_url(
-                            'output/' + job_id + '/' + outf.location)
+                        'output/' + job_id + '/' + outf.location)
                     output[outf.name]['path'] = str(out_file)
 
                 job.local_output = json.dumps(output)
@@ -183,10 +181,10 @@ class LocalFiles:
                 return fs / name
             else:
                 raise ValueError('Invalid scheme {} in input URL: {}'.format(
-                        parsed_url.scheme, url))
+                    parsed_url.scheme, url))
 
-    def _write_to_output_file(self, job_id: str, rel_path: str, data: bytes
-                              ) -> str:
+    def _write_to_output_file(self, job_id: str, rel_path: str,
+                              data: bytes) -> str:
         """Write the data to a local file.
 
         Args:

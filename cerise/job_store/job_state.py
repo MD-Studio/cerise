@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class JobState(Enum):
     """Enum JobState
     """
@@ -35,11 +36,10 @@ class JobState(Enum):
             bool: True if a job in this state will remain in this
                   state indefinitely.
         """
-        return state in [JobState.SUCCESS,
-                         JobState.CANCELLED,
-                         JobState.PERMANENT_FAILURE,
-                         JobState.TEMPORARY_FAILURE,
-                         JobState.SYSTEM_ERROR]
+        return state in [
+            JobState.SUCCESS, JobState.CANCELLED, JobState.PERMANENT_FAILURE,
+            JobState.TEMPORARY_FAILURE, JobState.SYSTEM_ERROR
+        ]
 
     @staticmethod
     def cancellation_active(state: 'JobState') -> bool:
@@ -55,10 +55,10 @@ class JobState(Enum):
             bool: True if a job in this state has been marked for
                   cancellation.
         """
-        return state in [JobState.STAGING_IN_CR,
-                         JobState.WAITING_CR,
-                         JobState.RUNNING_CR,
-                         JobState.STAGING_OUT_CR]
+        return state in [
+            JobState.STAGING_IN_CR, JobState.WAITING_CR, JobState.RUNNING_CR,
+            JobState.STAGING_OUT_CR
+        ]
 
     @staticmethod
     def is_remote(state: 'JobState') -> bool:
@@ -74,10 +74,10 @@ class JobState(Enum):
         Returns:
             bool: True iff this state is remote.
         """
-        return state in [JobState.WAITING,
-                         JobState.WAITING_CR,
-                         JobState.RUNNING,
-                         JobState.RUNNING_CR]
+        return state in [
+            JobState.WAITING, JobState.WAITING_CR, JobState.RUNNING,
+            JobState.RUNNING_CR
+        ]
 
     @staticmethod
     def to_cwl_state_string(state: 'JobState') -> str:
@@ -98,13 +98,11 @@ class JobState(Enum):
             JobState.FINISHED: 'Running',
             JobState.STAGING_OUT: 'Running',
             JobState.SUCCESS: 'Success',
-
             JobState.STAGING_IN_CR: 'Waiting',
             JobState.WAITING_CR: 'Running',
             JobState.RUNNING_CR: 'Running',
             JobState.STAGING_OUT_CR: 'Running',
             JobState.CANCELLED: 'Cancelled',
-
             JobState.SYSTEM_ERROR: 'SystemError',
             JobState.TEMPORARY_FAILURE: 'TemporaryFailure',
             JobState.PERMANENT_FAILURE: 'PermanentFailure',

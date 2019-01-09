@@ -1,10 +1,8 @@
-from cerise.back_end.job_planner import JobPlanner
-from cerise.test.fixture_jobs import (PassJob, SlowJob, BrokenJob,
-                                      NoSuchStepJob, MissingInputJob)
-
 import cerulean
-import pytest
 
+from cerise.back_end.job_planner import JobPlanner
+from cerise.test.fixture_jobs import (BrokenJob, MissingInputJob,
+                                      NoSuchStepJob, PassJob, SlowJob)
 
 lfs = cerulean.LocalFileSystem()
 

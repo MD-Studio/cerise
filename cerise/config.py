@@ -1,18 +1,18 @@
-import cerulean
 import logging
 import os
 import traceback
-from typing import cast, Any, Dict, Optional
 import urllib
-import yaml
+from typing import Any, Dict, Optional, cast
 
+import cerulean
+import yaml
 
 _remote_file_system = None
 
 
 class Config:
-    def __init__(self, config: Dict[str, Any], api_config: Dict[str, Any]
-                 ) -> None:
+    def __init__(self, config: Dict[str, Any],
+                 api_config: Dict[str, Any]) -> None:
         """Create a configuration object.
 
         Args:
@@ -34,11 +34,11 @@ class Config:
     def _get_credential_variable(self, kind: str, name: str) -> Optional[str]:
         def have_config(kind: str, name: str) -> bool:
             if kind == '':
-                return 'credentials' in self._cr_config and \
-                        name in self._cr_config['credentials']
-            return kind in self._cr_config and \
-                    'credentials' in self._cr_config[kind] and \
-                    name in self._cr_config[kind]['credentials']
+                return ('credentials' in self._cr_config
+                        and name in self._cr_config['credentials'])
+            return (kind in self._cr_config
+                    and 'credentials' in self._cr_config[kind]
+                    and name in self._cr_config[kind]['credentials'])
 
         def get_config(kind: str, name: str) -> str:
             if kind == '':
@@ -84,9 +84,10 @@ class Config:
         certfile = self._get_credential_variable(kind, 'certfile')
         passphrase = self._get_credential_variable(kind, 'passphrase')
 
-        credential = None   # type: Optional[cerulean.Credential]
+        credential = None  # type: Optional[cerulean.Credential]
         if username and certfile:
-            credential = cerulean.PubKeyCredential(username, certfile, passphrase)
+            credential = cerulean.PubKeyCredential(username, certfile,
+                                                   passphrase)
         elif username and password:
             credential = cerulean.PasswordCredential(username, password)
 
@@ -134,8 +135,8 @@ class Config:
         """
         return self._get_credential_variable(kind, 'username')
 
-    def get_scheduler(self, run_on_head_node: bool = False
-                      ) -> cerulean.Scheduler:
+    def get_scheduler(self,
+                      run_on_head_node: bool = False) -> cerulean.Scheduler:
         """
         Returns a scheduler as configured by the user.
 
@@ -154,8 +155,8 @@ class Config:
         else:
             protocol = self._cr_config['jobs'].get('protocol', 'local')
             location = self._cr_config['jobs'].get('location')
-            scheduler_type = self._cr_config['jobs'].get('scheduler',
-                                                         'directgnu')
+            scheduler_type = self._cr_config['jobs'].get(
+                'scheduler', 'directgnu')
 
         if run_on_head_node:
             scheduler_type = 'directgnu'
@@ -182,11 +183,12 @@ class Config:
                 location = self._cr_config['files'].get('location')
 
             credential = self._get_credential('files')
-            self._logger.debug(('protocol: {}, location: {}, credential: {}'
-                    ).format(protocol, location, credential))
+            self._logger.debug(
+                ('protocol: {}, location: {}, credential: {}').format(
+                    protocol, location, credential))
 
             _remote_file_system = cerulean.make_file_system(
-                    protocol, location, credential)
+                protocol, location, credential)
 
         return _remote_file_system
 
@@ -311,7 +313,7 @@ class Config:
         Returns if logging is configured.
 
         Returns:
-            (bool): True iff a logging section is available in the configuration.
+            True iff a logging section is available in the configuration.
         """
         return 'logging' in self._config
 
@@ -323,7 +325,8 @@ class Config:
         Returns:
             (str): The path.
         """
-        return self._config['logging'].get('file', '/var/log/cerise/cerise_backend.log')
+        return self._config['logging'].get(
+            'file', '/var/log/cerise/cerise_backend.log')
 
     def get_log_level(self) -> int:
         """
@@ -388,7 +391,8 @@ class Config:
         """
         if 'CERISE_STORE_LOCATION_CLIENT' in os.environ:
             return os.environ['CERISE_STORE_LOCATION_CLIENT']
-        return self._config['client-file-exchange'].get('store-location-client')
+        return self._config['client-file-exchange'].get(
+            'store-location-client')
 
 
 def make_config() -> Config:
@@ -404,7 +408,7 @@ def make_config() -> Config:
     try:
         with open(config_file_path) as config_file:
             config = yaml.safe_load(config_file)
-    except:
+    except Exception:
         print("Could not load main configuration, aborting.")
         print("Does the file exist, and is it valid YAML?")
         print(traceback.format_exc())
@@ -414,7 +418,7 @@ def make_config() -> Config:
     try:
         with open(api_config_file_path) as api_config_file:
             api_config = yaml.safe_load(api_config_file)
-    except:
+    except Exception:
         print("Could not load API configuration, aborting.")
         print("Does the file exist, and is it valid YAML?")
         print(traceback.format_exc())

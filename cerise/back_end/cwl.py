@@ -1,8 +1,9 @@
 from typing import Any, Dict, List
+
 import yaml
 
-from cerise.job_store.job_state import JobState
 from cerise.back_end.file import File
+from cerise.job_store.job_state import JobState
 
 
 def is_workflow(workflow_content: bytes) -> bool:
@@ -18,16 +19,16 @@ def is_workflow(workflow_content: bytes) -> bool:
     """
     try:
         workflow = yaml.safe_load(workflow_content.decode())
-    except yaml.scanner.ScannerError:   # type: ignore
+    except yaml.scanner.ScannerError:  # type: ignore
         return False
-    except yaml.parser.ParserError:     # type: ignore
+    except yaml.parser.ParserError:  # type: ignore
         return False
 
-    if not 'class' in workflow:
+    if 'class' not in workflow:
         return False
-    if not 'inputs' in workflow or not 'outputs' in workflow:
+    if 'inputs' not in workflow or 'outputs' not in workflow:
         return False
-    if not 'steps' in workflow:
+    if 'steps' not in workflow:
         return False
 
     process_class = workflow.get('class')
@@ -50,9 +51,9 @@ def get_workflow_step_names(workflow_content: bytes) -> List[str]:
         A list of step names.
     """
     workflow = yaml.safe_load(workflow_content.decode())
-    if not 'class' in workflow or workflow['class'] != 'Workflow':
+    if 'class' not in workflow or workflow['class'] != 'Workflow':
         raise RuntimeError('Invalid workflow file')
-    if not 'steps' in workflow:
+    if 'steps' not in workflow:
         raise RuntimeError('Invalid workflow file')
 
     steps = None
@@ -130,8 +131,7 @@ def get_time_limit(cwl_content: bytes) -> int:
                          ' expected int or timeLimit attribute')
 
 
-def get_secondary_files(secondary_files: List[Dict[str, Any]]
-                        ) -> List[File]:
+def get_secondary_files(secondary_files: List[Dict[str, Any]]) -> List[File]:
     """Parses a list of secondary files, recursively.
 
     Args:
@@ -151,9 +151,13 @@ def get_secondary_files(secondary_files: List[Dict[str, Any]]
                 new_file = File(None, None, value['location'], sf)
                 result.append(new_file)
             elif 'class' in value and value['class'] == 'Directory':
-                raise RuntimeError("Directory inputs are not yet supported, sorry")
+                raise RuntimeError(
+                    'Directory inputs are not yet supported, sorry')
             else:
-                raise RuntimeError("Invalid secondaryFiles entry: must be a File or a Directory")
+                raise RuntimeError(
+                    'Invalid secondaryFiles entry: must be a File or a'
+                    ' Directory'
+                )
     return result
 
 
@@ -174,19 +178,26 @@ def get_files_from_binding(cwl_binding: Dict[str, Any]) -> List[File]:
         for name, value in cwl_binding.items():
             if isinstance(value, dict):
                 if value.get('class') == 'File':
-                    secondary_files = get_secondary_files(value.get('secondaryFiles', []))
-                    result.append(File(name, None, value['location'], secondary_files))
+                    secondary_files = get_secondary_files(
+                        value.get('secondaryFiles', []))
+                    result.append(
+                        File(name, None, value['location'], secondary_files))
                 elif value.get('class') == 'Directory':
-                    raise RuntimeError('Directory inputs are not yet supported, sorry')
+                    raise RuntimeError(
+                        'Directory inputs are not yet supported, sorry')
             elif isinstance(value, list):
                 for i, val in enumerate(value):
                     if isinstance(val, dict):
                         if val.get('class') == 'File':
-                            secondary_files = get_secondary_files(val.get('secondaryFiles', []))
-                            input_file = File(name, i, val['location'], secondary_files)
+                            secondary_files = get_secondary_files(
+                                val.get('secondaryFiles', []))
+                            input_file = File(name, i, val['location'],
+                                              secondary_files)
                             result.append(input_file)
                         elif val.get('class') == 'Directory':
-                            raise RuntimeError('Directory inputs are not yet supported, sorry')
+                            raise RuntimeError(
+                                'Directory inputs are not yet supported, sorry'
+                            )
 
     return result
 

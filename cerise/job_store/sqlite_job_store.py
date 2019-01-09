@@ -1,14 +1,12 @@
-from cerise.util import BaseExceptionType
-from cerise.job_store.sqlite_job import SQLiteJob
-from cerise.job_store.job_state import JobState
-
 import sqlite3
 import threading
 from types import TracebackType
 from typing import Any, List, Optional
 from uuid import uuid4
 
-
+from cerise.job_store.job_state import JobState
+from cerise.job_store.sqlite_job import SQLiteJob
+from cerise.util import BaseExceptionType
 
 
 class SQLiteJobStore:
@@ -96,7 +94,8 @@ class SQLiteJobStore:
             if self._connection_pool != []:
                 self._thread_local_data.conn = self._connection_pool.pop()
             else:
-                self._thread_local_data.conn = sqlite3.connect(self._db_file, isolation_level="IMMEDIATE")
+                self._thread_local_data.conn = sqlite3.connect(
+                    self._db_file, isolation_level="IMMEDIATE")
 
             self._thread_local_data.recursion_depth = 1
 
@@ -141,10 +140,11 @@ class SQLiteJobStore:
         """
         job_id = uuid4().hex
 
-        self._thread_local_data.conn.execute("""
+        self._thread_local_data.conn.execute(
+            """
                 INSERT INTO jobs (job_id, name, workflow, local_input, state)
                 VALUES (?, ?, ?, ?, ?)""",
-                (job_id, name, workflow, job_input, JobState.SUBMITTED.name))
+            (job_id, name, workflow, job_input, JobState.SUBMITTED.name))
         self._thread_local_data.conn.commit()
 
         return job_id
@@ -170,11 +170,12 @@ class SQLiteJobStore:
         Returns:
             The job object corresponding to the given id.
         """
-        res = self._thread_local_data.conn.execute("""
-                SELECT COUNT(*) FROM jobs WHERE job_id = ?""", (job_id,))
+        res = self._thread_local_data.conn.execute(
+            """
+                SELECT COUNT(*) FROM jobs WHERE job_id = ?""", (job_id, ))
         if res.fetchone()[0] == 0:
-            raise RuntimeError('Job with id {} not found in store'.format(
-                    job_id))
+            raise RuntimeError(
+                'Job with id {} not found in store'.format(job_id))
         return SQLiteJob(self, job_id)
 
     def delete_job(self, job_id: str) -> None:
@@ -183,10 +184,9 @@ class SQLiteJobStore:
         Args:
             job_id: A string containing the id of the job to be deleted.
         """
-        self._thread_local_data.conn.execute("""
-                DELETE FROM jobs WHERE job_id = ?""",
-                (job_id,))
         self._thread_local_data.conn.execute(
-                'DELETE FROM job_log WHERE job_id = ?',
-                (job_id,))
+            """
+                DELETE FROM jobs WHERE job_id = ?""", (job_id, ))
+        self._thread_local_data.conn.execute(
+            'DELETE FROM job_log WHERE job_id = ?', (job_id, ))
         self._thread_local_data.conn.commit()

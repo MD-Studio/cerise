@@ -1,14 +1,13 @@
 import logging
+import os
 import signal
 import sys
-import time
 import traceback
 from types import FrameType
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import cerulean
 
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import cerise.config
 from cerise.back_end.execution_manager import ExecutionManager
 
@@ -34,9 +33,12 @@ if __name__ == "__main__":
     if config.has_logging():
         logfile = config.get_log_file()
         loglevel = config.get_log_level()
-        logging.basicConfig(filename=logfile, level=loglevel,
-                format='[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s [%(name)s]',
-                datefmt='%Y-%m-%d %H:%M:%S')
+        logging.basicConfig(
+            filename=logfile,
+            level=loglevel,
+            format=('[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s'
+                    ' [%(name)s]'),
+            datefmt='%Y-%m-%d %H:%M:%S')
 
     # Run
     logging.info('Starting up')
@@ -48,7 +50,6 @@ if __name__ == "__main__":
         manager.execute_jobs()
     except:
         logging.critical(traceback.format_exc())
-
 
     # Shut down
     logging.info('Shutting down')

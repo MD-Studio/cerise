@@ -1,17 +1,15 @@
-import cerulean
 import json
 import logging
-import os
 import re
-from typing import Any, Dict, List, Optional, Tuple, cast
-import yaml
+from typing import Any, Dict, List, cast
 
-from pathlib import Path
+import cerulean
+from cerulean import Path
 
 from cerise.back_end.cwl import get_files_from_binding
 from cerise.back_end.file import File
-from cerise.job_store.sqlite_job_store import SQLiteJobStore
 from cerise.config import Config
+from cerise.job_store.sqlite_job_store import SQLiteJobStore
 
 
 class RemoteJobFiles:
@@ -46,7 +44,7 @@ class RemoteJobFiles:
         self._username = config.get_username('files')
         """str: The remote user name to use, if any."""
         self._basedir = config.get_basedir()
-        """cerulean.Path: The remote path to the directory where the API files are."""
+        """Path: The remote path to the directory where the API files are."""
 
         # Create directories if they don't exist
         self._logger.debug('basedir: {}'.format(self._basedir))
@@ -69,8 +67,10 @@ class RemoteJobFiles:
             job = self._job_store.get_job(job_id)
 
             # create work dir
-            self._abs_path(job_id, '').mkdir(0o700, parents=True, exists_ok=True)
-            self._abs_path(job_id, 'work').mkdir(0o700, parents=True, exists_ok=True)
+            self._abs_path(job_id, '').mkdir(
+                0o700, parents=True, exists_ok=True)
+            self._abs_path(job_id, 'work').mkdir(
+                0o700, parents=True, exists_ok=True)
             job.remote_workdir_path = str(self._abs_path(job_id, 'work'))
 
             # stage name of the job
@@ -78,7 +78,8 @@ class RemoteJobFiles:
 
             # stage workflow
             self._add_file_to_job(job_id, 'workflow.cwl', workflow_content)
-            job.remote_workflow_path = str(self._abs_path(job_id, 'workflow.cwl'))
+            job.remote_workflow_path = str(
+                self._abs_path(job_id, 'workflow.cwl'))
 
             # stage input files
             inputs = json.loads(job.local_input)
@@ -88,7 +89,8 @@ class RemoteJobFiles:
                     input_desc = inputs[input_file.name][input_file.index]
                 else:
                     input_desc = inputs[input_file.name]
-                count = self._stage_input_file(count, job_id, input_file, input_desc)
+                count = self._stage_input_file(count, job_id, input_file,
+                                               input_desc)
 
             # stage input description
             inputs_json = json.dumps(inputs).encode('utf-8')
@@ -117,16 +119,22 @@ class RemoteJobFiles:
             if job.remote_output != '':
                 outputs = json.loads(job.remote_output)
                 for output_file in get_files_from_binding(outputs):
-                    self._logger.debug('Destage path = {} for output {}'.format(
-                        output_file.location, output_file.name))
+                    self._logger.debug(
+                        'Destage path = {} for output {}'.format(
+                            output_file.location, output_file.name))
                     prefix = 'file://' + str(work_dir) + '/'
                     if not output_file.location.startswith(prefix):
-                        raise Exception("Unexpected output location in cwl-runner output: {}, expected it to start with: {}".format(output_file.location, prefix))
+                        raise Exception(
+                            'Unexpected output location in cwl-runner output:'
+                            ' {}, expected it to start with: {}'
+                            .format(output_file.location, prefix))
                     output_file.location = output_file.location[len(prefix):]
                     output_file.source = work_dir / output_file.location
                     output_files.append(output_file)
             else:
-                self._logger.error('CWL runner did not produce any output for job {}!'.format(job_id))
+                self._logger.error(
+                    'CWL runner did not produce any output for job {}!'.format(
+                        job_id))
 
         # output name and location are (immutable) str's, while source
         # does not come from the store, so we're not leaking here
@@ -188,23 +196,27 @@ class RemoteJobFiles:
             The updated count
         """
         self._logger.debug(type(input_file))
-        staged_name = _create_input_filename(str(count).zfill(2), input_file.location)
+        staged_name = _create_input_filename(
+            str(count).zfill(2), input_file.location)
         self._logger.debug('Staging input file {} to remote file {}'.format(
             input_file.location, staged_name))
         count += 1
 
         target_path = self._abs_path(job_id, 'work/{}'.format(staged_name))
-        cerulean.copy(cast(cerulean.Path, input_file.source), target_path)
+        cerulean.copy(cast(Path, input_file.source), target_path)
 
-        input_desc['location'] = str(self._abs_path(job_id, 'work/' + staged_name))
+        input_desc['location'] = str(
+            self._abs_path(job_id, 'work/' + staged_name))
 
         for i, secondary_file in enumerate(input_file.secondary_files):
             sec_input_desc = input_desc['secondaryFiles'][i]
-            count = self._stage_input_file(count, job_id, secondary_file, sec_input_desc)
+            count = self._stage_input_file(count, job_id, secondary_file,
+                                           sec_input_desc)
 
         return count
 
-    def _add_file_to_job(self, job_id: str, rel_path: str, data: bytes) -> None:
+    def _add_file_to_job(self, job_id: str, rel_path: str,
+                         data: bytes) -> None:
         """Write a file on the remote resource containing the given raw data.
 
         Args:
@@ -229,7 +241,7 @@ class RemoteJobFiles:
         except FileNotFoundError:
             return bytes()
 
-    def _abs_path(self, job_id: str, rel_path: str) -> cerulean.Path:
+    def _abs_path(self, job_id: str, rel_path: str) -> Path:
         """Return an absolute remote path given a job-relative path.
 
         Args:
@@ -240,6 +252,7 @@ class RemoteJobFiles:
         if rel_path != '':
             ret /= rel_path
         return ret
+
 
 def _create_input_filename(unique_prefix: str, orig_path: str) -> str:
     """Return a string containing a remote filename that

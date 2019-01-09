@@ -1,8 +1,9 @@
+import json
+
+import pytest
+
 from cerise.back_end.remote_job_files import RemoteJobFiles
 from cerise.test.fixture_jobs import MissingInputJob
-
-import json
-import pytest
 
 
 def _assert_remote_files_are_equal(output_file, reference_output_file, prefix):
@@ -11,7 +12,8 @@ def _assert_remote_files_are_equal(output_file, reference_output_file, prefix):
     assert output_file.location == (prefix + reference_output_file.location)
     assert str(output_file.source) == str(reference_output_file.source)
     for i, secondary_file in enumerate(output_file.secondary_files):
-        _assert_remote_files_are_equal(secondary_file, reference_output_file.secondary_files[i], prefix)
+        _assert_remote_files_are_equal(
+            secondary_file, reference_output_file.secondary_files[i], prefix)
 
 
 def test_stage_job(mock_config, mock_store_resolved):
@@ -22,7 +24,8 @@ def test_stage_job(mock_config, mock_store_resolved):
     input_files = job_fixture.local_input_files
     if job_fixture == MissingInputJob:
         with pytest.raises(FileNotFoundError):
-            remote_job_files.stage_job('test_job', input_files, job_fixture.workflow)
+            remote_job_files.stage_job('test_job', input_files,
+                                       job_fixture.workflow)
         return
 
     remote_job_files.stage_job('test_job', input_files, job_fixture.workflow)
@@ -34,7 +37,8 @@ def test_stage_job(mock_config, mock_store_resolved):
     assert workflow_file.read_bytes() == job_fixture.workflow
 
     input_file = jobdir / 'input.json'
-    assert json.loads(input_file.read_text()) == job_fixture.remote_input(jobdir / 'work')
+    assert json.loads(input_file.read_text()) == job_fixture.remote_input(
+        jobdir / 'work')
 
     for _, path, content in job_fixture.remote_input_files:
         staged_file = jobdir / 'work' / path
@@ -49,7 +53,8 @@ def test_update_job(mock_config, mock_store_run):
 
     remote_job_files.update_job('test_job')
     job = store.get_job('test_job')
-    assert job.remote_output == job_fixture.remote_output('file://{}'.format(work_dir))
+    assert job.remote_output == job_fixture.remote_output(
+        'file://{}'.format(work_dir))
     assert job.remote_error == 'Test log output\nAnother line\n'
 
 
@@ -59,7 +64,8 @@ def test_destage_job(mock_config, mock_store_run_and_updated):
     remote_job_files = RemoteJobFiles(store, mock_config)
     output_files = remote_job_files.destage_job_output('test_job')
     for i, output_file in enumerate(output_files):
-        _assert_remote_files_are_equal(output_file, job_fixture.output_files[i], '')
+        _assert_remote_files_are_equal(output_file,
+                                       job_fixture.output_files[i], '')
 
 
 def test_delete_job(mock_config, mock_store_run_and_updated):

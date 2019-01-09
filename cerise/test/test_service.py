@@ -1,23 +1,23 @@
-import bravado
+import io
+import json
+import tarfile
+import time
+from pathlib import Path
+
+import docker
+import pytest
+import requests
+import webdav.client as wc
+import webdav.urn as wu
 from bravado.client import SwaggerClient
 from bravado.exception import HTTPBadGateway, HTTPNotFound
 from bravado_core.formatter import SwaggerFormat
-import docker
-import io
-import json
-from pathlib import Path
-import pytest
-import requests
-import tarfile
-import time
-import webdav.client as wc
-import webdav.urn as wu
 
-
-from cerise.test.fixture_jobs import (
-        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        LongRunningJob, NoSuchStepJob, MissingInputJob, BrokenJob,
-        NoWorkflowJob, InstallScriptTestJob, PartiallyFailingJob)
+from cerise.test.fixture_jobs import (BrokenJob, FileArrayJob, HostnameJob,
+                                      InstallScriptTestJob, LongRunningJob,
+                                      MissingInputJob, NoSuchStepJob,
+                                      NoWorkflowJob, PartiallyFailingJob,
+                                      SecondaryFilesJob, SlowJob, WcJob)
 
 
 def clear_old_container(client, name):
@@ -50,10 +50,12 @@ def slurm_container(clean_up_old_containers):
 
     client.images.pull('mdstudio/cerulean-test-slurm-18-08:latest')
     slurm_image = client.images.get(
-            'mdstudio/cerulean-test-slurm-18-08:latest')
+        'mdstudio/cerulean-test-slurm-18-08:latest')
     slurm_container = client.containers.run(
-            slurm_image, name='cerise-test-slurm', hostname='hostname',
-            detach=True)
+        slurm_image,
+        name='cerise-test-slurm',
+        hostname='hostname',
+        detach=True)
     return slurm_container
 
 
@@ -62,15 +64,16 @@ def cerise_service(slurm_container):
     client = docker.from_env()
 
     client.images.build(path='.', tag='cerise')
-    service_image = client.images.build(path='cerise/test',
-                                        tag='cerise-test-service')
+    service_image = client.images.build(
+        path='cerise/test', tag='cerise-test-service')
 
     wait_for_container(client, slurm_container)
     service_container = client.containers.run(
-            service_image, name='cerise-test-service',
-            links={'cerise-test-slurm': 'cerise-test-slurm'},
-            ports={'29593/tcp': ('127.0.0.1', 29593)},
-            detach=True)
+        service_image,
+        name='cerise-test-service',
+        links={'cerise-test-slurm': 'cerise-test-slurm'},
+        ports={'29593/tcp': ('127.0.0.1', 29593)},
+        detach=True)
     wait_for_container(client, service_container)
 
     yield service_container
@@ -107,17 +110,13 @@ def cerise_client():
     # Disable Bravado warning about uri format not being registered
     # It's all done by frameworks, so we're not testing that here
     uri_format = SwaggerFormat(
-            description='A Uniform Resource Identifier',
-            format='uri',
-            to_wire=lambda uri: uri,
-            to_python=lambda uri: uri,
-            validate=lambda uri_string: True
-    )
+        description='A Uniform Resource Identifier',
+        format='uri',
+        to_wire=lambda uri: uri,
+        to_python=lambda uri: uri,
+        validate=lambda uri_string: True)
 
-    bravado_config = {
-        'also_return_response': True,
-        'formats': [uri_format]
-        }
+    bravado_config = {'also_return_response': True, 'formats': [uri_format]}
 
     service = None
     start_time = time.perf_counter()
@@ -125,8 +124,7 @@ def cerise_client():
     while cur_time < start_time + 10:
         try:
             service = SwaggerClient.from_url(
-                    'http://localhost:29593/swagger.json',
-                    config=bravado_config)
+                'http://localhost:29593/swagger.json', config=bravado_config)
             _, response = service.jobs.get_jobs().result()
             if response.status_code == 200:
                 break
@@ -142,14 +140,15 @@ def cerise_client():
     return service
 
 
-@pytest.fixture(params=[
-        HostnameJob, WcJob, SecondaryFilesJob, FileArrayJob])
+@pytest.fixture(params=[HostnameJob, WcJob, SecondaryFilesJob, FileArrayJob])
 def job_fixture_success(request):
     return request.param
 
 
-@pytest.fixture(params=[MissingInputJob, BrokenJob, NoWorkflowJob,
-                        NoSuchStepJob, PartiallyFailingJob])
+@pytest.fixture(params=[
+    MissingInputJob, BrokenJob, NoWorkflowJob, NoSuchStepJob,
+    PartiallyFailingJob
+])
 def job_fixture_permfail(request):
     return request.param
 
@@ -205,15 +204,16 @@ def _start_job(cerise_client, webdav_client, job_fixture, test_name=None):
         input_path = '{}/{}'.format(input_dir, input_file.location)
         input_res = wc.Resource(webdav_client, wu.Urn(input_path))
         if input_file.location in job_fixture.input_content:
-            input_res.read_from(io.BytesIO(
-                    job_fixture.input_content[input_file.location]))
+            input_res.read_from(
+                io.BytesIO(job_fixture.input_content[input_file.location]))
 
         for secondary_file in input_file.secondary_files:
             input_path = '{}/{}'.format(input_dir, secondary_file.location)
             input_res = wc.Resource(webdav_client, wu.Urn(input_path))
             if secondary_file.location in job_fixture.input_content:
-                input_res.read_from(io.BytesIO(
-                    job_fixture.input_content[secondary_file.location]))
+                input_res.read_from(
+                    io.BytesIO(
+                        job_fixture.input_content[secondary_file.location]))
 
     input_dir_url = 'http://localhost:29593{}/'.format(input_dir)
     input_text = job_fixture.local_input(input_dir_url)
@@ -223,8 +223,7 @@ def _start_job(cerise_client, webdav_client, job_fixture, test_name=None):
     job_desc = JobDescription(
         name=test_name,
         workflow='http://localhost:29593' + workflow_file,
-        input=input_data
-    )
+        input=input_data)
 
     job, response = cerise_client.jobs.post_job(body=job_desc).result()
 
@@ -234,8 +233,10 @@ def _start_job(cerise_client, webdav_client, job_fixture, test_name=None):
 
 def _wait_for_state(job_id, timeout, states, cerise_client):
     if states == 'DONE':
-        states = ['Success', 'Cancelled', 'PermanentFailure',
-                  'TemporaryFailure', 'SystemError']
+        states = [
+            'Success', 'Cancelled', 'PermanentFailure', 'TemporaryFailure',
+            'SystemError'
+        ]
 
     if isinstance(states, str):
         states = [states]
@@ -248,7 +249,7 @@ def _wait_for_state(job_id, timeout, states, cerise_client):
         """
         try:
             test_job, response = cerise_client.jobs.get_job_by_id(
-                    jobId=job_id).result()
+                jobId=job_id).result()
             assert response.status_code == 200
         except HTTPNotFound:
             return True, False, None
@@ -322,8 +323,8 @@ def test_run_broken_job(cerise_service, cerise_client, webdav_client,
     assert job.state == 'PermanentFailure'
 
     if job_fixture_permfail == PartiallyFailingJob:
-        assert ('missing_output' not in job.output or
-                job.output['missing_output'] is None)
+        assert ('missing_output' not in job.output
+                or job.output['missing_output'] is None)
 
         out_data = requests.get(job.output['output']['location'])
         assert out_data.status_code == 200
@@ -382,7 +383,6 @@ def test_delete_job(cerise_service, cerise_client, webdav_client):
 
 
 def test_delete_running_job(cerise_service, cerise_client, webdav_client):
-    start_time = time.perf_counter()
     job = _start_job(cerise_client, webdav_client, LongRunningJob,
                      'test_delete_running_job')
 
@@ -414,7 +414,7 @@ def test_restart_service(cerise_service, cerise_client, webdav_client,
 
 
 def test_dropped_ssh_connection(cerise_service, cerise_client, webdav_client,
-                            slurm_container):
+                                slurm_container):
     job = _start_job(cerise_client, webdav_client, SlowJob,
                      'test_dropped_ssh_connection')
     _drop_connections(slurm_container)
@@ -424,7 +424,7 @@ def test_dropped_ssh_connection(cerise_service, cerise_client, webdav_client,
 
 
 def test_no_resource_connection(cerise_service, cerise_client, webdav_client,
-                       slurm_container):
+                                slurm_container):
     slurm_container.stop()
     time.sleep(1)
     job = _start_job(cerise_client, webdav_client, SlowJob,

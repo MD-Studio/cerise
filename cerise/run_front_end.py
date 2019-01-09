@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
+import os
+import sys
+
 import connexion
 
-import sys
-import os
-
 sys.path.append(os.path.join(os.path.dirname(__file__)))
-
 from cerise.config import make_config
 from cerise.front_end.encoder import JSONEncoder
 
@@ -19,7 +18,4 @@ application = app.app
 
 if __name__ == '__main__':
     config = make_config()
-    app.run(
-        host=config.get_service_host(),
-        port=config.get_service_port()
-        )
+    app.run(host=config.get_service_host(), port=config.get_service_port())

@@ -1,12 +1,11 @@
-import cerulean
 import logging
 from math import ceil
-import os
-from time import sleep
 
+import cerulean
+
+from cerise.config import Config
 from cerise.job_store.job_state import JobState
 from cerise.job_store.sqlite_job_store import SQLiteJobStore
-from cerise.config import Config
 
 
 class JobRunner:
@@ -38,7 +37,8 @@ class JobRunner:
         self._cores_per_node = config.get_cores_per_node()
         """Number of cores per node on the configured machine/queue."""
 
-        self._logger.debug('Slots per node set to ' + str(self._mpi_slots_per_node))
+        self._logger.debug('Slots per node set to ' +
+                           str(self._mpi_slots_per_node))
 
     def update_job(self, job_id: str) -> None:
         """Get status from compute resource and update store.
@@ -55,8 +55,8 @@ class JobRunner:
                 job.try_transition(JobState.WAITING_CR, JobState.RUNNING_CR)
                 return
             if status != cerulean.JobStatus.DONE:
-                    # Still waiting in the queue, check again later
-                    return
+                # Still waiting in the queue, check again later
+                return
 
             # Not running or waiting, so it's finished unless we cancelled it
             job.try_transition(JobState.WAITING, JobState.FINISHED)
@@ -78,7 +78,9 @@ class JobRunner:
             jobdesc = cerulean.JobDescription()
             jobdesc.working_directory = job.remote_workdir_path
             jobdesc.command = self._remote_cwlrunner
-            jobdesc.arguments = [job.remote_workflow_path, job.remote_input_path]
+            jobdesc.arguments = [
+                job.remote_workflow_path, job.remote_input_path
+            ]
             jobdesc.stdout_file = job.remote_stdout_path
             jobdesc.stderr_file = job.remote_stderr_path
 
@@ -86,7 +88,8 @@ class JobRunner:
                 jobdesc.time_reserved = job.time_limit
 
             if job.required_num_cores > 0:
-                jobdesc.num_nodes = ceil(job.required_num_cores / self._cores_per_node)
+                jobdesc.num_nodes = ceil(
+                    job.required_num_cores / self._cores_per_node)
 
             if not isinstance(self._sched, cerulean.DirectGnuScheduler):
                 jobdesc.mpi_processes_per_node = self._mpi_slots_per_node

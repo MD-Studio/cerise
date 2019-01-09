@@ -4,14 +4,13 @@ from pathlib import Path
 
 import cerulean
 import pytest
-from urllib.parse import urlparse
 import yaml
 
-from cerise.job_store.job_state import JobState
 from cerise.back_end.test.mock_job import MockJob
-from cerise.test.fixture_jobs import (
-        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        MissingInputJob, BrokenJob, NoSuchStepJob)
+from cerise.job_store.job_state import JobState
+from cerise.test.fixture_jobs import (BrokenJob, FileArrayJob, HostnameJob,
+                                      MissingInputJob, NoSuchStepJob, PassJob,
+                                      SecondaryFilesJob, SlowJob, WcJob)
 
 
 def workflow_to_json(yaml_string, test_steps_dir):
@@ -22,11 +21,13 @@ def workflow_to_json(yaml_string, test_steps_dir):
             if isinstance(steps, list):
                 for step in steps:
                     if 'run' in step:
-                        step['run'] = '{}/{}'.format(test_steps_dir, step['run'])
+                        step['run'] = '{}/{}'.format(test_steps_dir,
+                                                     step['run'])
             elif isinstance(steps, dict):
                 for _, step in steps.items():
                     if 'run' in step:
-                        step['run'] = '{}/{}'.format(test_steps_dir, step['run'])
+                        step['run'] = '{}/{}'.format(test_steps_dir,
+                                                     step['run'])
     return bytes(json.dumps(dict_form), 'utf-8')
 
 
@@ -109,12 +110,13 @@ class MockStore:
 
     def delete_job(self, job_id):
         self.deleted_jobs.extend(
-                [job for job in self._jobs if job.id == job_id])
+            [job for job in self._jobs if job.id == job_id])
 
 
 @pytest.fixture(params=[
-        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        MissingInputJob, BrokenJob])
+    PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
+    MissingInputJob, BrokenJob
+])
 def mock_store_submitted(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param
@@ -131,17 +133,21 @@ def mock_store_submitted(request, mock_config):
     for input_file in job_fixture.local_input_files:
         input_path = exchange_job_input_dir / input_file.location
         if input_file.location in job_fixture.input_content:
-            input_path.write_bytes(job_fixture.input_content[input_file.location])
+            input_path.write_bytes(
+                job_fixture.input_content[input_file.location])
         input_file.source = input_path
 
         for sec_file in input_file.secondary_files:
             sec_path = exchange_job_input_dir / sec_file.location
             if sec_file.location in job_fixture.input_content:
-                sec_path.write_bytes(job_fixture.input_content[sec_file.location])
+                sec_path.write_bytes(
+                    job_fixture.input_content[sec_file.location])
             sec_file.source = sec_path
 
-    job = MockJob('test_job', 'test_job', 'client://' + str(wf_path),
-                      job_fixture.local_input('client://' + str(exchange_job_input_dir) + '/'))
+    job = MockJob(
+        'test_job', 'test_job', 'client://' + str(wf_path),
+        job_fixture.local_input('client://' + str(exchange_job_input_dir) +
+                                '/'))
     job.state = JobState.SUBMITTED
 
     store.add_job(job)
@@ -155,8 +161,9 @@ def mock_store_submitted(request, mock_config):
 
 
 @pytest.fixture(params=[
-        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
-        MissingInputJob, NoSuchStepJob])
+    PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob,
+    MissingInputJob, NoSuchStepJob
+])
 def mock_store_resolved(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = copy.deepcopy(request.param)
@@ -164,18 +171,21 @@ def mock_store_resolved(request, mock_config):
     exchange_dir = mock_config.get_store_location_service()
     exchange_job_input_dir = exchange_dir / 'input' / 'test_job'
     exchange_job_input_dir.mkdir(parents=True)
-    local_input = job_fixture.local_input('file://' + str(exchange_job_input_dir) + '/')
+    local_input = job_fixture.local_input('file://' +
+                                          str(exchange_job_input_dir) + '/')
 
     for input_file in job_fixture.local_input_files:
         input_path = exchange_job_input_dir / input_file.location
         if input_file.location in job_fixture.input_content:
-            input_path.write_bytes(job_fixture.input_content[input_file.location])
+            input_path.write_bytes(
+                job_fixture.input_content[input_file.location])
         input_file.source = input_path
 
         for sec_file in input_file.secondary_files:
             sec_path = exchange_job_input_dir / sec_file.location
             if sec_file.location in job_fixture.input_content:
-                sec_path.write_bytes(job_fixture.input_content[sec_file.location])
+                sec_path.write_bytes(
+                    job_fixture.input_content[sec_file.location])
             sec_file.source = sec_path
 
     job = MockJob('test_job', 'test_job', None, local_input)
@@ -193,7 +203,8 @@ def mock_store_resolved(request, mock_config):
 
 
 @pytest.fixture(params=[
-        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob])
+    PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob
+])
 def mock_store_staged(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param
@@ -205,10 +216,10 @@ def mock_store_staged(request, mock_config):
 
     test_steps_dir = mock_config.get_basedir() / 'api' / 'test' / 'steps'
 
-    (job_dir / 'workflow.cwl').write_bytes(workflow_to_json(
-            job_fixture.workflow, test_steps_dir))
-    (job_dir / 'input.json').write_text(json.dumps(
-            job_fixture.remote_input(work_dir)))
+    (job_dir / 'workflow.cwl').write_bytes(
+        workflow_to_json(job_fixture.workflow, test_steps_dir))
+    (job_dir / 'input.json').write_text(
+        json.dumps(job_fixture.remote_input(work_dir)))
 
     for _, name, content in job_fixture.remote_input_files:
         (work_dir / name).write_bytes(content)
@@ -227,7 +238,8 @@ def mock_store_staged(request, mock_config):
 
 
 @pytest.fixture(params=[
-        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob])
+    PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob
+])
 def mock_store_run(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param
@@ -237,7 +249,8 @@ def mock_store_run(request, mock_config):
     work_dir = job_dir / 'work'
     work_dir.mkdir(parents=True)
 
-    (job_dir / 'stdout.txt').write_text(job_fixture.remote_output('file://{}'.format(work_dir)))
+    (job_dir / 'stdout.txt').write_text(
+        job_fixture.remote_output('file://{}'.format(work_dir)))
     (job_dir / 'stderr.txt').write_text('Test log output\nAnother line\n')
 
     for location, content in job_fixture.output_content.items():
@@ -262,7 +275,8 @@ def mock_store_run_and_updated(mock_config, mock_store_run):
     for output_file in job_fixture.output_files:
         output_path = work_dir / output_file.location
         if output_file.location in job_fixture.output_content:
-            output_path.write_bytes(job_fixture.output_content[output_file.location])
+            output_path.write_bytes(
+                job_fixture.output_content[output_file.location])
         output_file.source = output_path
 
     job = store.get_job('test_job')
@@ -272,7 +286,8 @@ def mock_store_run_and_updated(mock_config, mock_store_run):
 
 
 @pytest.fixture(params=[
-        PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob])
+    PassJob, HostnameJob, WcJob, SlowJob, SecondaryFilesJob, FileArrayJob
+])
 def mock_store_destaged(request, mock_config):
     store = MockStore(mock_config)
     job_fixture = request.param
@@ -283,7 +298,8 @@ def mock_store_destaged(request, mock_config):
     for output_file in job_fixture.output_files:
         output_path = work_dir / output_file.location
         if output_file.location in job_fixture.output_content:
-            output_path.write_bytes(job_fixture.output_content[output_file.location])
+            output_path.write_bytes(
+                job_fixture.output_content[output_file.location])
         output_file.source = output_path
 
     job = MockJob('test_job', 'test_job', None, None)

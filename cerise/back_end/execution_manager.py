@@ -1,20 +1,21 @@
-from cerise.job_store.sqlite_job_store import SQLiteJobStore
-from cerise.job_store.job_state import JobState
-from cerise.back_end.cwl import get_cwltool_result, is_workflow
-from cerise.back_end.local_files import ConnectionError, LocalFiles
-from cerise.back_end.remote_api import RemoteApi
-from cerise.back_end.remote_job_files import RemoteJobFiles
-from cerise.back_end.job_planner import InvalidJobError, JobPlanner
-from cerise.back_end.job_runner import JobRunner
-from cerise.config import Config
-from cerise.job_store.sqlite_job import SQLiteJob
-
-import cerulean
 import logging
-from paramiko.ssh_exception import SSHException     # type: ignore
 import time
 import traceback
 from typing import cast
+
+import cerulean
+from paramiko.ssh_exception import SSHException  # type: ignore
+
+from cerise.back_end.cwl import get_cwltool_result, is_workflow
+from cerise.back_end.job_planner import InvalidJobError, JobPlanner
+from cerise.back_end.job_runner import JobRunner
+from cerise.back_end.local_files import ConnectionError, LocalFiles
+from cerise.back_end.remote_api import RemoteApi
+from cerise.back_end.remote_job_files import RemoteJobFiles
+from cerise.config import Config
+from cerise.job_store.job_state import JobState
+from cerise.job_store.sqlite_job import SQLiteJob
+from cerise.job_store.sqlite_job_store import SQLiteJobStore
 
 
 class ExecutionManager:
@@ -25,6 +26,7 @@ class ExecutionManager:
     resource, ensuring that any remote state changes are propagated to
     the job store correctly.
     """
+
     def __init__(self, config: Config, local_api_dir: cerulean.Path) -> None:
         """Set up the execution manager.
 
@@ -55,9 +57,8 @@ class ExecutionManager:
         """The remote job files manager."""
 
         remote_cwlrunner = self._remote_api.translate_runner_location(
-                config.get_remote_cwl_runner())
-        self._job_runner = JobRunner(
-                self._job_store, config, remote_cwlrunner)
+            config.get_remote_cwl_runner())
+        self._job_runner = JobRunner(self._job_store, config, remote_cwlrunner)
         """The job runner submits jobs and checks on them."""
 
         # recover database from crash
@@ -178,15 +179,18 @@ class ExecutionManager:
             return
 
         job.info('Planned job, now staging in inputs')
-        workflow_content = self._remote_api.translate_workflow(cast(bytes, job.workflow_content))
+        workflow_content = self._remote_api.translate_workflow(
+            cast(bytes, job.workflow_content))
         try:
-            self._remote_job_files.stage_job(job_id, input_files, workflow_content)
+            self._remote_job_files.stage_job(job_id, input_files,
+                                             workflow_content)
         except FileNotFoundError as e:
             job.error('Input not found: {}'.format(e.args[0]))
             job.state = JobState.PERMANENT_FAILURE
             return
         except SSHException as e:
-            job.warning('Connection problem with remote resource: {}'.format(e.args[0]))
+            job.warning('Connection problem with remote resource: {}'.format(
+                e.args[0]))
             job.warning('Will try again later')
             job.state = JobState.SUBMITTED
             return
@@ -206,15 +210,18 @@ class ExecutionManager:
         try:
             self._job_runner.start_job(job_id)
         except SSHException as e:
-            job.warning('Connection problem with remote resource: {}'.format(e.args[0]))
+            job.warning('Connection problem with remote resource: {}'.format(
+                e.args[0]))
             job.warning('Will try again later')
             job.state = JobState.SUBMITTED
             return
         job.info('Started job')
 
-        if not (job.try_transition(JobState.STAGING_IN, JobState.WAITING) or
-                job.try_transition(JobState.STAGING_IN_CR, JobState.WAITING_CR)):
-            self._logger.critical('Something odd happened while staging and starting')
+        if not (job.try_transition(JobState.STAGING_IN, JobState.WAITING)
+                or job.try_transition(JobState.STAGING_IN_CR,
+                                      JobState.WAITING_CR)):
+            self._logger.critical(
+                'Something odd happened while staging and starting')
             self._logger.critical('State is now {}'.format(job.state))
             job.state = JobState.SYSTEM_ERROR
 
@@ -234,18 +241,22 @@ class ExecutionManager:
         if job.try_transition(JobState.FINISHED, JobState.STAGING_OUT):
             job.info('Starting destaging of results')
             try:
-                output_files = self._remote_job_files.destage_job_output(job_id)
+                output_files = self._remote_job_files.destage_job_output(
+                    job_id)
                 self._local_files.publish_job_output(job_id, output_files)
             except SSHException as e:
-                job.warning('Connection problem with remote resource: {}'.format(e.args[0]))
+                job.warning(
+                    'Connection problem with remote resource: {}'.format(
+                        e.args[0]))
                 job.warning('Will try again later')
                 job.state = JobState.FINISHED
                 return
 
             job.info('Results downloaded and available')
 
-            if not (job.try_transition(JobState.STAGING_OUT, result) or
-                    job.try_transition(JobState.STAGING_OUT_CR, JobState.CANCELLED)):
+            if not (job.try_transition(JobState.STAGING_OUT, result)
+                    or job.try_transition(JobState.STAGING_OUT_CR,
+                                          JobState.CANCELLED)):
                 job.state = JobState.SYSTEM_ERROR
 
     def _process_jobs(self, check_remote: bool) -> bool:
@@ -270,7 +281,8 @@ class ExecutionManager:
 
             try:
                 job = self._job_store.get_job(job_id)
-                self._logger.debug('Processing job ' + job_id + ' with current state ' + job.state.value)
+                self._logger.debug('Processing job ' + job_id +
+                                   ' with current state ' + job.state.value)
 
                 if check_remote and JobState.is_remote(job.state):
                     self._logger.debug('Checking remote state')
@@ -278,7 +290,10 @@ class ExecutionManager:
                         self._job_runner.update_job(job_id)
                         self._remote_job_files.update_job(job_id)
                         job = self._job_store.get_job(job_id)
-                        have_running_jobs = have_running_jobs or JobState.is_remote(job.state)
+                        have_running_jobs = (
+                                have_running_jobs
+                                or JobState.is_remote(job.state)
+                        )
                     except SSHException:
                         have_running_jobs = True
 
@@ -286,7 +301,8 @@ class ExecutionManager:
                     self._destage_job(job_id, job)
 
                 if not self._update_available:
-                    if job.try_transition(JobState.SUBMITTED, JobState.STAGING_IN):
+                    if job.try_transition(JobState.SUBMITTED,
+                                          JobState.STAGING_IN):
                         self._stage_and_start_job(job_id, job)
                         self._logger.debug('Staged and started job')
 
@@ -299,7 +315,8 @@ class ExecutionManager:
                     self._delete_job(job_id, job)
             except:
                 job.state = JobState.SYSTEM_ERROR
-                self._logger.critical('An internal error occurred when processing job ' + job.id)
+                self._logger.critical(
+                    'An internal error occurred when processing job ' + job.id)
                 self._logger.critical(traceback.format_exc())
 
         return have_running_jobs

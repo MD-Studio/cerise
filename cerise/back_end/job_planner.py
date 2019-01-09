@@ -1,11 +1,10 @@
-import cerulean
-from cerulean import LocalFileSystem
 import logging
-from typing import cast, Dict
+from typing import Dict, cast
 
-from cerise.back_end.cwl import (
-        get_workflow_step_names, get_required_num_cores, get_time_limit)
-from cerise.job_store.job_state import JobState
+import cerulean
+
+from cerise.back_end.cwl import (get_required_num_cores, get_time_limit,
+                                 get_workflow_step_names)
 from cerise.job_store.sqlite_job_store import SQLiteJobStore
 
 
@@ -21,7 +20,8 @@ class JobPlanner:
     resources it needs based on this.
     """
 
-    def __init__(self, job_store: SQLiteJobStore, local_api_dir: cerulean.Path):
+    def __init__(self, job_store: SQLiteJobStore,
+                 local_api_dir: cerulean.Path):
         """Create a JobPlanner.
 
         Args:
@@ -58,18 +58,21 @@ class JobPlanner:
                     raise InvalidJobError('Invalid step in workflow')
 
             job.required_num_cores = get_required_num_cores(
-                    cast(bytes, job.workflow_content))
-            num_cores_steps = [self._steps_requirements[step]['num_cores']
-                               for step in steps]
+                cast(bytes, job.workflow_content))
+            num_cores_steps = [
+                self._steps_requirements[step]['num_cores'] for step in steps
+            ]
             if max(num_cores_steps) > 0:
                 job.required_num_cores = max(num_cores_steps)
 
             job.time_limit = get_time_limit(cast(bytes, job.workflow_content))
-            time_limit_steps = [self._steps_requirements[step]['time_limit']
-                                for step in steps]
+            time_limit_steps = [
+                self._steps_requirements[step]['time_limit'] for step in steps
+            ]
             job.time_limit = max(job.time_limit, sum(time_limit_steps))
 
-    def _get_steps_resource_requirements(self, local_api_dir: cerulean.Path) -> None:
+    def _get_steps_resource_requirements(self,
+                                         local_api_dir: cerulean.Path) -> None:
         """Scan CWL steps and extract resource requirements.
 
         Args:
@@ -81,14 +84,20 @@ class JobPlanner:
             for this_dir, _, files in local_steps_dir.walk():
                 for filename in files:
                     if filename.endswith('.cwl'):
-                        self._logger.debug('Scanning file for requirements: {}'.format(this_dir / filename))
-                        rel_this_dir = this_dir.relative_to(str(local_steps_dir))
+                        self._logger.debug(
+                            'Scanning file for requirements: {}'.format(
+                                this_dir / filename))
+                        rel_this_dir = this_dir.relative_to(
+                            str(local_steps_dir))
                         step_name = str(rel_this_dir / filename)
                         step_contents = (this_dir / filename).read_bytes()
                         step_num_cores = get_required_num_cores(step_contents)
                         step_time_limit = get_time_limit(step_contents)
-                        if not step_name in self._steps_requirements:
+                        if step_name not in self._steps_requirements:
                             self._steps_requirements[step_name] = dict()
-                        self._steps_requirements[step_name]['num_cores'] = step_num_cores
-                        self._steps_requirements[step_name]['time_limit'] = step_time_limit
-                        self._logger.debug('Step {} requires {} cores'.format(step_name, step_num_cores))
+                        self._steps_requirements[step_name][
+                            'num_cores'] = step_num_cores
+                        self._steps_requirements[step_name][
+                            'time_limit'] = step_time_limit
+                        self._logger.debug('Step {} requires {} cores'.format(
+                            step_name, step_num_cores))

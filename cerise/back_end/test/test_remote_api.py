@@ -1,12 +1,8 @@
-from cerise.test.fixture_jobs import PassJob, MissingInputJob, BrokenJob
-from cerise.back_end.remote_api import RemoteApi
-
 import cerulean
-
-import os
-from pathlib import Path
 import pytest
 
+from cerise.back_end.remote_api import RemoteApi
+from cerise.test.fixture_jobs import BrokenJob, MissingInputJob, PassJob
 
 lfs = cerulean.LocalFileSystem()
 
@@ -68,11 +64,10 @@ def test_get_projects(remote_api):
     assert 'cerise 0.0.0.dev' in remote_api.get_projects()
 
 
-def test_translate_runner_location(installed_api_dir, mock_config,
-                                   remote_api):
+def test_translate_runner_location(installed_api_dir, mock_config, remote_api):
     remote_api_dir = mock_config.get_basedir() / 'api'
     location = remote_api.translate_runner_location(
-            '$CERISE_API/project/files/cwltool.sh')
+        '$CERISE_API/project/files/cwltool.sh')
     assert location == '{}/project/files/cwltool.sh'.format(remote_api_dir)
 
 

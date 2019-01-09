@@ -1,14 +1,14 @@
-from cerise.back_end.job_runner import JobRunner
-from cerise.job_store.job_state import JobState
-
-from cerise.test.fixture_jobs import BrokenJob
-
 import json
 import pathlib
-import pytest
 import shutil
 import time
+
+import pytest
 import yaml
+
+from cerise.back_end.job_runner import JobRunner
+from cerise.job_store.job_state import JobState
+from cerise.test.fixture_jobs import BrokenJob
 
 
 def _stage_test_api(local_api_dir, remote_api_dir):
@@ -21,8 +21,10 @@ def _stage_test_api(local_api_dir, remote_api_dir):
             step_dict = yaml.safe_load(step.read_text())
             step.write_text(json.dumps(step_dict))
 
-    cwltiny = pathlib.Path(__file__).parents[3] / 'api' / 'cerise' / 'files' / 'cwltiny.py'
-    shutil.copy(str(cwltiny), str(remote_api_dir / 'cerise' / 'files' / 'cwltiny.py'))
+    cwltiny = pathlib.Path(
+        __file__).parents[3] / 'api' / 'cerise' / 'files' / 'cwltiny.py'
+    shutil.copy(
+        str(cwltiny), str(remote_api_dir / 'cerise' / 'files' / 'cwltiny.py'))
 
 
 @pytest.fixture
@@ -94,19 +96,19 @@ def test_update(runner_store):
 
 
 def test_cancel(runner_store):
-    job_runner, store, _  = runner_store
+    job_runner, store, _ = runner_store
 
     start_time = time.perf_counter()
     job_runner.start_job('test_job')
     store.get_job('test_job').state = JobState.WAITING
 
-    updated_job = _wait_for_state(store, job_runner, JobState.RUNNING, 2.0)
+    _wait_for_state(store, job_runner, JobState.RUNNING, 2.0)
 
     is_running = job_runner.cancel_job('test_job')
     assert time.perf_counter() < start_time + 1.0
-    assert is_running == False
+    assert is_running is False
     assert store.get_job('test_job').state == JobState.RUNNING
 
     is_running = job_runner.cancel_job('test_job')
-    assert is_running == False
+    assert is_running is False
     assert store.get_job('test_job').state == JobState.RUNNING

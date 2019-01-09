@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from cerulean import FileSystem, Path
+from cerulean import Path
 
 
 class File:

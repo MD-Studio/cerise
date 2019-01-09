@@ -1,10 +1,7 @@
-from cerise.back_end.local_files import LocalFiles
-from cerise.test.fixture_jobs import MissingInputJob, BrokenJob
-
-from urllib.parse import urlparse
-from pathlib import Path
-
 import pytest
+
+from cerise.back_end.local_files import LocalFiles
+from cerise.test.fixture_jobs import BrokenJob
 
 
 @pytest.fixture
@@ -21,7 +18,7 @@ def _assert_local_files_are_equal(input_file, reference_input_file, prefix):
     assert str(input_file.source) == str(reference_input_file.source)
     for i, secondary_file in enumerate(input_file.secondary_files):
         _assert_local_files_are_equal(
-                secondary_file, reference_input_file.secondary_files[i], prefix)
+            secondary_file, reference_input_file.secondary_files[i], prefix)
 
 
 def test_resolve_input(mock_config, mock_store_submitted):
@@ -34,12 +31,13 @@ def test_resolve_input(mock_config, mock_store_submitted):
     else:
         input_files = local_files.resolve_input('test_job')
 
-        assert store.get_job('test_job').workflow_content == job_fixture.workflow
+        assert store.get_job(
+            'test_job').workflow_content == job_fixture.workflow
 
         for i, input_file in enumerate(input_files):
             _assert_local_files_are_equal(
-                    input_file, job_fixture.local_input_files[i],
-                    mock_config.get_store_location_client() + '/input/test_job/')
+                input_file, job_fixture.local_input_files[i],
+                mock_config.get_store_location_client() + '/input/test_job/')
 
 
 def test_create_output_dir(mock_config, mock_store_destaged, output_dir):

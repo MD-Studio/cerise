@@ -10,6 +10,7 @@ class MockJob:
     It's used for testing, so that we don't need to bother with a
     database there.
     """
+
     # Attributes:
     def __init__(self, job_id, name, workflow, job_input):
         """Creates a new Job object.

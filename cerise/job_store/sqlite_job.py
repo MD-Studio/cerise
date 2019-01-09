@@ -1,6 +1,6 @@
 import logging
 from time import asctime, localtime, time
-from typing import cast, Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 from cerise.job_store.job_state import JobState
 
@@ -12,6 +12,7 @@ class SQLiteJob:
     and a Cerulean JobDescription class, which describes a job to start on
     a remote compute resource.
     """
+
     def __init__(self, store: Any, job_id: str) -> None:
         """Creates a new SQLiteJob object.
 
@@ -53,7 +54,6 @@ class SQLiteJob:
         """Current state of the job.
         """
         state_str = cast(str, self._get_var('state'))
-        ret = JobState[state_str]
         return JobState[state_str]
 
     @state.setter
@@ -80,7 +80,6 @@ class SQLiteJob:
     def please_delete(self, value: bool) -> None:
         self._set_var('please_delete', value)
 
-
     @property
     def log(self) -> str:
         """Log output as of last update.
@@ -90,8 +89,7 @@ class SQLiteJob:
             """
             SELECT level, time, message FROM job_log
             WHERE job_id = ? or job_id IS NULL
-            ORDER BY time ASC""",
-            (self.id,))
+            ORDER BY time ASC""", (self.id, ))
         for row in cursor:
             level_str = logging.getLevelName(row[0])
             time_str = asctime(localtime(row[1]))
@@ -153,7 +151,6 @@ class SQLiteJob:
     def time_limit(self, value: int) -> None:
         self._set_var('time_limit', value)
 
-
     # Post-staging data
     @property
     def remote_workdir_path(self) -> str:
@@ -165,7 +162,6 @@ class SQLiteJob:
     def remote_workdir_path(self, value: str) -> None:
         self._set_var('remote_workdir_path', value)
 
-
     @property
     def remote_workflow_path(self) -> str:
         """The absolute remote path of the CWL workflow file.
@@ -175,7 +171,6 @@ class SQLiteJob:
     @remote_workflow_path.setter
     def remote_workflow_path(self, value: str) -> None:
         self._set_var('remote_workflow_path', value)
-
 
     @property
     def remote_input_path(self) -> str:
@@ -187,7 +182,6 @@ class SQLiteJob:
     def remote_input_path(self, value: str) -> None:
         self._set_var('remote_input_path', value)
 
-
     @property
     def remote_stdout_path(self) -> str:
         """The absolute remote path of the standard output dump.
@@ -198,7 +192,6 @@ class SQLiteJob:
     def remote_stdout_path(self, value: str) -> None:
         self._set_var('remote_stdout_path', value)
 
-
     @property
     def remote_stderr_path(self) -> str:
         """The absolute remote path of the standard error dump.
@@ -208,7 +201,6 @@ class SQLiteJob:
     @remote_stderr_path.setter
     def remote_stderr_path(self, value: str) -> None:
         self._set_var('remote_stderr_path', value)
-
 
     # Post-destaging data
     @property
@@ -222,7 +214,6 @@ class SQLiteJob:
     def local_output(self, value: str) -> None:
         self._set_var('local_output', value)
 
-
     # Internal data
     @property
     def remote_job_id(self) -> str:
@@ -233,7 +224,6 @@ class SQLiteJob:
     @remote_job_id.setter
     def remote_job_id(self, value: str) -> None:
         self._set_var('remote_job_id', value)
-
 
     def try_transition(self, from_state: JobState, to_state: JobState) -> bool:
         """Attempts to transition the job's state to a new one.
@@ -249,7 +239,8 @@ class SQLiteJob:
         Returns:
             True iff the transition was successful.
         """
-        res = self._store._thread_local_data.conn.execute("""
+        res = self._store._thread_local_data.conn.execute(
+            """
             UPDATE jobs SET state = ? WHERE job_id = ? AND state = ?;""",
             (to_state.name, self.id, from_state.name))
         self._store._thread_local_data.conn.commit()
@@ -264,8 +255,7 @@ class SQLiteJob:
         """
         cursor = self._store._thread_local_data.conn.execute(
             'INSERT INTO job_log (job_id, level, time, message)'
-            'VALUES (?, ?, ?, ?)',
-            (self.id, level, time(), message))
+            'VALUES (?, ?, ?, ?)', (self.id, level, time(), message))
         cursor.close()
 
     def debug(self, message: str) -> None:
@@ -310,17 +300,17 @@ class SQLiteJob:
 
     def _get_var(self, var: str) -> Union[str, int, bytes]:
         """Do NOT feed this user input for var. Static strings only."""
-        cursor = self._store._thread_local_data.conn.execute("""
-            SELECT %s FROM jobs WHERE job_id = ?""" % var,
-            (self.id,))
+        cursor = self._store._thread_local_data.conn.execute(
+            """
+            SELECT %s FROM jobs WHERE job_id = ?""" % var, (self.id, ))
         value = cursor.fetchone()[0]
         cursor.close()
         return value
 
     def _set_var(self, var: str, value: Union[str, int, bytes]) -> None:
         """Do NOT feed this user input for var. Static strings only."""
-        cursor = self._store._thread_local_data.conn.execute("""
-            UPDATE jobs SET %s = ? WHERE job_id = ?""" % var,
-            (value, self.id))
+        cursor = self._store._thread_local_data.conn.execute(
+            """
+            UPDATE jobs SET %s = ? WHERE job_id = ?""" % var, (value, self.id))
         cursor.close()
         self._store._thread_local_data.conn.commit()
