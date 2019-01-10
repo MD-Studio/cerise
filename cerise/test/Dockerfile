@@ -1,4 +1,4 @@
-FROM cerise
+FROM cerise:latest
 
 # Install code coverage
 RUN pip3 install coverage

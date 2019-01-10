@@ -72,7 +72,7 @@ def test_translate_runner_location(installed_api_dir, mock_config, remote_api):
 
 
 def test_translate_workflow(mock_store_submitted, remote_api, mock_config):
-    store, job_fixture = mock_store_submitted
+    _, job_fixture = mock_store_submitted
 
     if job_fixture in [PassJob, MissingInputJob, BrokenJob]:
         with pytest.raises(RuntimeError):

@@ -8,7 +8,7 @@ lfs = cerulean.LocalFileSystem()
 
 
 def test_job_planner_init(mock_config, mock_store_resolved, local_api_dir):
-    store, job_fixture = mock_store_resolved
+    store, _ = mock_store_resolved
 
     planner = JobPlanner(store, lfs / str(local_api_dir))
 

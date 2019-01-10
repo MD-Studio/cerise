@@ -1,5 +1,4 @@
 FROM ubuntu:16.04
-MAINTAINER Lourens Veen <l.veen@esciencecenter.nl>
 
 # Install requirements
 RUN apt-get update -y && apt-get -y dist-upgrade && \

@@ -69,7 +69,7 @@ def test_destage_job(mock_config, mock_store_run_and_updated):
 
 
 def test_delete_job(mock_config, mock_store_run_and_updated):
-    store, job_fixture = mock_store_run_and_updated
+    store, _ = mock_store_run_and_updated
 
     remote_job_files = RemoteJobFiles(store, mock_config)
 

@@ -337,7 +337,6 @@ class Config:
             (int): The log level, following Python's built-in logging \
                     library.
         """
-        import logging
         loglevel_str = 'INFO'
         if 'logging' in self._config:
             loglevel_str = self._config['logging'].get('level', 'INFO')

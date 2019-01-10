@@ -304,6 +304,7 @@ def test_run_job(cerise_service, cerise_client, webdav_client,
     assert job.state == 'Success'
 
     log, response = cerise_client.jobs.get_job_log_by_id(jobId=job.id).result()
+    assert response.status_code == 200
     assert 'CWLTiny' in log
     assert 'success' in log
 
@@ -336,10 +337,12 @@ def test_get_job_by_id(cerise_service, cerise_client, webdav_client):
     job2 = _start_job(cerise_client, webdav_client, SecondaryFilesJob)
 
     job, response = cerise_client.jobs.get_job_by_id(jobId=job1.id).result()
+    assert response.status_code == 200
     assert job.name == job1.name
     assert job.id == job1.id
 
     job, response = cerise_client.jobs.get_job_by_id(jobId=job2.id).result()
+    assert response.status_code == 200
     assert job.name == job2.name
     assert job.id == job2.id
 
