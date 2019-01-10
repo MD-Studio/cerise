@@ -8,6 +8,7 @@ Cerise takes configuration information from various sources, with some
 overriding others. This page describes the configuration files and what can be
 configured in them.
 
+.. _main_configuration:
 
 Main configuration file
 -----------------------
@@ -30,6 +31,7 @@ looks as follows::
     store-location-client: file:///tmp/cerise_files
 
   rest-service:
+    base-url: http://localhost:29593
     hostname: 127.0.0.1
     port: 29593
 
@@ -66,8 +68,8 @@ different URLs, e.g.
     store-location-client: http://localhost:29593/files
 
 The user is expected to submit references to files that start with the URL in
-``store-location-client``, Cerise will then fetch the corresponding files from the
-directory specified in ``store-location-service``.
+``store-location-client``, Cerise will then fetch the corresponding files from
+the directory specified in ``store-location-service``.
 
 ``store-location-client`` can be overridden by specifying the environment
 variable CERISE_STORE_LOCATION_CLIENT. If you want to run multiple Cerise
@@ -77,11 +79,20 @@ the port can be easily injected into the container, removing the need to have
 a different image for each container. Cerise Client uses this functionality.
 
 Finally, key ``rest-service`` has the hostname and port on which the REST
-service should listen. If you want the service to be available to the outside
+service should listen, as well as the external URL on which it is available.
+If you want the service to be available to the outside
 world, this should be the IP address of the network adaptor to listen on, or
 ``0.0.0.0`` to listen on all adaptors. Note that a service running inside a
 Docker container needs to have ``0.0.0.0`` for it to be accessible from outside
 the container.
+
+Since the service needs to pass URLs to the client sometimes, it needs to know
+at which URL it is available to the client. This is specified by ``base-url``,
+which should contain the first part of the URL to the REST API, before the
+``/jobs`` part. Alternatively, you can set the CERISE_BASE_URL environment
+variable to this value.
+
+.. _compute-resource-configuration:
 
 Compute resource configuration
 ------------------------------
@@ -93,6 +104,8 @@ users to use the same specialised Cerise installation (e.g. Docker image),
 credentials can be specified using environment variables. (Cerise Client uses
 the latter method.) If you are making a specialisation that is to be shared with
 others, do not put your credentials in this file!
+
+Note: this file is somewhat outdated, but well be updated prior to the 1.0 release.
 
 API configuration file
 ......................
@@ -131,6 +144,8 @@ format::
 
       queue-name: None      # cluster default
       slots-per-node: None  # cluster default
+      cores-per-node: 32
+      scheduler-options: None
       cwl-runner: $CERISE_API_FILES/cerise/cwltiny.py
 
     refresh: 10
@@ -172,9 +187,15 @@ Other valid values for ``scheduler`` are ``slurm``, ``torque`` and
 If jobs need to be sent to a particular queue, then you can pass the queue name
 using the corresponding option; if it is not specified, the default queue is
 used. If one or more of your steps start MPI jobs, then you may want to set the
-number of MPI slots per node via ``slots-per-node`` for better performance.
-Ideally, it would be possible to specify this in the CWL file for the step, but
-neither CWL nor Cerise currently support this.
+number of MPI slots per node via ``slots-per-node`` for better performance. If
+you need to specify additional scheduler options to e.g. select a GPU node, you
+can do so using e.g. ``scheduler-options: "-C TitanX --gres=gpu:1"``. Ideally,
+it would be possible to specify this in the CWL file for the step, but support
+for this in CWL is partial and in-development, and Cerise does not currently
+support this. Users can specify the number of cores to run on using a CWL
+ResourceRequirement, but Cerise always allocates whole nodes. It therefore needs
+to know the number of cores in each node, which you should specify using
+``cores-per-node``.
 
 Finally, ``cwl-runner`` specifies the remote path to the CWL runner. It defaults
 to ``$CERISE_API_FILES/cerise/cwltiny.py``, which is Cerise's included simple

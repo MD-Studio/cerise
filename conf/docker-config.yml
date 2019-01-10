@@ -7,7 +7,7 @@ database:
 
 logging:
   file: /var/log/cerise/cerise_backend.log
-  level: DEBUG
+  level: INFO
 
 pidfile: /home/cerise/run/cerise_backend.pid
 

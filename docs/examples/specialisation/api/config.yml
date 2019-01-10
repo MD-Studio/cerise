@@ -1,0 +1,9 @@
+compute-resource:
+  files:
+    protocol: local
+    path: /home/cerise/.cerise
+
+  jobs:
+    protocol: local
+
+  refresh: 0.1

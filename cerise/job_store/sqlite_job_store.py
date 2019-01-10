@@ -1,12 +1,15 @@
-from .sqlite_job import SQLiteJob
-from .job_store import JobStore
-from .job_state import JobState
-
 import sqlite3
 import threading
+from types import TracebackType
+from typing import Any, List, Optional
 from uuid import uuid4
 
-class SQLiteJobStore(JobStore):
+from cerise.job_store.job_state import JobState
+from cerise.job_store.sqlite_job import SQLiteJob
+from cerise.util import BaseExceptionType
+
+
+class SQLiteJobStore:
     """A JobStore that stores jobs in a SQLite database.
     You must acquire the store to do anything with it or
     the jobs stored in it. It's a context manager, so
@@ -25,14 +28,14 @@ class SQLiteJobStore(JobStore):
         dbfile (str): The path to the file storing the database.
     """
 
-    def __init__(self, dbfile):
+    def __init__(self, dbfile: str) -> None:
         self._db_file = dbfile
         """The location of the database file."""
 
         self._pool_lock = threading.RLock()
         """A lock protecting the connection pool."""
 
-        self._connection_pool = []
+        self._connection_pool = []  # type: List[Any]
         """The list of available database connections."""
 
         self._thread_local_data = threading.local()
@@ -47,23 +50,33 @@ class SQLiteJobStore(JobStore):
                 workflow VARCHAR(255),
                 local_input TEXT,
                 state VARCHAR(17) DEFAULT 'SUBMITTED',
-                log TEXT DEFAULT '',
+                please_delete INTEGER DEFAULT 0,
+                resolve_retry_count INTEGER DEFAULT 0,
                 remote_output TEXT DEFAULT '',
+                remote_error TEXT DEFAULT '',
                 workflow_content BLOB,
+                required_num_cores INTEGER DEFAULT 0,
+                time_limit INTEGER DEFAULT 0,
                 remote_workdir_path VARCHAR(255) DEFAULT '',
                 remote_workflow_path VARCHAR(255) DEFAULT '',
                 remote_input_path VARCHAR(255) DEFAULT '',
                 remote_stdout_path VARCHAR(255) DEFAULT '',
                 remote_stderr_path VARCHAR(255) DEFAULT '',
                 remote_job_id VARCHAR(255),
-                local_output TEXT DEFAULT '',
-                please_delete INTEGER DEFAULT 0
+                local_output TEXT DEFAULT ''
+                )
+                """)
+        conn.execute("""CREATE TABLE IF NOT EXISTS job_log(
+                job_id CHARACTER(32),
+                level INTEGER,
+                time DOUBLE PRECISION,
+                message TEXT
                 )
                 """)
         conn.commit()
         conn.close()
 
-    def __enter__(self):
+    def __enter__(self) -> 'SQLiteJobStore':
         """Grabs a connection from the shared connection pool, and
         puts it in thread-local storage, thus reserving it for the
         present thread, which will use it for any subsequent actions
@@ -81,7 +94,8 @@ class SQLiteJobStore(JobStore):
             if self._connection_pool != []:
                 self._thread_local_data.conn = self._connection_pool.pop()
             else:
-                self._thread_local_data.conn = sqlite3.connect(self._db_file, isolation_level="IMMEDIATE")
+                self._thread_local_data.conn = sqlite3.connect(
+                    self._db_file, isolation_level="IMMEDIATE")
 
             self._thread_local_data.recursion_depth = 1
 
@@ -89,8 +103,11 @@ class SQLiteJobStore(JobStore):
 
         else:
             self._thread_local_data.recursion_depth += 1
+        return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Optional[BaseExceptionType],
+                 exc_value: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> None:
         """Returns the connection back to the pool.
         """
         if self._thread_local_data.recursion_depth == 1:
@@ -108,64 +125,68 @@ class SQLiteJobStore(JobStore):
 
         self._thread_local_data.recursion_depth -= 1
 
-    def create_job(self, name, workflow, job_input):
+    def create_job(self, name: str, workflow: str, job_input: str) -> str:
         """Create a job.
 
         Args:
-            name (str): The user-assigned name of the job
-            workflow (str): A string containing a URL pointing to the
+            name: The user-assigned name of the job
+            workflow: A string containing a URL pointing to the
                 workflow
-            job_input (str): A string containing a json description of
+            job_input: A string containing a json description of
                 a json string.
-            description (JobDescription): A JobDescription describing the job.
 
         Returns:
-            str: A string containing the job id.
+            A string containing the job id.
         """
         job_id = uuid4().hex
 
-        self._thread_local_data.conn.execute("""
+        self._thread_local_data.conn.execute(
+            """
                 INSERT INTO jobs (job_id, name, workflow, local_input, state)
                 VALUES (?, ?, ?, ?, ?)""",
-                (job_id, name, workflow, job_input, JobState.SUBMITTED.name))
+            (job_id, name, workflow, job_input, JobState.SUBMITTED.name))
         self._thread_local_data.conn.commit()
 
         return job_id
 
-    def list_jobs(self):
+    def list_jobs(self) -> List[SQLiteJob]:
         """Return a list of all currently known jobs.
 
         Returns:
-            List[SQLiteJob]: A list of SQLiteJob objects.
+            A list of SQLiteJob objects.
         """
         res = self._thread_local_data.conn.execute("""
                 SELECT job_id FROM jobs;""")
         ret = [SQLiteJob(self, row[0]) for row in res.fetchall()]
         return ret
 
-    def get_job(self, job_id):
+    def get_job(self, job_id: str) -> SQLiteJob:
         """Return the job with the given id.
 
         Args:
-            job_id (str): A string containing a job id, as obtained from create_job()
-                or list_jobs().
+            job_id: A string containing a job id, as obtained from
+                create_job() or list_jobs().
 
         Returns:
-            Union[SQLiteJob, NoneType]: The job object corresponding to the given id.
+            The job object corresponding to the given id.
         """
-        res = self._thread_local_data.conn.execute("""
-                SELECT COUNT(*) FROM jobs WHERE job_id = ?""", (job_id,))
+        res = self._thread_local_data.conn.execute(
+            """
+                SELECT COUNT(*) FROM jobs WHERE job_id = ?""", (job_id, ))
         if res.fetchone()[0] == 0:
-            return None
+            raise RuntimeError(
+                'Job with id {} not found in store'.format(job_id))
         return SQLiteJob(self, job_id)
 
-    def delete_job(self, job_id):
+    def delete_job(self, job_id: str) -> None:
         """Delete the job with the given id.
 
         Args:
-            job_id (str): A string containing the id of the job to be deleted.
+            job_id: A string containing the id of the job to be deleted.
         """
-        self._thread_local_data.conn.execute("""
-                DELETE FROM jobs WHERE job_id = ?""",
-                (job_id,))
+        self._thread_local_data.conn.execute(
+            """
+                DELETE FROM jobs WHERE job_id = ?""", (job_id, ))
+        self._thread_local_data.conn.execute(
+            'DELETE FROM job_log WHERE job_id = ?', (job_id, ))
         self._thread_local_data.conn.commit()

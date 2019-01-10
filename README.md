@@ -1,9 +1,9 @@
 Cerise
 ======
-[![Develop build status](https://api.travis-ci.org/MD-Studio/cerise.svg?branch=develop)](https://travis-ci.org/MD-Studio/cerise) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise) [![Coverage Badge](https://api.codacy.com/project/badge/Coverage/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise) [![Documentation Status](https://readthedocs.org/projects/cerise/badge/?version=latest)](http://cerise.readthedocs.io/en/latest/?badge=latest) [![Docker Build Status](https://img.shields.io/docker/build/mdstudio/cerise.svg)](https://hub.docker.com/r/mdstudio/cerise/)
+[![Build status](https://api.travis-ci.org/MD-Studio/cerise.svg?branch=master)](https://travis-ci.org/MD-Studio/cerise) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise) [![Coverage Badge](https://api.codacy.com/project/badge/Coverage/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise) [![Documentation Status](https://readthedocs.org/projects/cerise/badge/?version=stable)](http://cerise.readthedocs.io/en/latest/?badge=stable) [![Docker Build Status](https://img.shields.io/docker/build/mdstudio/cerise.svg)](https://hub.docker.com/r/mdstudio/cerise/)
 
 This is a simple REST service that can run (some) CWL jobs on some remote
-compute resource. It uses a REST API as its interface and PyXenon
+compute resource. It uses a REST API as its interface and Cerulean
 to run jobs remotely.
 
 The implementation is fairly complete, and the main things needed are some
@@ -92,9 +92,11 @@ Cerise follows the Google Python style guide, with Sphinxdoc docstrings for modu
 contribute to the project please fork it, create a branch including your addition, and create a pull request.
 
 The tests use relative imports and can be run directly after making
-changes to the code. To run all tests use `pytest` in the main directory.
+changes to the code. To run all tests use `make test` in the main directory.
 This will also run the integration tests, which take several minutes to complete
 as a bunch of Docker containers is built, started, and stopped.
+While developing, you may want to run `make fast_test` to skip the expensive
+integration test.
 
 Before creating a pull request please ensure the following:
 * You have written unit tests to test your additions

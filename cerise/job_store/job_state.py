@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class JobState(Enum):
     """Enum JobState
     """
@@ -25,7 +26,7 @@ class JobState(Enum):
     PERMANENT_FAILURE = "PermanentFailure"
 
     @staticmethod
-    def is_final(state):
+    def is_final(state: 'JobState') -> bool:
         """Return whether the JobState is a final state.
 
         Args:
@@ -35,14 +36,13 @@ class JobState(Enum):
             bool: True if a job in this state will remain in this
                   state indefinitely.
         """
-        return state in [JobState.SUCCESS,
-                         JobState.CANCELLED,
-                         JobState.PERMANENT_FAILURE,
-                         JobState.TEMPORARY_FAILURE,
-                         JobState.SYSTEM_ERROR]
+        return state in [
+            JobState.SUCCESS, JobState.CANCELLED, JobState.PERMANENT_FAILURE,
+            JobState.TEMPORARY_FAILURE, JobState.SYSTEM_ERROR
+        ]
 
     @staticmethod
-    def cancellation_active(state):
+    def cancellation_active(state: 'JobState') -> bool:
         """Return whether the JobState indicates that the job has been
         marked for cancellation, but is not cancelled yet.
 
@@ -55,13 +55,13 @@ class JobState(Enum):
             bool: True if a job in this state has been marked for
                   cancellation.
         """
-        return state in [JobState.STAGING_IN_CR,
-                         JobState.WAITING_CR,
-                         JobState.RUNNING_CR,
-                         JobState.STAGING_OUT_CR]
+        return state in [
+            JobState.STAGING_IN_CR, JobState.WAITING_CR, JobState.RUNNING_CR,
+            JobState.STAGING_OUT_CR
+        ]
 
     @staticmethod
-    def is_remote(state):
+    def is_remote(state: 'JobState') -> bool:
         """Return whether the state is one in which we expect the
         remote resource to do something to advance it to the next
         state.
@@ -74,13 +74,13 @@ class JobState(Enum):
         Returns:
             bool: True iff this state is remote.
         """
-        return state in [JobState.WAITING,
-                         JobState.WAITING_CR,
-                         JobState.RUNNING,
-                         JobState.RUNNING_CR]
+        return state in [
+            JobState.WAITING, JobState.WAITING_CR, JobState.RUNNING,
+            JobState.RUNNING_CR
+        ]
 
     @staticmethod
-    def to_cwl_state_string(state):
+    def to_cwl_state_string(state: 'JobState') -> str:
         """Return a string containing the CWL state corresponding to
         this state.
 
@@ -93,18 +93,16 @@ class JobState(Enum):
         state_to_cwl_string = {
             JobState.SUBMITTED: 'Waiting',
             JobState.STAGING_IN: 'Waiting',
-            JobState.WAITING: 'Waiting',
+            JobState.WAITING: 'Running',
             JobState.RUNNING: 'Running',
             JobState.FINISHED: 'Running',
             JobState.STAGING_OUT: 'Running',
             JobState.SUCCESS: 'Success',
-
             JobState.STAGING_IN_CR: 'Waiting',
-            JobState.WAITING_CR: 'Waiting',
+            JobState.WAITING_CR: 'Running',
             JobState.RUNNING_CR: 'Running',
             JobState.STAGING_OUT_CR: 'Running',
             JobState.CANCELLED: 'Cancelled',
-
             JobState.SYSTEM_ERROR: 'SystemError',
             JobState.TEMPORARY_FAILURE: 'TemporaryFailure',
             JobState.PERMANENT_FAILURE: 'PermanentFailure',

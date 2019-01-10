@@ -1,11 +1,18 @@
-import jpype
 import logging
 import os
-import xenon
+import traceback
+import urllib
+from typing import Any, Dict, Optional, cast
+
+import cerulean
 import yaml
 
+_remote_file_system = None
+
+
 class Config:
-    def __init__(self, xenon, config, api_config):
+    def __init__(self, config: Dict[str, Any],
+                 api_config: Dict[str, Any]) -> None:
         """Create a configuration object.
 
         Args:
@@ -14,43 +21,40 @@ class Config:
         """
         self._logger = logging.getLogger(__name__)
         """Logger: The logger for this class."""
-        self._x = xenon
-        """xenon.Xenon: The Xenon object to use."""
         self._config = config
         """The main configuration dictionary."""
         self._api_config = api_config
         """The API configuration dictionary."""
-        self._cr_config = None
+        self._cr_config = dict()  # type: Dict[str, Any]
         """The compute-resource part of the main config."""
 
-        if 'compute-resource' not in self._api_config:
-            self._api_config['compute-resource'] = {}
-        self._cr_config = self._api_config['compute-resource']
+        if 'compute-resource' in self._api_config:
+            self._cr_config = cast(dict, self._api_config['compute-resource'])
 
-    def _get_credential_variable(self, kind, name):
-        def have_config(kind, name):
+    def _get_credential_variable(self, kind: str, name: str) -> Optional[str]:
+        def have_config(kind: str, name: str) -> bool:
             if kind == '':
-                return 'credentials' in self._cr_config and \
-                        name in self._cr_config['credentials']
-            return kind in self._cr_config and \
-                    'credentials' in self._cr_config[kind] and \
-                    name in self._cr_config[kind]['credentials']
+                return ('credentials' in self._cr_config
+                        and name in self._cr_config['credentials'])
+            return (kind in self._cr_config
+                    and 'credentials' in self._cr_config[kind]
+                    and name in self._cr_config[kind]['credentials'])
 
-        def get_config(kind, name):
+        def get_config(kind: str, name: str) -> str:
             if kind == '':
                 return self._cr_config['credentials'][name]
             return self._cr_config[kind]['credentials'][name]
 
-        def env_var(kind, name):
+        def env_var(kind: str, name: str) -> str:
             if kind == '':
                 return '_'.join(['CERISE', name.upper()])
             else:
                 return '_'.join(['CERISE', kind.upper(), name.upper()])
 
-        def have_env(kind, name):
+        def have_env(kind: str, name: str) -> bool:
             return env_var(kind, name) in os.environ
 
-        def get_env(kind, name):
+        def get_env(kind: str, name: str) -> str:
             return os.environ[env_var(kind, name)]
 
         value = None
@@ -64,100 +68,42 @@ class Config:
             value = get_env(kind, name)
         return value
 
-    def _get_xenon1_scheme(self, kind, protocol, scheduler=None):
+    def _get_credential(self, kind: str) -> Optional[cerulean.Credential]:
         """
-        Decides which Xenon 1 scheme to use for a given protocol and
-        scheduler.
-
-        Args:
-            kind (str): Either 'files' or 'jobs'.
-            protocol (str): A protocol name.
-            scheduler (str): A scheduler name.
-
-        Returns:
-            str: A Xenon 1 scheme name.
-        """
-        if kind == 'files':
-            xenon1_files_map = {
-                    'file': 'file',
-                    'sftp': 'sftp',
-                    'ftp': 'ftp',
-                    'webdav': 'http'
-                    }
-            return xenon1_files_map[protocol]
-        elif kind == 'jobs':
-            xenon1_jobs_map = {
-                    ('local', 'none'): 'local',
-                    ('ssh', 'none'): 'ssh',
-                    ('ssh', 'slurm'): 'slurm',
-                    ('ssh', 'torque'): 'torque',
-                    ('ssh', 'gridengine'): 'ge'
-                    }
-            return xenon1_jobs_map[(protocol, scheduler)]
-
-    def _get_xenon1_password(self, password):
-        """
-        Manually convert a Python string containing a password to a \
-        JPype Java character array.
-
-        JPype does this incorrectly when doing it automatically,
-        leading to an incorrect password error. This works around
-        that.
-
-        Args:
-            password (str): A string containing a password.
-        Returns:
-            jpype.JArray(jpype.JChar): The equivalent Java char array.
-        """
-        if password is None:
-            return None
-        jpassword = jpype.JArray(jpype.JChar)(len(password))
-        for i, char in enumerate(password):
-            jpassword[i] = char
-        return jpassword
-
-    def _get_credential(self, kind, protocol, scheduler):
-        """
-        Create a Xenon Credential given the configuration, and return
+        Create a Cerulean Credential given the configuration, and return
         it together with the username.
 
         Args:
             kind (str): Either 'files' or 'jobs'.
-            protocol (str): The protocol to connect with.
-            scheduler (str): The scheduler to use to start jobs.
 
         Returns:
-            (xenon.Credential): The credential to use for connecting
+            (cerulean.Credential): The credential to use for connecting
         """
         username = self._get_credential_variable(kind, 'username')
         password = self._get_credential_variable(kind, 'password')
         certfile = self._get_credential_variable(kind, 'certfile')
         passphrase = self._get_credential_variable(kind, 'passphrase')
 
-        # self._logger.debug('Creating credential using {} {}'.format(username, password))
-
-        scheme = self._get_xenon1_scheme(kind, protocol, scheduler)
-        jpassword = self._get_xenon1_password(password)
-
-        if username and certfile and passphrase:
-            credential = self._x.credentials().newCertificateCredential(
-                    scheme, username, jpassword, None)
-        elif username and certfile:
-            credential = self._x.credentials().newCertificateCredential(
-                    scheme, username, jpassword, None)
+        credential = None  # type: Optional[cerulean.Credential]
+        if username and certfile:
+            credential = cerulean.PubKeyCredential(username, certfile,
+                                                   passphrase)
         elif username and password:
-            credential = self._x.credentials().newPasswordCredential(
-                    scheme, username, jpassword, None)
-        elif username:
-            # Wait for Xenon 2
-            pass
-        else:
-            credential = self._x.credentials().getDefaultCredential(
-                    scheme)
+            credential = cerulean.PasswordCredential(username, password)
 
         return credential
 
-    def get_service_host(self):
+    def close_file_systems(self) -> None:
+        """Close any open connections and free resources.
+
+        This function is to be called on shutdown, to ensure that the
+        remote file system managed by Config is shut down properly.
+        """
+        global _remote_file_system
+        if _remote_file_system is not None:
+            _remote_file_system.close()
+
+    def get_service_host(self) -> str:
         """
         Return the host interface Cerise should listen on.
 
@@ -167,7 +113,7 @@ class Config:
         rs_config = self._config.get('rest-service', {})
         return rs_config.get('hostname', '127.0.0.1')
 
-    def get_service_port(self):
+    def get_service_port(self) -> int:
         """
         Return the port on which Cerise should listen.
 
@@ -177,7 +123,7 @@ class Config:
         rs_config = self._config.get('rest-service', {})
         return int(rs_config.get('port', 29593))
 
-    def get_username(self, kind):
+    def get_username(self, kind: str) -> Optional[str]:
         """
         Return the username used to connect to the specified kind of resource.
 
@@ -189,7 +135,8 @@ class Config:
         """
         return self._get_credential_variable(kind, 'username')
 
-    def get_scheduler(self, run_on_head_node=False):
+    def get_scheduler(self,
+                      run_on_head_node: bool = False) -> cerulean.Scheduler:
         """
         Returns a scheduler as configured by the user.
 
@@ -199,55 +146,53 @@ class Config:
             adaptor is a cluster scheduler (i.e. slurm, torque or gridengine).
 
         Returns:
-            (xenon.Scheduler): A new scheduler
+            (cerulean.Scheduler): A new scheduler
         """
         if 'jobs' not in self._cr_config:
             protocol = 'local'
             location = None
-            scheduler = 'none'
+            scheduler_type = 'directgnu'
         else:
             protocol = self._cr_config['jobs'].get('protocol', 'local')
             location = self._cr_config['jobs'].get('location')
-            scheduler = self._cr_config['jobs'].get('scheduler', 'none')
+            scheduler_type = self._cr_config['jobs'].get(
+                'scheduler', 'directgnu')
 
         if run_on_head_node:
-            scheduler = 'none'
+            scheduler_type = 'directgnu'
 
-        scheme = self._get_xenon1_scheme('jobs', protocol, scheduler)
-        credential = self._get_credential('jobs', protocol, scheduler)
-
-        properties = jpype.java.util.HashMap()
-        if scheduler == 'slurm':
-            properties.put('xenon.adaptors.slurm.ignore.version', 'true')
-
-        scheduler = self._x.jobs().newScheduler(
-                scheme, location, credential, properties)
+        credential = self._get_credential('jobs')
+        terminal = cerulean.make_terminal(protocol, location, credential)
+        scheduler = cerulean.make_scheduler(scheduler_type, terminal)
         return scheduler
 
-    def get_file_system(self):
+    def get_file_system(self) -> cerulean.FileSystem:
         """
         Returns a remote file system as configured by the user.
 
         Returns:
-            (xenon.FileSystem): A new filesystem
+            (cerulean.FileSystem) A new filesystem
         """
-        if 'files' not in self._cr_config:
-            protocol = 'file'
-            location = None
-        else:
-            protocol = self._cr_config['files'].get('protocol', 'file')
-            location = self._cr_config['files'].get('location')
+        global _remote_file_system
+        if _remote_file_system is None:
+            if 'files' not in self._cr_config:
+                protocol = 'local'
+                location = None
+            else:
+                protocol = self._cr_config['files'].get('protocol', 'local')
+                location = self._cr_config['files'].get('location')
 
-        scheme = self._get_xenon1_scheme('files', protocol)
-        credential = self._get_credential('files', protocol, location)
-        self._logger.debug('scheme: {}, location: {}, credential: {}'.format(
-                scheme, location, credential))
-        filesystem = self._x.files().newFileSystem(
-                scheme, location, credential, None)
+            credential = self._get_credential('files')
+            self._logger.debug(
+                ('protocol: {}, location: {}, credential: {}').format(
+                    protocol, location, credential))
 
-        return filesystem
+            _remote_file_system = cerulean.make_file_system(
+                protocol, location, credential)
 
-    def get_remote_cwl_runner(self):
+        return _remote_file_system
+
+    def get_remote_cwl_runner(self) -> str:
         """
         Returns the configured remote path to the CWL runner to use.
 
@@ -256,24 +201,29 @@ class Config:
         Returns:
             (str): The path.
         """
-        default = '$CERISE_API_FILES/cerise/cwltiny.py'
+        default = '$CERISE_API/cerise/files/cwltiny.py'
         if 'jobs' not in self._cr_config:
             return default
         return self._cr_config['jobs'].get('cwl-runner', default)
 
-    def get_basedir(self):
+    def get_basedir(self) -> cerulean.Path:
         """
         Returns the configured remote base directory to use.
 
         Returns:
             (str): The remote path to the base directory.
         """
-        default = '/home/$CERISE_USERNAME/.cerise'
-        if 'files' not in self._cr_config:
-            return default
-        return self._cr_config['files'].get('path', default)
+        basedir = '/home/$CERISE_USERNAME/.cerise'
+        if 'files' in self._cr_config:
+            basedir = self._cr_config['files'].get('path', basedir)
 
-    def get_queue_name(self):
+        username = self.get_username('files')
+        if username is not None:
+            basedir = basedir.replace('$CERISE_USERNAME', username)
+        basedir = basedir.strip('/')
+        return self.get_file_system() / basedir
+
+    def get_queue_name(self) -> Optional[str]:
         """
         Returns the name of the queue to submit jobs to, or None if no
         queue name was configured.
@@ -285,7 +235,7 @@ class Config:
             return None
         return self._cr_config['jobs'].get('queue-name')
 
-    def get_slots_per_node(self):
+    def get_slots_per_node(self) -> int:
         """
         Returns the configured number of MPI slots per node.
 
@@ -297,7 +247,37 @@ class Config:
             return default
         return self._cr_config['jobs'].get('slots-per-node', default)
 
-    def get_remote_refresh(self):
+    def get_scheduler_options(self) -> Optional[str]:
+        """Returns the additional scheduler options to use.
+
+        Returns:
+            (str): The options as a single string.
+        """
+        if 'jobs' not in self._cr_config:
+            return None
+        return self._cr_config['jobs'].get('scheduler-options', None)
+
+    def get_cores_per_node(self) -> int:
+        """Returns the number of cores per node.
+
+        This depends on the available compute hardware, and should be
+        configured in the specialisation. The incoming workflow
+        specifies a number of cores, but we reserve nodes, so we need
+        to convert.
+
+        The default is 32, which is probably more than what you have,
+        as a result of which we'll allocate fewer nodes than the user
+        specified if no value is given. That'll slow things down, but
+        at least we won't be burning core hours needlessly.
+
+        Returns:
+            (int): The number of cores per node on this machine.
+        """
+        if 'jobs' not in self._cr_config:
+            return 32
+        return self._cr_config['jobs'].get('cores-per-node', 32)
+
+    def get_remote_refresh(self) -> float:
         """
         Returns the interval in between checks of the remote job \
         status, in seconds.
@@ -307,7 +287,7 @@ class Config:
         """
         return self._cr_config.get('refresh', 60.0)
 
-    def get_database_location(self):
+    def get_database_location(self) -> str:
         """
         Returns the local path to the database file.
 
@@ -319,7 +299,7 @@ class Config:
         """
         return self._config['database']['file']
 
-    def get_pid_file(self):
+    def get_pid_file(self) -> Optional[str]:
         """
         Returns the location of the PID file, if any.
 
@@ -328,16 +308,16 @@ class Config:
         """
         return self._config.get('pidfile')
 
-    def has_logging(self):
+    def has_logging(self) -> bool:
         """
         Returns if logging is configured.
 
         Returns:
-            (bool): True iff a logging section is available in the configuration.
+            True iff a logging section is available in the configuration.
         """
         return 'logging' in self._config
 
-    def get_log_file(self):
+    def get_log_file(self) -> str:
         """
         Returns the configured path for the log file. Use has_logging()
         to see if logging has been configured first.
@@ -345,9 +325,10 @@ class Config:
         Returns:
             (str): The path.
         """
-        return self._config['logging'].get('file', '/var/log/cerise/cerise_backend.log')
+        return self._config['logging'].get(
+            'file', '/var/log/cerise/cerise_backend.log')
 
-    def get_log_level(self):
+    def get_log_level(self) -> int:
         """
         Returns the configured log level. Use has_logging() to see if
         logging has been configured first.
@@ -356,24 +337,48 @@ class Config:
             (int): The log level, following Python's built-in logging \
                     library.
         """
-        import logging
-        loglevel_str = self._config['logging'].get('level', 'INFO')
+        loglevel_str = 'INFO'
+        if 'logging' in self._config:
+            loglevel_str = self._config['logging'].get('level', 'INFO')
+        if 'CERISE_LOG_LEVEL' in os.environ:
+            loglevel_str = os.environ['CERISE_LOG_LEVEL'].strip()
         loglevel = getattr(logging, loglevel_str.upper(), None)
         return loglevel
 
-    def get_store_location_service(self):
+    def get_base_url(self) -> str:
+        """Returns the service's base url.
+
+        This is the URL of the REST API, before the /jobs part, e.g. if
+        listing jobs is done by a GET to http://localhost/jobs, then
+        this should be set to http://localhost. Obtained from the
+        configuration file or the CERISE_BASE_URL environment variable.
+        """
+        if 'CERISE_BASE_URL' in os.environ:
+            return os.environ['CERISE_BASE_URL']
+        rs_config = self._config.get('rest-service', {})
+        return rs_config.get('base-url', '')
+
+    def get_store_location_service(self) -> cerulean.Path:
         """
         Returns the file exchange location access point for the service.
 
         Returns:
-            (str): A URL.
+            The local base directory for file exchange with the client.
 
         Raises:
             KeyError: The location was not set.
         """
-        return self._config['client-file-exchange']['store-location-service']
+        url = self._config['client-file-exchange']['store-location-service']
+        urlparts = urllib.parse.urlparse(url)
+        if urlparts.scheme == 'file':
+            return cerulean.LocalFileSystem() / urlparts.path
+        elif urlparts.scheme == 'http':
+            return cerulean.WebdavFileSystem(url) / ''
+        else:
+            raise RuntimeError('Config store-location-service contains an'
+                               ' invalid scheme. Use file:// or http://.')
 
-    def get_store_location_client(self):
+    def get_store_location_client(self) -> str:
         """
         Returns the file exchange location access point for the client.
 
@@ -385,28 +390,24 @@ class Config:
         """
         if 'CERISE_STORE_LOCATION_CLIENT' in os.environ:
             return os.environ['CERISE_STORE_LOCATION_CLIENT']
-        return self._config['client-file-exchange']['store-location-client']
+        return self._config['client-file-exchange'].get(
+            'store-location-client')
 
 
-def make_config(xenon=None):
+def make_config() -> Config:
     """Make a configuration object.
 
     Uses the configuration files and environment variables to determine
     the configuration.
 
-    Args:
-        xenon (xenon.Xenon): A Xenon object.
     Returns:
         Config: The Cerise configuration.
     """
-    config = None
-    api_config = None
-
     config_file_path = 'conf/config.yml'
     try:
         with open(config_file_path) as config_file:
             config = yaml.safe_load(config_file)
-    except:
+    except Exception:
         print("Could not load main configuration, aborting.")
         print("Does the file exist, and is it valid YAML?")
         print(traceback.format_exc())
@@ -416,10 +417,10 @@ def make_config(xenon=None):
     try:
         with open(api_config_file_path) as api_config_file:
             api_config = yaml.safe_load(api_config_file)
-    except:
+    except Exception:
         print("Could not load API configuration, aborting.")
         print("Does the file exist, and is it valid YAML?")
         print(traceback.format_exc())
         quit(1)
 
-    return Config(xenon, config, api_config)
+    return Config(config, api_config)

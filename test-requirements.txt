@@ -1,8 +1,9 @@
-bravado>=9.0.7
+bravado==10.1.0
 flask_testing>=0.6.1
 coverage>=4.0.3
 docker>=2.3.0,<3.0
-pytest>=3.0
+mypy>=0.650
+pytest>=3.6.0
 pytest-cov>=2.5
 codacy-coverage
 py>=1.4.31

@@ -1,0 +1,21 @@
+[run]
+source = cerise
+omit =
+    # The front end is generated code, so not being tested
+    cerise/front_end/*
+    # Don't test the coverage of the tests themselves
+    */test/*
+branch = True
+parallel = True
+
+[report]
+omit =
+    # The front end is generated code, so not being tested
+    cerise/front_end/*
+    # Don't test the coverage of the tests themselves
+    */test/*
+
+[paths]
+source =
+    .
+    /home/cerise
