@@ -278,6 +278,18 @@ def _drop_connections(slurm_container):
     slurm_container.exec_run('/bin/bash -c "killall sshd"', user='cerulean')
 
 
+def _drop_network(slurm_container):
+    # this will make the slurm container stop listening to SSH connections,
+    # simulating an interruption in network connectivity
+    slurm_container.exec_run('service ssh stop')
+    _drop_connections(slurm_container)
+
+
+def _restore_network(slurm_container):
+    # this turns the network back on
+    slurm_container.exec_run('service ssh start')
+
+
 def test_get_jobs(cerise_service, cerise_client):
     _, response = cerise_client.jobs.get_jobs().result()
     assert response.status_code == 200
@@ -427,23 +439,31 @@ def test_dropped_ssh_connection(cerise_service, cerise_client, webdav_client,
 
 def test_no_resource_connection(cerise_service, cerise_client, webdav_client,
                                 slurm_container):
-    slurm_container.stop()
+    _drop_network(slurm_container)
     time.sleep(1)
-    job = _start_job(cerise_client, webdav_client, SlowJob,
+    job = _start_job(cerise_client, webdav_client, LongRunningJob,
                      'test_no_resource_connection')
     time.sleep(1)
     job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
     assert response.status_code == 200
     assert job.state == 'Waiting'
 
-    slurm_container.start()
+    _restore_network(slurm_container)
     job = _wait_for_state(job.id, 5.0, 'Running', cerise_client)
+
+    _drop_network(slurm_container)
 
     job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
     assert response.status_code == 200
     assert job.state == 'Running'
 
-    _drop_connections(slurm_container)
+    time.sleep(5)
 
-    job = _wait_for_state(job.id, 15.0, 'DONE', cerise_client)
+    job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+    assert response.status_code == 200
+    assert job.state == 'Running'
+
+    _restore_network(slurm_container)
+
+    job = _wait_for_state(job.id, 60.0, 'DONE', cerise_client)
     assert job.state == 'Success'
