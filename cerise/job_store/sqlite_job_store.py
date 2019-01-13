@@ -1,5 +1,7 @@
+import logging
 import sqlite3
 import threading
+from time import time
 from types import TracebackType
 from typing import Any, List, Optional
 from uuid import uuid4
@@ -140,12 +142,17 @@ class SQLiteJobStore:
         """
         job_id = uuid4().hex
 
-        self._thread_local_data.conn.execute(
+        cursor = self._thread_local_data.conn.execute(
             """
                 INSERT INTO jobs (job_id, name, workflow, local_input, state)
                 VALUES (?, ?, ?, ?, ?)""",
             (job_id, name, workflow, job_input, JobState.SUBMITTED.name))
+        cursor.execute(
+            'INSERT INTO job_log (job_id, level, time, message)'
+            'VALUES (?, ?, ?, ?)', (job_id, logging.INFO, time(),
+                                    'Submitted job'))
         self._thread_local_data.conn.commit()
+        cursor.close()
 
         return job_id
 
@@ -155,9 +162,10 @@ class SQLiteJobStore:
         Returns:
             A list of SQLiteJob objects.
         """
-        res = self._thread_local_data.conn.execute("""
+        cursor = self._thread_local_data.conn.execute("""
                 SELECT job_id FROM jobs;""")
-        ret = [SQLiteJob(self, row[0]) for row in res.fetchall()]
+        ret = [SQLiteJob(self, row[0]) for row in cursor.fetchall()]
+        cursor.close()
         return ret
 
     def get_job(self, job_id: str) -> SQLiteJob:
@@ -170,10 +178,13 @@ class SQLiteJobStore:
         Returns:
             The job object corresponding to the given id.
         """
-        res = self._thread_local_data.conn.execute(
+        cursor = self._thread_local_data.conn.execute(
             """
                 SELECT COUNT(*) FROM jobs WHERE job_id = ?""", (job_id, ))
-        if res.fetchone()[0] == 0:
+        not_found = cursor.fetchone()[0] == 0
+        cursor.close()
+
+        if not_found:
             raise RuntimeError(
                 'Job with id {} not found in store'.format(job_id))
         return SQLiteJob(self, job_id)
@@ -184,9 +195,10 @@ class SQLiteJobStore:
         Args:
             job_id: A string containing the id of the job to be deleted.
         """
-        self._thread_local_data.conn.execute(
+        cursor = self._thread_local_data.conn.execute(
             """
                 DELETE FROM jobs WHERE job_id = ?""", (job_id, ))
-        self._thread_local_data.conn.execute(
+        cursor.execute(
             'DELETE FROM job_log WHERE job_id = ?', (job_id, ))
         self._thread_local_data.conn.commit()
+        cursor.close()

@@ -174,8 +174,7 @@ class RemoteJobFiles:
                 lines = log.decode().splitlines()
                 last_lines = job.remote_error.splitlines()
                 first_new_line = len(last_lines)
-                for line in lines[first_new_line:]:
-                    job.debug(line)
+                job.debug(lines[first_new_line:])
                 job.remote_error = log.decode()
 
     def _stage_input_file(self, count: int, job_id: str, input_file: File,
