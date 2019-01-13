@@ -142,7 +142,7 @@ class ExecutionManager:
             job.info('Resolving inputs')
             input_files = self._local_files.resolve_input(job_id)
         except FileNotFoundError as e:
-            job.error('Input not found: {}'.format(e.args[0]))
+            job.error('Input not found, failing with PermanentFailure')
             job.state = JobState.PERMANENT_FAILURE
             return
         except ValueError as e:
@@ -185,7 +185,7 @@ class ExecutionManager:
             self._remote_job_files.stage_job(job_id, input_files,
                                              workflow_content)
         except FileNotFoundError as e:
-            job.error('Input not found: {}'.format(e.args[0]))
+            job.error('Input not found, failing with PermanentFailure')
             job.state = JobState.PERMANENT_FAILURE
             return
         except SSHException as e:

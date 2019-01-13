@@ -316,7 +316,6 @@ def test_run_job(cerise_service, cerise_client, webdav_client,
 
 def test_run_broken_job(cerise_service, cerise_client, webdav_client,
                         job_fixture_permfail):
-
     job = _start_job(cerise_client, webdav_client, job_fixture_permfail)
     assert job.state == 'Waiting'
 

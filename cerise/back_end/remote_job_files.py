@@ -195,12 +195,13 @@ class RemoteJobFiles:
         Returns:
             The updated count
         """
-        self._logger.debug(type(input_file))
         staged_name = _create_input_filename(
             str(count).zfill(2), input_file.location)
-        self._logger.debug('Staging input file {} to remote file {}'.format(
-            input_file.location, staged_name))
         count += 1
+
+        with self._job_store:
+            job = self._job_store.get_job(job_id)
+            job.info('Staging input file {}'.format(input_file.location))
 
         target_path = self._abs_path(job_id, 'work/{}'.format(staged_name))
         cerulean.copy(cast(Path, input_file.source), target_path)

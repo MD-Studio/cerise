@@ -37,7 +37,7 @@ def test_plan_job(mock_config, mock_store_resolved, local_api_dir):
         planner.plan_job('test_job')
     except RuntimeError as e:
         if 'Invalid workflow file' in e.args[0]:
-            if job_fixture in [PassJob, SlowJob, BrokenJob, MissingInputJob]:
+            if job_fixture in [PassJob, SlowJob, BrokenJob]:
                 return
         elif 'Invalid step in workflow' in e.args[0]:
             if job_fixture is NoSuchStepJob:
