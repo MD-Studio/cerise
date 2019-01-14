@@ -101,8 +101,7 @@ class ExecutionManager:
         """
         self._logger.debug('Deleting job ' + job_id)
         self._remote_job_files.delete_job(job_id)
-        if job.state == JobState.SUCCESS:
-            self._local_files.delete_output_dir(job_id)
+        self._local_files.delete_output_dir(job_id)
         self._job_store.delete_job(job_id)
 
     def _cancel_job(self, job_id: str, job: SQLiteJob) -> None:
@@ -142,20 +141,12 @@ class ExecutionManager:
             job.info('Resolving inputs')
             input_files = self._local_files.resolve_input(job_id)
         except FileNotFoundError as e:
-            job.error('Input not found: {}'.format(e.args[0]))
+            job.error('Input not found, failing with PermanentFailure')
             job.state = JobState.PERMANENT_FAILURE
             return
         except ValueError as e:
             job.error('Invalid input: {}'.format(e.args[0]))
             job.state = JobState.PERMANENT_FAILURE
-            return
-        except ConnectionError:
-            job.resolve_retry_count += 1
-            job.warning('Could not connect to input source, will retry')
-            job.state = JobState.SUBMITTED
-            if job.resolve_retry_count > 10:
-                job.error('Could not connect to input source, giving up')
-                job.state = JobState.TEMPORARY_FAILURE
             return
 
         if not is_workflow(cast(bytes, job.workflow_content)):
@@ -185,36 +176,15 @@ class ExecutionManager:
             self._remote_job_files.stage_job(job_id, input_files,
                                              workflow_content)
         except FileNotFoundError as e:
-            job.error('Input not found: {}'.format(e.args[0]))
+            job.error('Input not found, failing with PermanentFailure')
             job.state = JobState.PERMANENT_FAILURE
-            return
-        except SSHException as e:
-            job.warning('Connection problem with remote resource: {}'.format(
-                e.args[0]))
-            job.warning('Will try again later')
-            job.state = JobState.SUBMITTED
-            return
-        except IOError as e:
-            job.error('An IO error occurred while uploading the job'
-                      ' input data: {}. Please check that your network'
-                      ' connection works, and that you have enough'
-                      ' disk space or quota on the remote machine.'
-                      ''.format(e))
-            job.state = JobState.SYSTEM_ERROR
             return
 
         job.info('Staged job, now starting')
         job.info('API versions:')
         for project_version in self._remote_api.get_projects():
             job.info('  {}'.format(project_version))
-        try:
-            self._job_runner.start_job(job_id)
-        except SSHException as e:
-            job.warning('Connection problem with remote resource: {}'.format(
-                e.args[0]))
-            job.warning('Will try again later')
-            job.state = JobState.SUBMITTED
-            return
+        self._job_runner.start_job(job_id)
         job.info('Started job')
 
         if not (job.try_transition(JobState.STAGING_IN, JobState.WAITING)
@@ -240,17 +210,9 @@ class ExecutionManager:
 
         if job.try_transition(JobState.FINISHED, JobState.STAGING_OUT):
             job.info('Starting destaging of results')
-            try:
-                output_files = self._remote_job_files.destage_job_output(
-                    job_id)
-                self._local_files.publish_job_output(job_id, output_files)
-            except SSHException as e:
-                job.warning(
-                    'Connection problem with remote resource: {}'.format(
-                        e.args[0]))
-                job.warning('Will try again later')
-                job.state = JobState.FINISHED
-                return
+            output_files = self._remote_job_files.destage_job_output(
+                job_id)
+            self._local_files.publish_job_output(job_id, output_files)
 
             job.info('Results downloaded and available')
 
@@ -281,21 +243,19 @@ class ExecutionManager:
 
             try:
                 job = self._job_store.get_job(job_id)
+                previous_state = job.state
                 self._logger.debug('Processing job ' + job_id +
                                    ' with current state ' + job.state.value)
 
                 if check_remote and JobState.is_remote(job.state):
                     self._logger.debug('Checking remote state')
-                    try:
-                        self._job_runner.update_job(job_id)
-                        self._remote_job_files.update_job(job_id)
-                        job = self._job_store.get_job(job_id)
-                        have_running_jobs = (
-                                have_running_jobs
-                                or JobState.is_remote(job.state)
-                        )
-                    except SSHException:
-                        have_running_jobs = True
+                    self._job_runner.update_job(job_id)
+                    self._remote_job_files.update_job(job_id)
+                    job = self._job_store.get_job(job_id)
+                    have_running_jobs = (
+                            have_running_jobs
+                            or JobState.is_remote(job.state)
+                    )
 
                 if job.state == JobState.FINISHED:
                     self._destage_job(job_id, job)
@@ -313,6 +273,30 @@ class ExecutionManager:
 
                 if job.please_delete and JobState.is_final(job.state):
                     self._delete_job(job_id, job)
+
+            except (ConnectionError, IOError, OSError, SSHException) as e:
+                self._logger.debug('System exception while processing job:'
+                                   ' {}'.format(e))
+                if isinstance(e, IOError) or isinstance(e, OSError):
+                    if ('Socket' not in e.args[1] and
+                        'Network' not in e.args[1] and
+                        'Temporary' not in e.args[1]):
+                        job.error('An IO error occurred while uploading the job'
+                            ' input data: {}. Please check that your network'
+                            ' connection works, and that you have enough'
+                            ' disk space or quota on the remote machine.'
+                            ''.format(e))
+                        job.state = JobState.SYSTEM_ERROR
+                        self._logger.critical('An internal error occurred when'
+                                              ' processing job ' + job.id)
+                        self._logger.critical(traceback.format_exc())
+                        return False
+                job = self._job_store.get_job(job_id)
+                job.debug('Connection problem with remote resource: {}, will'
+                          ' try again later'.format(e.args[0]))
+                job.state = previous_state
+                have_running_jobs = True
+
             except:
                 job.state = JobState.SYSTEM_ERROR
                 self._logger.critical(

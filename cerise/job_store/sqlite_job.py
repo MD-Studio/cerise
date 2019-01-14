@@ -1,6 +1,6 @@
 import logging
 from time import asctime, localtime, time
-from typing import Any, Optional, Union, cast
+from typing import Any, List, Optional, Union, cast
 
 from cerise.job_store.job_state import JobState
 
@@ -244,21 +244,28 @@ class SQLiteJob:
             UPDATE jobs SET state = ? WHERE job_id = ? AND state = ?;""",
             (to_state.name, self.id, from_state.name))
         self._store._thread_local_data.conn.commit()
-        return res.rowcount == 1
+        success = res.rowcount == 1
+        res.close()
+        return success
 
-    def add_log(self, level: int, message: str) -> None:
+    def add_log(self, level: int, message: Union[str, List[str]]) -> None:
         """Add a message to the job's log.
 
         Args:
             level: Level of importance
             message: The log message.
         """
-        cursor = self._store._thread_local_data.conn.execute(
-            'INSERT INTO job_log (job_id, level, time, message)'
-            'VALUES (?, ?, ?, ?)', (self.id, level, time(), message))
+        if not isinstance(message, list):
+            message = [message]
+        cursor = self._store._thread_local_data.conn.cursor()
+        for msg in message:
+            cursor.execute(
+                'INSERT INTO job_log (job_id, level, time, message)'
+                'VALUES (?, ?, ?, ?)', (self.id, level, time(), msg))
+        cursor.connection.commit()
         cursor.close()
 
-    def debug(self, message: str) -> None:
+    def debug(self, message: Union[str, List[str]]) -> None:
         """Add a message to the job's log at level DEBUG.
 
         Args:
@@ -266,7 +273,7 @@ class SQLiteJob:
         """
         self.add_log(logging.DEBUG, message)
 
-    def info(self, message: str) -> None:
+    def info(self, message: Union[str, List[str]]) -> None:
         """Add a message to the job's log at level INFO.
 
         Args:
@@ -274,7 +281,7 @@ class SQLiteJob:
         """
         self.add_log(logging.INFO, message)
 
-    def warning(self, message: str) -> None:
+    def warning(self, message: Union[str, List[str]]) -> None:
         """Add a message to the job's log at level WARNING.
 
         Args:
@@ -282,7 +289,7 @@ class SQLiteJob:
         """
         self.add_log(logging.WARNING, message)
 
-    def error(self, message: str) -> None:
+    def error(self, message: Union[str, List[str]]) -> None:
         """Add a message to the job's log at level ERROR.
 
         Args:
@@ -290,7 +297,7 @@ class SQLiteJob:
         """
         self.add_log(logging.ERROR, message)
 
-    def critical(self, message: str) -> None:
+    def critical(self, message: Union[str, List[str]]) -> None:
         """Add a message to the job's log at level CRITICAL.
 
         Args:
@@ -312,5 +319,5 @@ class SQLiteJob:
         cursor = self._store._thread_local_data.conn.execute(
             """
             UPDATE jobs SET %s = ? WHERE job_id = ?""" % var, (value, self.id))
-        cursor.close()
         self._store._thread_local_data.conn.commit()
+        cursor.close()

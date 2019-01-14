@@ -8,7 +8,7 @@ REQUIRES = ["connexion"]
 
 setup(
     name = "cerise",
-    version = "0.2.0",
+    version = "0.2.1",
     author = "Lourens Veen",
     author_email = "l.veen@esciencecenter.nl",
     description = ("A simple CWL job running service"),

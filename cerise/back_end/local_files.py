@@ -79,6 +79,8 @@ class LocalFiles:
         with self._job_store:
             job = self._job_store.get_job(job_id)
 
+            self._logger.debug('Resolving workflow input from {}'.format(
+                job.workflow))
             job.workflow_content = self._get_source_from_url(
                 job.workflow).read_bytes()
 

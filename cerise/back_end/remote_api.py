@@ -199,8 +199,21 @@ class RemoteApi:
             Path of the remote project directory.
         """
         remote_project_dir = self._remote_api_dir / name
+        # A recursive rmdir via SFTP is slow if you have many files, since
+        # the directory hierarchy has to be walked client-side. Since we
+        # already run the installation script anyway, we use a server-side
+        # rm -rf to delete an existing project dir, for performance reasons.
         if remote_project_dir.exists():
-            remote_project_dir.rmdir(recursive=True)
+            rmdir = cerulean.JobDescription()
+            rmdir.command = 'rm'
+            rmdir.arguments = ['-r', '-f', str(remote_project_dir)]
+            job_id = self._sched.submit(rmdir)
+            exit_code = self._sched.wait(job_id)
+            if exit_code != 0:
+                msg = 'Failed to delete existing project dir: {}'.format(
+                        exit_code)
+                self._logger.debug(msg)
+                raise RuntimeError(msg)
         remote_project_dir.mkdir(0o700)
         return remote_project_dir
 

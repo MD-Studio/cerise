@@ -278,6 +278,18 @@ def _drop_connections(slurm_container):
     slurm_container.exec_run('/bin/bash -c "killall sshd"', user='cerulean')
 
 
+def _drop_network(slurm_container):
+    # this will make the slurm container stop listening to SSH connections,
+    # simulating an interruption in network connectivity
+    slurm_container.exec_run('service ssh stop')
+    _drop_connections(slurm_container)
+
+
+def _restore_network(slurm_container):
+    # this turns the network back on
+    slurm_container.exec_run('service ssh start')
+
+
 def test_get_jobs(cerise_service, cerise_client):
     _, response = cerise_client.jobs.get_jobs().result()
     assert response.status_code == 200
@@ -285,7 +297,7 @@ def test_get_jobs(cerise_service, cerise_client):
 
 def test_api_install_script(cerise_service, cerise_client, webdav_client):
     job = _start_job(cerise_client, webdav_client, InstallScriptTestJob)
-    job = _wait_for_state(job.id, 5.0, 'DONE', cerise_client)
+    job = _wait_for_state(job.id, 10.0, 'DONE', cerise_client)
     assert job.state == 'Success'
 
     output_path = '/files/output/{}/output.txt'.format(job.id)
@@ -300,7 +312,7 @@ def test_run_job(cerise_service, cerise_client, webdav_client,
     job = _start_job(cerise_client, webdav_client, job_fixture_success)
     assert job.state == 'Waiting'
 
-    job = _wait_for_state(job.id, 5.0, 'DONE', cerise_client)
+    job = _wait_for_state(job.id, 10.0, 'DONE', cerise_client)
     assert job.state == 'Success'
 
     log, response = cerise_client.jobs.get_job_log_by_id(jobId=job.id).result()
@@ -316,11 +328,10 @@ def test_run_job(cerise_service, cerise_client, webdav_client,
 
 def test_run_broken_job(cerise_service, cerise_client, webdav_client,
                         job_fixture_permfail):
-
     job = _start_job(cerise_client, webdav_client, job_fixture_permfail)
     assert job.state == 'Waiting'
 
-    job = _wait_for_state(job.id, 5.0, 'DONE', cerise_client)
+    job = _wait_for_state(job.id, 10.0, 'DONE', cerise_client)
     assert job.state == 'PermanentFailure'
 
     if job_fixture_permfail == PartiallyFailingJob:
@@ -378,22 +389,22 @@ def test_cancel_running_job(cerise_service, cerise_client, webdav_client):
 def test_delete_job(cerise_service, cerise_client, webdav_client):
     job = _start_job(cerise_client, webdav_client, WcJob, 'test_delete_job')
 
-    job = _wait_for_state(job.id, 5.0, 'Success', cerise_client)
+    job = _wait_for_state(job.id, 10.0, 'Success', cerise_client)
     _, response = cerise_client.jobs.delete_job_by_id(jobId=job.id).result()
     assert response.status_code == 204
 
-    _wait_for_state(job.id, 5.0, 'DELETED', cerise_client)
+    _wait_for_state(job.id, 10.0, 'DELETED', cerise_client)
 
 
 def test_delete_running_job(cerise_service, cerise_client, webdav_client):
     job = _start_job(cerise_client, webdav_client, LongRunningJob,
                      'test_delete_running_job')
 
-    job = _wait_for_state(job.id, 5.0, 'Running', cerise_client)
+    job = _wait_for_state(job.id, 10.0, 'Running', cerise_client)
     _, response = cerise_client.jobs.delete_job_by_id(jobId=job.id).result()
     assert response.status_code == 204
 
-    _wait_for_state(job.id, 5.0, 'DELETED', cerise_client)
+    _wait_for_state(job.id, 10.0, 'DELETED', cerise_client)
 
 
 def test_restart_service(cerise_service, cerise_client, webdav_client,
@@ -428,23 +439,31 @@ def test_dropped_ssh_connection(cerise_service, cerise_client, webdav_client,
 
 def test_no_resource_connection(cerise_service, cerise_client, webdav_client,
                                 slurm_container):
-    slurm_container.stop()
+    _drop_network(slurm_container)
     time.sleep(1)
-    job = _start_job(cerise_client, webdav_client, SlowJob,
+    job = _start_job(cerise_client, webdav_client, LongRunningJob,
                      'test_no_resource_connection')
     time.sleep(1)
     job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
     assert response.status_code == 200
     assert job.state == 'Waiting'
 
-    slurm_container.start()
-    job = _wait_for_state(job.id, 5.0, 'Running', cerise_client)
+    _restore_network(slurm_container)
+    job = _wait_for_state(job.id, 10.0, 'Running', cerise_client)
+
+    _drop_network(slurm_container)
 
     job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
     assert response.status_code == 200
     assert job.state == 'Running'
 
-    _drop_connections(slurm_container)
+    time.sleep(5)
 
-    job = _wait_for_state(job.id, 15.0, 'DONE', cerise_client)
+    job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
+    assert response.status_code == 200
+    assert job.state == 'Running'
+
+    _restore_network(slurm_container)
+
+    job = _wait_for_state(job.id, 60.0, 'DONE', cerise_client)
     assert job.state == 'Success'

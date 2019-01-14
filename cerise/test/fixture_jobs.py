@@ -407,7 +407,8 @@ class LongRunningJob:
             '  sleep:\n'
             '    run: test/sleep.cwl\n'
             '    in:\n'
-            '      delay: 120\n'
+            '      delay:\n'
+            '        default: 60\n'
             '\n'
             'inputs: []\n'
             '\n'
@@ -532,7 +533,8 @@ class NoSuchStepJob:
             '  sleep:\n'
             '    run: test/no_such_step.cwl\n'
             '    in:\n'
-            '      delay: 120\n'
+            '      delay:\n'
+            '        default: 120\n'
             '\n'
             'inputs: []\n'
             '\n'
@@ -571,19 +573,23 @@ class MissingInputJob:
                 '#!/usr/bin/env cwl-runner\n'
                 '\n'
                 'cwlVersion: v1.0\n'
-                'class: CommandLineTool\n'
-                'baseCommand: wc\n'
-                'stdout: output.txt\n'
+                'class: Workflow\n'
                 'inputs:\n'
                 '  file:\n'
                 '    type: File\n'
-                '    inputBinding:\n'
-                '      position: 1\n'
                 '\n'
                 'outputs:\n'
-                '  output:\n'
+                '  counts:\n'
                 '    type: File\n'
-                '    outputBinding: { glob: output.txt }\n', 'utf-8')
+                '    outputSource: wc/output\n'
+                '\n'
+                'steps:\n'
+                '  wc:\n'
+                '    run: test/wc.cwl\n'
+                '    in:\n'
+                '      file: file\n'
+                '    out:\n'
+                '      [output]\n', 'utf-8')
 
     def local_input(local_baseurl):
         return ('{{ "file": {{ "class": "File", "location":'
@@ -592,6 +598,10 @@ class MissingInputJob:
     local_input_files = [File('file', None, 'non_existing_file.txt', [])]
 
     input_content = {}
+
+    required_num_cores = 0
+
+    time_limit = 60
 
     def remote_input(job_remote_workdir):
         return {
