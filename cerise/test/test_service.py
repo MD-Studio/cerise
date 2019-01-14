@@ -389,11 +389,11 @@ def test_cancel_running_job(cerise_service, cerise_client, webdav_client):
 def test_delete_job(cerise_service, cerise_client, webdav_client):
     job = _start_job(cerise_client, webdav_client, WcJob, 'test_delete_job')
 
-    job = _wait_for_state(job.id, 5.0, 'Success', cerise_client)
+    job = _wait_for_state(job.id, 10.0, 'Success', cerise_client)
     _, response = cerise_client.jobs.delete_job_by_id(jobId=job.id).result()
     assert response.status_code == 204
 
-    _wait_for_state(job.id, 5.0, 'DELETED', cerise_client)
+    _wait_for_state(job.id, 10.0, 'DELETED', cerise_client)
 
 
 def test_delete_running_job(cerise_service, cerise_client, webdav_client):
