@@ -5,6 +5,14 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.2.2
+*****
+
+Fixed
+-----
+
+* Improved network error handling
+
 0.2.1
 *****
 
