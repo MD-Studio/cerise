@@ -278,9 +278,9 @@ class ExecutionManager:
                 self._logger.debug('System exception while processing job:'
                                    ' {}'.format(e))
                 if isinstance(e, IOError) or isinstance(e, OSError):
-                    if ('Socket' not in e.args[1] and
-                        'Network' not in e.args[1] and
-                        'Temporary' not in e.args[1]):
+                    if ('Socket' not in str(e) and
+                        'Network' not in str(e) and
+                        'Temporary' not in str(e)):
                         job.error('An IO error occurred while uploading the job'
                             ' input data: {}. Please check that your network'
                             ' connection works, and that you have enough'
