@@ -70,6 +70,10 @@ class MockJob:
         """str: The absolute remote path of the standard output dump."""
         self.remote_stderr_path = ''
         """str: The absolute remote path of the standard error dump."""
+        self.remote_system_out_path = ''
+        """str: The absolute remote path of the system output dump."""
+        self.remote_system_err_path = ''
+        """str: The absolute remote path of the standard error dump."""
 
         # Post-destaging data
         self.local_output = ''

@@ -202,6 +202,26 @@ class SQLiteJob:
     def remote_stderr_path(self, value: str) -> None:
         self._set_var('remote_stderr_path', value)
 
+    @property
+    def remote_system_out_path(self) -> str:
+        """The absolute remote path of the system out dump.
+        """
+        return cast(str, self._get_var('remote_system_out_path'))
+
+    @remote_system_out_path.setter
+    def remote_system_out_path(self, value: str) -> None:
+        self._set_var('remote_system_out_path', value)
+
+    @property
+    def remote_system_err_path(self) -> str:
+        """The absolute remote path of the system error dump.
+        """
+        return cast(str, self._get_var('remote_system_err_path'))
+
+    @remote_system_err_path.setter
+    def remote_system_err_path(self, value: str) -> None:
+        self._set_var('remote_system_err_path', value)
+
     # Post-destaging data
     @property
     def local_output(self) -> str:
