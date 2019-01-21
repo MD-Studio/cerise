@@ -231,6 +231,8 @@ def mock_store_staged(request, mock_config):
     job.remote_input_path = str(job_dir / 'input.json')
     job.remote_stdout_path = str(job_dir / 'stdout.txt')
     job.remote_stderr_path = str(job_dir / 'stderr.txt')
+    job.remote_system_out_path = str(job_dir / 'sysout.txt')
+    job.remote_system_err_path = str(job_dir / 'syserr.txt')
     job.state = JobState.STAGING_IN
 
     store.add_job(job)

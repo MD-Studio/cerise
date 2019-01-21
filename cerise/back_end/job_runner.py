@@ -83,6 +83,8 @@ class JobRunner:
             ]
             jobdesc.stdout_file = job.remote_stdout_path
             jobdesc.stderr_file = job.remote_stderr_path
+            jobdesc.system_out_file = job.remote_system_out_path
+            jobdesc.system_err_file = job.remote_system_err_path
 
             if job.time_limit > 0:
                 jobdesc.time_reserved = job.time_limit
