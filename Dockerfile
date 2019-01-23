@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 # Install requirements
 RUN apt-get update -y && apt-get -y dist-upgrade && \
