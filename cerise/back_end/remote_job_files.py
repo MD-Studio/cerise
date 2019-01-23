@@ -100,6 +100,10 @@ class RemoteJobFiles:
             # configure output
             job.remote_stdout_path = str(self._abs_path(job_id, 'stdout.txt'))
             job.remote_stderr_path = str(self._abs_path(job_id, 'stderr.txt'))
+            job.remote_system_out_path = str(self._abs_path(job_id,
+                                                            'sysout.txt'))
+            job.remote_system_err_path = str(self._abs_path(job_id,
+                                                            'syserr.txt'))
 
     def destage_job_output(self, job_id: str) -> List[File]:
         """Download results of the given job from the compute resource.

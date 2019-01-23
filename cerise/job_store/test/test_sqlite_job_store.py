@@ -35,6 +35,8 @@ def inited_db(request, empty_db):
                              '    remote_input_path VARCHAR(255),'
                              '    remote_stdout_path VARCHAR(255),'
                              '    remote_stderr_path VARCHAR(255),'
+                             '    remote_system_out_path VARCHAR(255),'
+                             '    remote_system_err_path VARCHAR(255),'
                              '    remote_job_id VARCHAR(255),'
                              '    local_output TEXT'
                              '    )')
@@ -245,6 +247,16 @@ def test_set_get_remote_stdout_path(job):
 def test_set_get_remote_stderr_path(job):
     job.remote_stderr_path = '/test_set_get'
     assert job.remote_stderr_path == '/test_set_get'
+
+
+def test_set_get_remote_system_out_path(job):
+    job.remote_system_out_path = '/test_set_get_out'
+    assert job.remote_system_out_path == '/test_set_get_out'
+
+
+def test_set_get_remote_system_err_path(job):
+    job.remote_system_err_path = '/test_set_get_err'
+    assert job.remote_system_err_path == '/test_set_get_err'
 
 
 def test_set_get_local_output(job):
