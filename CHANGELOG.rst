@@ -5,6 +5,15 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.2.3
+*****
+
+Fixed
+-----
+
+* Don't litter slurm-xyz.out files all over the place
+* Update Docker to Ubuntu 18.04
+
 0.2.2
 *****
 
