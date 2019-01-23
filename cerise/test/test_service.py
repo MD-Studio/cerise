@@ -186,6 +186,23 @@ def debug_output(request, tmpdir, cerise_client):
         f.write(stream.read())
 
 
+@pytest.fixture
+def debug_print_log(tmpdir, cerise_client):
+    yield
+
+    # print logs for debugging
+    client = docker.from_env()
+    service = client.containers.get('cerise-test-service')
+    archive_file = tmpdir / 'docker_logs2.tar'
+    stream, _ = service.get_archive('/var/log')
+    with archive_file.open('wb') as f:
+        f.write(stream.read())
+
+    with tarfile.open(str(archive_file)) as tf:
+        with tf.extractfile('log/cerise/cerise_backend.log') as f:
+            print(f.read().decode('utf-8'))
+
+
 def _start_job(cerise_client, webdav_client, job_fixture, test_name=None):
     if test_name is None:
         test_name = 'test_post_' + job_fixture.__name__
@@ -428,7 +445,7 @@ def test_restart_service(cerise_service, cerise_client, webdav_client,
 
 
 def test_dropped_ssh_connection(cerise_service, cerise_client, webdav_client,
-                                slurm_container):
+                                slurm_container, debug_print_log):
     job = _start_job(cerise_client, webdav_client, SlowJob,
                      'test_dropped_ssh_connection')
     _drop_connections(slurm_container)
@@ -438,7 +455,7 @@ def test_dropped_ssh_connection(cerise_service, cerise_client, webdav_client,
 
 
 def test_no_resource_connection(cerise_service, cerise_client, webdav_client,
-                                slurm_container, tmpdir):
+                                slurm_container, debug_print_log):
     _drop_network(slurm_container)
     time.sleep(1)
     job = _start_job(cerise_client, webdav_client, LongRunningJob,
@@ -455,20 +472,6 @@ def test_no_resource_connection(cerise_service, cerise_client, webdav_client,
 
     job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
     assert response.status_code == 200
-
-    # Collect logs for debugging
-    client = docker.from_env()
-    service = client.containers.get('cerise-test-service')
-    archive_file = tmpdir / 'docker_logs2.tar'
-    stream, _ = service.get_archive('/var/log')
-    print(stream)
-    print(archive_file)
-    with archive_file.open('wb') as f:
-        f.write(stream.read())
-
-    with tarfile.open(str(archive_file)) as tf:
-        with tf.extractfile('log/cerise/cerise_backend.log') as f:
-            print(f.read())
 
     assert job.state == 'Running'
 
