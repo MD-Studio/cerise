@@ -374,6 +374,20 @@ def test_get_job_by_id(cerise_service, cerise_client, webdav_client):
     assert job.name == job2.name
     assert job.id == job2.id
 
+    with pytest.raises(HTTPNotFound):
+        cerise_client.jobs.get_job_by_id(jobId='doesnotexist').result()
+
+
+def test_get_job_log_by_id(cerise_service, cerise_client, webdav_client):
+    job = _start_job(cerise_client, webdav_client, WcJob)
+
+    log, response = cerise_client.jobs.get_job_log_by_id(jobId=job.id).result()
+    assert response.status_code == 200
+    assert log != ''
+
+    with pytest.raises(HTTPNotFound):
+        cerise_client.jobs.get_job_log_by_id(jobId='doesnotexist').result()
+
 
 def test_cancel_waiting_job(cerise_service, cerise_client, webdav_client):
     start_time = time.perf_counter()
@@ -448,6 +462,7 @@ def test_dropped_ssh_connection(cerise_service, cerise_client, webdav_client,
                                 slurm_container, debug_print_log):
     job = _start_job(cerise_client, webdav_client, SlowJob,
                      'test_dropped_ssh_connection')
+    print('test_dropped_ssh_connection: {}'.format(job.id))
     _drop_connections(slurm_container)
 
     job = _wait_for_state(job.id, 10.0, 'DONE', cerise_client)
@@ -460,6 +475,7 @@ def test_no_resource_connection(cerise_service, cerise_client, webdav_client,
     time.sleep(1)
     job = _start_job(cerise_client, webdav_client, LongRunningJob,
                      'test_no_resource_connection')
+    print('test_no_resource_connection: {}'.format(job.id))
     time.sleep(1)
     job, response = cerise_client.jobs.get_job_by_id(jobId=job.id).result()
     assert response.status_code == 200

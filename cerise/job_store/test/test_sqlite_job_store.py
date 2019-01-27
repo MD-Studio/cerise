@@ -5,7 +5,7 @@ import sqlite3
 import pytest
 
 from cerise.job_store.job_state import JobState
-from cerise.job_store.sqlite_job_store import SQLiteJobStore
+from cerise.job_store.sqlite_job_store import JobNotFound, SQLiteJobStore
 
 
 @pytest.fixture
@@ -139,6 +139,9 @@ def test_get_job(onejob_store):
     with onejob_store['store']:
         job = onejob_store['store'].get_job('258685677b034756b55bbad161b2b89b')
         assert job.name == 'test_sqlite_job_store'
+
+        with pytest.raises(JobNotFound):
+            onejob_store['store'].get_job('not_an_existing_job')
 
 
 def test_delete_job(onejob_store):

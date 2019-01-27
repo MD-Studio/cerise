@@ -5,7 +5,7 @@ import flask
 import json
 
 from cerise.job_store import job_state
-from cerise.job_store.sqlite_job_store import SQLiteJobStore
+from cerise.job_store.sqlite_job_store import JobNotFound, SQLiteJobStore
 from cerise.config import make_config
 
 _config = make_config()
@@ -84,7 +84,7 @@ def get_job_by_id(jobId):
         try:
             job = _job_store.get_job(jobId)
             return _internal_job_to_rest_job(job), 200
-        except RuntimeError:
+        except JobNotFound:
             flask.abort(404, "Job not found")
 
 
@@ -98,10 +98,11 @@ def get_job_log_by_id(jobId):
     :rtype: str
     """
     with _job_store:
-        job = _job_store.get_job(jobId)
-        if not job:
+        try:
+            job = _job_store.get_job(jobId)
+            return job.log
+        except JobNotFound:
             flask.abort(404, "Job not found")
-        return job.log
 
 
 def get_jobs():
