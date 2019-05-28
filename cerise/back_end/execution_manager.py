@@ -274,7 +274,8 @@ class ExecutionManager:
                 if job.please_delete and JobState.is_final(job.state):
                     self._delete_job(job_id, job)
 
-            except (ConnectionError, IOError, OSError, SSHException) as e:
+            except (ConnectionError, IOError, EOFError, OSError, SSHException
+                    ) as e:
                 self._logger.debug('System exception while processing job:'
                                    ' {}'.format(e))
                 if isinstance(e, IOError) or isinstance(e, OSError):
