@@ -5,6 +5,16 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.2.4
+*****
+
+Fixed
+-----
+
+* Improved network robustness
+* Better error handling when requesting non-existing job status
+* Zenodo integration and DOI
+
 0.2.3
 *****
 
