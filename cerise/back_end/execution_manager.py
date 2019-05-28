@@ -274,15 +274,17 @@ class ExecutionManager:
                 if job.please_delete and JobState.is_final(job.state):
                     self._delete_job(job_id, job)
 
-            except (ConnectionError, IOError, OSError, SSHException) as e:
+            except (ConnectionError, IOError, EOFError, OSError, SSHException
+                    ) as e:
                 self._logger.debug('System exception while processing job:'
                                    ' {}'.format(e))
                 if isinstance(e, IOError) or isinstance(e, OSError):
                     if ('Socket' not in str(e) and
                         'Network' not in str(e) and
-                        'Temporary' not in str(e)):
-                        job.error('An IO error occurred while uploading the job'
-                            ' input data: {}. Please check that your network'
+                        'Temporary' not in str(e) and
+                        'Timeout opening channel' not in str(e)):
+                        job.error('An IO error occurred while processing the'
+                            ' job: {}. Please check that your network'
                             ' connection works, and that you have enough'
                             ' disk space or quota on the remote machine.'
                             ''.format(e))

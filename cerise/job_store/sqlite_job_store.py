@@ -11,6 +11,10 @@ from cerise.job_store.sqlite_job import SQLiteJob
 from cerise.util import BaseExceptionType
 
 
+class JobNotFound(RuntimeError):
+    pass
+
+
 class SQLiteJobStore:
     """A JobStore that stores jobs in a SQLite database.
     You must acquire the store to do anything with it or
@@ -187,7 +191,7 @@ class SQLiteJobStore:
         cursor.close()
 
         if not_found:
-            raise RuntimeError(
+            raise JobNotFound(
                 'Job with id {} not found in store'.format(job_id))
         return SQLiteJob(self, job_id)
 

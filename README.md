@@ -1,6 +1,6 @@
 Cerise
 ======
-[![Master build status](https://api.travis-ci.org/MD-Studio/cerise.svg?branch=master)](https://travis-ci.org/MD-Studio/cerise) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise) [![Coverage Badge](https://api.codacy.com/project/badge/Coverage/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise) [![Documentation Status](https://readthedocs.org/projects/cerise/badge/?version=stable)](http://cerise.readthedocs.io/en/latest/?badge=stable) [![Docker Build Status](https://img.shields.io/docker/build/mdstudio/cerise.svg)](https://hub.docker.com/r/mdstudio/cerise/)
+[![Build status](https://api.travis-ci.org/MD-Studio/cerise.svg?branch=master)](https://travis-ci.org/MD-Studio/cerise) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise) [![Coverage Badge](https://api.codacy.com/project/badge/Coverage/56de5791221a42e5964ba9d3a949c9c4)](https://www.codacy.com/app/LourensVeen/cerise) [![Documentation Status](https://readthedocs.org/projects/cerise/badge/?version=stable)](http://cerise.readthedocs.io/en/latest/?badge=latest) [![Docker Build Status](https://img.shields.io/docker/build/mdstudio/cerise.svg)](https://hub.docker.com/r/mdstudio/cerise/)
 
 This is a simple REST service that can run (some) CWL jobs on some remote
 compute resource. It uses a REST API as its interface and Cerulean
