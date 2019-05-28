@@ -412,9 +412,9 @@ def test_cancel_running_job(cerise_service, cerise_client, webdav_client):
     _, response = cerise_client.jobs.cancel_job_by_id(jobId=job.id).result()
     assert response.status_code == 200
 
-    job = _wait_for_state(job.id, 10.0, 'DONE', cerise_client)
+    job = _wait_for_state(job.id, 20.0, 'DONE', cerise_client)
     assert job.state == 'Cancelled'
-    assert time.perf_counter() < start_time + 10.0
+    assert time.perf_counter() < start_time + 20.0
 
 
 def test_delete_job(cerise_service, cerise_client, webdav_client):
